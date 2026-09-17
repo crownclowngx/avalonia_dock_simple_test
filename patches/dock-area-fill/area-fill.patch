@@ -1,0 +1,1163 @@
+diff --git a/Directory.Packages.props b/Directory.Packages.props
+index 58b02f56971ba9736bbe6af729b69e72661d596e..5ce77651c7ab4f4535ba0045b55e637a5ea0eae9 100644
+--- a/Directory.Packages.props
++++ b/Directory.Packages.props
+@@ -34,7 +34,7 @@
+     <PackageVersion Include="System.Text.Json" Version="10.0.2" />
+     <PackageVersion Include="WebViewControl-Avalonia" Version="3.120.10" />
+     <PackageVersion Include="WebViewControl-Avalonia-ARM64" Version="3.120.10" />
+-    <PackageVersion Include="xunit.v3" Version="3.2.1" />
++    <PackageVersion Include="xunit.v3" Version="3.2.2" />
+     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5">
+       <PrivateAssets>all</PrivateAssets>
+       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+@@ -50,7 +50,8 @@
+     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="5.0.0" />
+     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.0.0" />
+     <PackageVersion Include="Microsoft.CodeAnalysis.Workspaces.MSBuild" Version="5.0.0" />
+-    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.102" />
++    <!-- 仅升级构建工具，避免继承上游旧 Git task 的 NU1902；不改变 Dock 运行时闭包。 -->
++    <PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.401" />
+     <PackageVersion Include="Nuke.Common" Version="10.1.0" />
+     <PackageVersion Include="System.Runtime.Serialization.Formatters" Version="10.0.2" />
+     <PackageVersion Include="protobuf-net" Version="3.2.56" />
+diff --git a/build/SignAssembly.props b/build/SignAssembly.props
+index 6e9430f4bfc4bf3f17bffc78f09f115bce2e901f..fbc0593a97d875a07f1ec04bc973f2ce620c04ca 100644
+--- a/build/SignAssembly.props
++++ b/build/SignAssembly.props
+@@ -4,6 +4,7 @@
+     <SignAssembly>True</SignAssembly>
+     <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)\dock.public.snk</AssemblyOriginatorKeyFile>
+     <DelaySign>false</DelaySign>
+-    <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
++    <!-- 使用仓库公开密钥完成本地补丁构建，不要求上游发布私钥；程序集身份保持不变。 -->
++    <PublicSign>true</PublicSign>
+   </PropertyGroup>
+ </Project>
+diff --git a/build/SourceLink.props b/build/SourceLink.props
+index a74a6dcaa22e9bcd86f1ca17a3ff9ab9155c701c..6c87d6b505e4f7792f2e6998f340037af06d7e2b 100644
+--- a/build/SourceLink.props
++++ b/build/SourceLink.props
+@@ -15,6 +15,7 @@
+     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All"/>
+   </ItemGroup>
+   <ItemGroup>
+-    <SourceRoot Include="$(NuGetPackageRoot)" Condition="'$(NuGetPackageRoot)' != ''" />
++    <!-- 独立缓存环境变量可不带末尾分隔符；SourceLink 的确定性映射要求目录以分隔符结尾。 -->
++    <SourceRoot Include="$([MSBuild]::EnsureTrailingSlash('$(NuGetPackageRoot)'))" Condition="'$(NuGetPackageRoot)' != ''" />
+   </ItemGroup>
+ </Project>
+diff --git a/src/Dock.Avalonia/Contract/IDockDropGuard.cs b/src/Dock.Avalonia/Contract/IDockDropGuard.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..86c75fd14ba013050c93eb81a954998b0da4a5b0
+--- /dev/null
++++ b/src/Dock.Avalonia/Contract/IDockDropGuard.cs
+@@ -0,0 +1,13 @@
++using Dock.Model.Core;
++
++namespace Dock.Avalonia.Contract;
++
++/// <summary>
++/// 可由宿主 Factory 实现的附加拖放约束。框架继续负责类型和能力校验；
++/// 此接口只表达宿主运行状态（例如内容全屏）是否允许本次迁移。
++/// </summary>
++public interface IDockDropGuard
++{
++    /// <summary>只读判断，预览与提交均会调用；实现不得在此移动模型或保存布局。</summary>
++    bool CanDrop(IDockable source, IDockable target, DockOperation operation);
++}
+diff --git a/src/Dock.Avalonia/Contract/IDockPreviewProvider.cs b/src/Dock.Avalonia/Contract/IDockPreviewProvider.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..1974bfab0e431de06a73f1a4870e601e72af6ab1
+--- /dev/null
++++ b/src/Dock.Avalonia/Contract/IDockPreviewProvider.cs
+@@ -0,0 +1,12 @@
++using Avalonia;
++using Avalonia.Controls;
++using Dock.Model.Core;
++
++namespace Dock.Avalonia.Contract;
++
++/// <summary>供拥有特殊布局规则的宿主只读调整预览范围，不参与命中或执行布局变更。</summary>
++public interface IDockPreviewProvider
++{
++    /// <summary>返回相对 dropControl 的预览矩形；null 表示使用框架默认预览。</summary>
++    Rect? GetPreviewBounds(IDockable source, IDockable target, DockOperation operation, Control dropControl);
++}
+diff --git a/src/Dock.Avalonia/Controls/DockTarget.axaml.cs b/src/Dock.Avalonia/Controls/DockTarget.axaml.cs
+index 71eb9f5bac558730c0cabac0051f466a435bbf1a..2b8ba16dade06a4485eb91974cd7585b5e677de3 100644
+--- a/src/Dock.Avalonia/Controls/DockTarget.axaml.cs
++++ b/src/Dock.Avalonia/Controls/DockTarget.axaml.cs
+@@ -9,6 +9,20 @@ namespace Dock.Avalonia.Controls;
+ /// </summary>
+ public class DockTarget : DockTargetBase
+ {
++    /// <summary>
++    /// 控制内容区域是否默认执行居中停靠。默认关闭，保证未选择该交互的宿主保持原行为。
++    /// 该属性只属于局部目标；全局方向提示不继承区域回退语义。
++    /// </summary>
++    public static readonly global::Avalonia.StyledProperty<bool> FillOnAreaDropProperty =
++        global::Avalonia.AvaloniaProperty.Register<DockTarget, bool>(nameof(FillOnAreaDrop));
++
++    /// <summary>启用后，合法内容区域在没有明确按钮命中时尝试 Fill，仍经过原有能力校验。</summary>
++    public bool FillOnAreaDrop
++    {
++        get => GetValue(FillOnAreaDropProperty);
++        set => SetValue(FillOnAreaDropProperty, value);
++    }
++
+     /// <inheritdoc />
+     protected override DockOperation DefaultDockOperation => DockOperation.Window;
+ }
+diff --git a/src/Dock.Avalonia/Controls/DockTargetBase.cs b/src/Dock.Avalonia/Controls/DockTargetBase.cs
+index 3cb9d2116e80ad5671016bac4aa8901fe151e75e..99a376d2b282787869358943a5ac91bfa41e6f6b 100644
+--- a/src/Dock.Avalonia/Controls/DockTargetBase.cs
++++ b/src/Dock.Avalonia/Controls/DockTargetBase.cs
+@@ -8,9 +8,11 @@
+ using Avalonia.Controls.Metadata;
+ using Avalonia.Controls.Primitives;
+ using Avalonia.VisualTree;
++using Avalonia.Media;
+ using Dock.Avalonia.Automation.Peers;
+ using Dock.Avalonia.Contract;
+ using Dock.Model.Core;
++using Dock.Model.Controls;
+ using Dock.Settings;
+ 
+ namespace Dock.Avalonia.Controls;
+@@ -151,6 +153,29 @@ public bool IsGlobalDockActive
+     /// </summary>
+     protected Dictionary<DockOperation, Control> SelectorsOperations { get; set; } = new();
+ 
++    // 命中事实与校验结果分开保存：用户明确指向不可用方向时，不能改成区域合并。
++    internal bool HasSelectorHit { get; private set; }
++
++    internal void ClearIndicators()
++    {
++        foreach (var indicator in IndicatorOperations.Values)
++            indicator.Opacity = 0;
++    }
++
++    /// <summary>仅改变指示器的绘制范围，不移动 selector，不改变鼠标命中边界。</summary>
++    internal void SetPreviewBounds(DockOperation operation, Rect bounds, Control relativeTo)
++    {
++        if (!IndicatorOperations.TryGetValue(operation, out var indicator) ||
++            indicator.Bounds.Width <= 0 || indicator.Bounds.Height <= 0 || bounds.Width <= 0 || bounds.Height <= 0)
++            return;
++        var origin = TranslatePointer(relativeTo, bounds.TopLeft, indicator);
++        if (origin is null) return;
++        indicator.RenderTransformOrigin = new RelativePoint(0, 0, RelativeUnit.Absolute);
++        indicator.RenderTransform = new MatrixTransform(new Matrix(
++            bounds.Width / indicator.Bounds.Width, 0, 0, bounds.Height / indicator.Bounds.Height,
++            origin.Value.X, origin.Value.Y));
++    }
++
+     private bool IsOperationEnabled(DockOperation operation)
+     {
+         return operation switch
+@@ -236,9 +261,12 @@ public DockOperation GetDockOperation(
+         DockOperationHandler validate,
+         DockOperationHandler? visible = null)
+     {
++        HasSelectorHit = false;
++        foreach (var indicator in IndicatorOperations.Values)
++            indicator.RenderTransform = null;
+         return ShowIndicatorsOnly 
+             ? GetDockOperationIndicatorsOnly(point, dropControl, relativeTo, dragAction, visible) 
+-            : GetDockOperationFromSelectors(point, relativeTo, dragAction, validate, visible);
++            : GetDockOperationFromSelectors(point, dropControl, relativeTo, dragAction, validate, visible);
+     }
+ 
+     private DockOperation GetDockOperationIndicatorsOnly(
+@@ -283,6 +311,7 @@ private DockOperation GetDockOperationIndicatorsOnly(
+ 
+     private DockOperation GetDockOperationFromSelectors(
+         Point point, 
++        Control dropControl,
+         Visual relativeTo, 
+         DragAction dragAction,
+         DockOperationHandler validate, 
+@@ -317,6 +346,17 @@ private DockOperation GetDockOperationFromSelectors(
+             }
+         }
+ 
++        // 只为局部文档 / 工具内容区回退。标签栏、根容器和全局目标继续走原协议。
++        if (!HasSelectorHit && this is DockTarget { FillOnAreaDrop: true } &&
++            IsContentAreaHit(dropControl, point, relativeTo) &&
++            (visible is null || visible(point, DockOperation.Fill, dragAction, relativeTo)) &&
++            validate(point, DockOperation.Fill, dragAction, relativeTo) &&
++            IndicatorOperations.TryGetValue(DockOperation.Fill, out var fillIndicator))
++        {
++            result = DockOperation.Fill;
++            fillIndicator.Opacity = 0.5;
++        }
++
+         foreach (var kvp in IndicatorOperations)
+         {
+             if (kvp.Key != result)
+@@ -328,6 +368,50 @@ private DockOperation GetDockOperationFromSelectors(
+         return result;
+     }
+ 
++    /// <summary>
++    /// 默认模板把标签栏和正文装在同一个 drop panel 中，因此不能只检查整个 panel。
++    /// 优先取该模板自己的正文边框，并检查祖先裁剪；纯代码目标没有模板时用自身边界。
++    /// 使用屏幕转换兼容独立提示窗口，不依赖源浮窗是否遮住目标。
++    /// </summary>
++    private static bool IsContentAreaHit(Control dropControl, Point point, Visual relativeTo)
++    {
++        if (dropControl.DataContext is not (IDocumentDock or IToolDock) ||
++            !DockProperties.GetIsDockTarget(dropControl) || !dropControl.IsEffectivelyVisible)
++            return false;
++
++        Control content = dropControl;
++        foreach (var child in dropControl.GetVisualDescendants())
++        {
++            // ToolDock 的外层 DockableControl 也可成为目标，它跨越标题和 ToolControl。
++            // 必须沿同一组找到内层正文，不能把 ToolChrome 的同名标题边框误当正文。
++            if (child is Border { Name: "PART_Border" } border &&
++                (ReferenceEquals(border.TemplatedParent, dropControl.TemplatedParent) ||
++                 border.TemplatedParent is ToolControl tool && ReferenceEquals(tool.DataContext, dropControl.DataContext)))
++            {
++                content = border;
++                break;
++            }
++        }
++
++        for (Visual? visual = content; visual is not null; visual = visual.GetVisualParent())
++        {
++            if (visual == content || visual.ClipToBounds)
++            {
++                var translated = TranslatePointer(relativeTo, point, visual);
++                if (translated is null || !new Rect(visual.Bounds.Size).Contains(translated.Value))
++                    return false;
++            }
++        }
++        return true;
++    }
++
++    private static Point? TranslatePointer(Visual relativeTo, Point point, Visual target)
++    {
++        if (relativeTo.GetVisualRoot() is null || target.GetVisualRoot() is null)
++            return null;
++        return relativeTo.TranslatePoint(point, target) ?? target.PointToClient(relativeTo.PointToScreen(point));
++    }
++
+     /// <summary>
+     /// Checks if the provided control is a dock target selector.
+     /// </summary>
+@@ -408,18 +492,13 @@ private bool InvalidateIndicator(
+             selector.Opacity = 1;
+         }
+ 
+-        var selectorPoint = relativeTo.TranslatePoint(point, selector);
+-        if (selectorPoint is null)
+-        {
+-            var screenPoint = relativeTo.PointToScreen(point);
+-            var localPoint = this.PointToClient(screenPoint);
+-            selectorPoint = this.TranslatePoint(localPoint, selector);
+-        }
++        var selectorPoint = TranslatePointer(relativeTo, point, selector);
+ 
+         if (selectorPoint is not null)
+         {
+-            if (IsSelectorHit(selector, selectorPoint.Value))
++            if (selector.IsEffectivelyVisible && IsSelectorHit(selector, selectorPoint.Value))
+             {
++                HasSelectorHit = true;
+                 if (validate(point, operation, dragAction, relativeTo))
+                 {
+                     indicator.Opacity = 0.5;
+@@ -483,10 +562,13 @@ private bool InvalidateIndicatorOnly(
+ 
+     void IDockTarget.Reset()
+     {
++        HasSelectorHit = false;
+         foreach (var control in IndicatorOperations.Values.Concat(SelectorsOperations.Values))
+         {
+             control.Opacity = 0;
+         }
++        foreach (var indicator in IndicatorOperations.Values)
++            indicator.RenderTransform = null;
+ 
+         ShowHorizontalTargets = true;
+         ShowVerticalTargets = true;
+diff --git a/src/Dock.Avalonia/Dock.Avalonia.csproj b/src/Dock.Avalonia/Dock.Avalonia.csproj
+index 2083c5ae9d9fdee9574fe064736245219a03b077..082fa87c356f4a8e241a64fea03cc952ca78b71f 100644
+--- a/src/Dock.Avalonia/Dock.Avalonia.csproj
++++ b/src/Dock.Avalonia/Dock.Avalonia.csproj
+@@ -29,7 +29,7 @@
+     <AvaloniaResource Include="Assets\*" Exclude="bin\**;obj\**;**\*.xproj;packages\**;@(EmbeddedResource)" />
+   </ItemGroup>
+ 
+-  <ItemGroup>
++  <ItemGroup Condition="'$(DockAreaFillPackage)' != 'true'">
+     <ProjectReference Include="..\Dock.Controls.DeferredContentControl\Dock.Controls.DeferredContentControl.csproj" />
+     <ProjectReference Include="..\Dock.Controls.ProportionalStackPanel\Dock.Controls.ProportionalStackPanel.csproj" />
+     <ProjectReference Include="..\Dock.Controls.Recycling\Dock.Controls.Recycling.csproj" />
+@@ -38,4 +38,14 @@
+     <ProjectReference Include="..\Dock.Settings\Dock.Settings.csproj" />
+   </ItemGroup>
+ 
++  <!-- 补丁仅替换呈现层；打包时使用官方依赖，防止全局 PackageVersion 传播到未修改的项目。 -->
++  <ItemGroup Condition="'$(DockAreaFillPackage)' == 'true'">
++    <PackageReference Include="Dock.Controls.DeferredContentControl" VersionOverride="12.1.0.6" />
++    <PackageReference Include="Dock.Controls.ProportionalStackPanel" VersionOverride="12.1.0.6" />
++    <PackageReference Include="Dock.Controls.Recycling" VersionOverride="12.1.0.6" />
++    <PackageReference Include="Dock.MarkupExtension" VersionOverride="12.1.0.6" />
++    <PackageReference Include="Dock.Model" VersionOverride="12.1.0.6" />
++    <PackageReference Include="Dock.Settings" VersionOverride="12.1.0.6" />
++  </ItemGroup>
++
+ </Project>
+diff --git a/src/Dock.Avalonia/Internal/DockControlState.cs b/src/Dock.Avalonia/Internal/DockControlState.cs
+index 2f505ee6505953de5105c25fccd43da32a052128..e58442ba7a4e38be6d5cd793416084126e545695 100644
+--- a/src/Dock.Avalonia/Internal/DockControlState.cs
++++ b/src/Dock.Avalonia/Internal/DockControlState.cs
+@@ -77,13 +77,6 @@ public void CopyTo(DockDragContext target)
+ /// </summary>
+ internal class DockControlState : DockManagerState, IDockControlState
+ {
+-    private readonly record struct DockOperationResolution(
+-        DockOperation LocalOperation,
+-        DockOperation GlobalOperation,
+-        bool UseGlobalOperation,
+-        DockOperation SelectedOperation,
+-        bool IsValid);
+-
+     private readonly DockDragContext _context = new();
+     private readonly DragPreviewHelper _dragPreviewHelper = new();
+     private DockControlState? _transferTarget;
+@@ -307,8 +300,17 @@ internal bool TryTransferDragTo(
+ 
+     private void Enter(Point point, DragAction dragAction, Visual relativeTo)
+     {
+-        var isLocalValid = ValidateLocal(point, DockOperation.Fill, dragAction, relativeTo);
+-        var isGlobalValid = ValidateGlobal(point, DockOperation.Fill, dragAction, relativeTo);
++        // Fill 被禁止时仍允许合法方向按钮出现，区域策略不能缩小原有分割能力。
++        var isLocalValid = ValidateLocal(point, DockOperation.Fill, dragAction, relativeTo)
++            || ValidateLocal(point, DockOperation.Left, dragAction, relativeTo)
++            || ValidateLocal(point, DockOperation.Right, dragAction, relativeTo)
++            || ValidateLocal(point, DockOperation.Top, dragAction, relativeTo)
++            || ValidateLocal(point, DockOperation.Bottom, dragAction, relativeTo);
++        var isGlobalValid = ValidateGlobal(point, DockOperation.Fill, dragAction, relativeTo)
++            || ValidateGlobal(point, DockOperation.Left, dragAction, relativeTo)
++            || ValidateGlobal(point, DockOperation.Right, dragAction, relativeTo)
++            || ValidateGlobal(point, DockOperation.Top, dragAction, relativeTo)
++            || ValidateGlobal(point, DockOperation.Bottom, dragAction, relativeTo);
+ 
+         AddAdorners(isLocalValid, isGlobalValid);
+     }
+@@ -323,48 +325,10 @@ private DockOperationResolution Over(Point point, DragAction dragAction, Control
+     }
+ 
+     private DockOperationResolution ResolveDockOperation(
+-        Point point,
+-        DragAction dragAction,
+-        Control dropControl,
+-        Visual relativeTo,
+-        bool updateAdornerState)
+-    {
+-        var localOperation = DockOperation.Fill;
+-        var globalOperation = DockOperation.None;
+-        var hasLocalAdorner = false;
+-
+-        if (LocalAdornerHelper.Adorner is DockTarget dockTarget)
+-        {
+-            hasLocalAdorner = true;
+-            localOperation = dockTarget.GetDockOperation(point, dropControl, relativeTo, dragAction, ValidateLocal, IsDockTargetVisible);
+-        }
+-
+-        if (GlobalAdornerHelper.Adorner is GlobalDockTarget globalDockTarget)
+-        {
+-            globalOperation = globalDockTarget.GetDockOperation(point, dropControl, relativeTo, dragAction, ValidateGlobal, IsDockTargetVisible);
+-        }
+-
+-        var useGlobalOperation = GlobalDocking.ShouldUseGlobalOperation(
+-            hasLocalAdorner,
+-            localOperation,
+-            globalOperation);
+-        var selectedOperation = useGlobalOperation ? globalOperation : localOperation;
+-        var isValid = useGlobalOperation
+-            ? ValidateGlobal(point, globalOperation, dragAction, relativeTo)
+-            : ValidateLocal(point, localOperation, dragAction, relativeTo);
+-
+-        if (updateAdornerState)
+-        {
+-            LocalAdornerHelper.SetGlobalDockActive(useGlobalOperation);
+-        }
+-
+-        return new DockOperationResolution(
+-            localOperation,
+-            globalOperation,
+-            useGlobalOperation,
+-            selectedOperation,
+-            isValid);
+-    }
++        Point point, DragAction dragAction, Control dropControl, Visual relativeTo, bool updateAdornerState)
++        => ResolveOperation(point, dragAction, dropControl, relativeTo,
++            ValidateLocal, ValidateGlobal, IsDockTargetVisible,
++            _context.DragControl?.DataContext is IDockable source ? DragDockableResolver.Resolve(source) : null);
+ 
+     private bool Drop(
+         Point point,
+@@ -682,6 +646,8 @@ public void Process(Point point, Vector delta, EventType eventType, DragAction d
+             {
+                 if (_context.DoDragDrop)
+                 {
++                    // 松开事件可能没有先收到最后一次移动；按最新位置刷新目标，不能提交旧缓存。
++                    Process(point, delta, EventType.Moved, dragAction, activeDockControl, dockControls);
+                     var executed = false;
+ 
+                     if (DropControl is { } dropControl && _context.TargetDockControl is { })
+@@ -689,27 +655,13 @@ public void Process(Point point, Vector delta, EventType eventType, DragAction d
+                         var isDropEnabled = dropControl.GetValue(DockProperties.IsDropEnabledProperty);
+                         if (isDropEnabled)
+                         {
+-                            var useGlobalOperation = _context.UseGlobalOperation;
+-                            var selectedOperation = _context.ResolvedOperation;
+-                            if (!_context.HasResolvedOperation)
++                            var resolution = ResolveDockOperation(_context.TargetPoint, dragAction,
++                                dropControl, _context.TargetDockControl, updateAdornerState: false);
++                            if (resolution.IsValid)
+                             {
+-                                var resolution = ResolveDockOperation(
+-                                    _context.TargetPoint,
+-                                    dragAction,
+-                                    dropControl,
+-                                    _context.TargetDockControl,
+-                                    updateAdornerState: false);
+-                                useGlobalOperation = resolution.UseGlobalOperation;
+-                                selectedOperation = resolution.SelectedOperation;
++                                executed = Drop(_context.TargetPoint, dragAction, dropControl,
++                                    _context.TargetDockControl, resolution.UseGlobalOperation, resolution.SelectedOperation);
+                             }
+-
+-                            executed = Drop(
+-                                _context.TargetPoint,
+-                                dragAction,
+-                                dropControl,
+-                                _context.TargetDockControl,
+-                                useGlobalOperation,
+-                                selectedOperation);
+                             LogDragState($"Drop executed on '{dropControl.GetType().Name}' with action '{dragAction}'.");
+                         }
+                         else
+diff --git a/src/Dock.Avalonia/Internal/DockHelpers.cs b/src/Dock.Avalonia/Internal/DockHelpers.cs
+index 171f1d8c7cacd35319312e910bd0451e3b4383b4..58099e15f4d17a24ff945d1648add497897bc5ed 100644
+--- a/src/Dock.Avalonia/Internal/DockHelpers.cs
++++ b/src/Dock.Avalonia/Internal/DockHelpers.cs
+@@ -353,7 +353,13 @@ private static int GetManagedWindowZOrder(DockControl dockControl)
+ 
+     public static IEnumerable<DockControl> GetZOrderedDockControls(IList<IDockControl> dockControls)
+     {
+-        var windows = dockControls
++        // 松开时重新查找目标可能遇到刚关闭、尚未从调用方列表移除的窗口。
++        // Avalonia 不允许对已销毁的原生窗口排序；先取可见快照，也防止旧目标继续参与命中。
++        var available = dockControls.OfType<DockControl>()
++            .Where(dock => dock.IsEffectivelyVisible && TopLevel.GetTopLevel(dock) is { } top &&
++                (top is not Window window || window.IsVisible))
++            .ToArray();
++        var windows = available
+             .OfType<DockControl>()
+             .Select(dock => TopLevel.GetTopLevel(dock) as Window)
+             .OfType<Window>()
+@@ -362,7 +368,7 @@ public static IEnumerable<DockControl> GetZOrderedDockControls(IList<IDockContro
+ 
+         Window.SortWindowsByZOrder(windows);
+ 
+-        return dockControls
++        return available
+             .OfType<DockControl>()
+             .Select(dock => (dock, windowOrder: IndexOf(windows, TopLevel.GetTopLevel(dock) as Window), managedOrder: GetManagedWindowZOrder(dock)))
+             .OrderByDescending(x => x.windowOrder)
+diff --git a/src/Dock.Avalonia/Internal/DockManagerState.cs b/src/Dock.Avalonia/Internal/DockManagerState.cs
+index 30eb39e43be4e104602ba5733bebd9d7fcee5cc6..57ae721694027c0fddab823349b57a693eb59775 100644
+--- a/src/Dock.Avalonia/Internal/DockManagerState.cs
++++ b/src/Dock.Avalonia/Internal/DockManagerState.cs
+@@ -8,6 +8,7 @@
+ using Avalonia.Controls;
+ using Avalonia.VisualTree;
+ using Dock.Avalonia.Controls;
++using Dock.Avalonia.Contract;
+ using Dock.Model.Controls;
+ using Dock.Model.Core;
+ using Dock.Settings;
+@@ -16,6 +17,51 @@ namespace Dock.Avalonia.Internal;
+ 
+ internal abstract class DockManagerState : IDockManagerState
+ {
++    protected readonly record struct DockOperationResolution(
++        DockOperation LocalOperation,
++        DockOperation GlobalOperation,
++        bool UseGlobalOperation,
++        DockOperation SelectedOperation,
++        bool IsValid);
++
++    /// <summary>
++    /// 两种拖动入口共用的决策：明确按钮优先，区域只承担局部 Fill 回退。
++    /// 全局按钮即使被拒绝也要压住局部回退；绘制只保留最终有效操作的高亮。
++    /// 校验回调由各入口提供，本层不拥有业务模型或窗口生命周期。
++    /// </summary>
++    protected DockOperationResolution ResolveOperation(
++        Point point, DragAction action, Control dropControl, Visual relativeTo,
++        DockOperationHandler validateLocal, DockOperationHandler validateGlobal, DockOperationHandler visible,
++        IDockable? source = null)
++    {
++        bool Local(Point p, DockOperation op, DragAction a, Visual v) =>
++            AllowsDrop(source, dropControl.DataContext as IDockable, op) && validateLocal(p, op, a, v);
++        bool Global(Point p, DockOperation op, DragAction a, Visual v) =>
++            AllowsDrop(source, ResolveGlobalTargetDock(dropControl), op) && validateGlobal(p, op, a, v);
++        var local = LocalAdornerHelper.Adorner as DockTarget;
++        var global = GlobalAdornerHelper.Adorner as GlobalDockTarget;
++        var localOperation = local?.GetDockOperation(point, dropControl, relativeTo, action, Local, visible)
++                             ?? DockOperation.Fill;
++        var globalOperation = global?.GetDockOperation(point, dropControl, relativeTo, action, Global, visible)
++                              ?? DockOperation.None;
++        var useGlobal = global?.HasSelectorHit == true || GlobalDocking.ShouldUseGlobalOperation(
++            local is not null, localOperation, globalOperation);
++        var selected = useGlobal ? globalOperation : localOperation;
++        var valid = selected is not (DockOperation.None or DockOperation.Window) &&
++                    (useGlobal ? Global(point, selected, action, relativeTo) : Local(point, selected, action, relativeTo));
++        LocalAdornerHelper.SetGlobalDockActive(useGlobal);
++        if (useGlobal || !valid) local?.ClearIndicators();
++        if (!useGlobal || !valid) global?.ClearIndicators();
++        if (valid && !useGlobal && source?.Factory is IDockPreviewProvider preview &&
++            dropControl.DataContext is IDockable target &&
++            preview.GetPreviewBounds(source, target, selected, dropControl) is { } bounds)
++            local?.SetPreviewBounds(selected, bounds, dropControl);
++        return new DockOperationResolution(localOperation, globalOperation, useGlobal, selected, valid);
++    }
++
++    private static bool AllowsDrop(IDockable? source, IDockable? target, DockOperation operation)
++        => source?.Factory is not IDockDropGuard guard || target is not null && guard.CanDrop(source, target, operation);
++
+     private readonly IDockManager _dockManager;
+     private readonly IGlobalDockingService _globalDockingService;
+     private Control? _globalAdornerHost;
+@@ -242,6 +288,7 @@ protected void RemoveAdorners()
+ 
+     protected virtual void Execute(Point point, DockOperation operation, DragAction dragAction, Visual relativeTo, IDockable sourceDockable, IDockable targetDockable)
+     {
++        if (!AllowsDrop(sourceDockable, targetDockable, operation)) return;
+         _dockManager.Position = DockHelpers.ToDockPoint(point);
+ 
+         if (relativeTo.GetVisualRoot() is null)
+diff --git a/src/Dock.Avalonia/Internal/HostWindowState.cs b/src/Dock.Avalonia/Internal/HostWindowState.cs
+index 5e591be9db2a407f0b8280a092a54344125cdad5..77f2aa8edad63b6180f20ecb089a4925a1072978 100644
+--- a/src/Dock.Avalonia/Internal/HostWindowState.cs
++++ b/src/Dock.Avalonia/Internal/HostWindowState.cs
+@@ -65,99 +65,38 @@ public HostWindowState(
+ 
+     private void Enter(Point point, DragAction dragAction, Visual relativeTo)
+     {
+-        var isLocalValid = ValidateLocal(point, DockOperation.Fill, dragAction, relativeTo);
+-        var isGlobalValid = ValidateGlobal(point, DockOperation.Fill, dragAction, relativeTo);
++        // Fill 被禁止时仍允许合法方向按钮出现，区域策略不能缩小原有分割能力。
++        var isLocalValid = ValidateLocal(point, DockOperation.Fill, dragAction, relativeTo)
++            || ValidateLocal(point, DockOperation.Left, dragAction, relativeTo)
++            || ValidateLocal(point, DockOperation.Right, dragAction, relativeTo)
++            || ValidateLocal(point, DockOperation.Top, dragAction, relativeTo)
++            || ValidateLocal(point, DockOperation.Bottom, dragAction, relativeTo);
++        var isGlobalValid = ValidateGlobal(point, DockOperation.Fill, dragAction, relativeTo)
++            || ValidateGlobal(point, DockOperation.Left, dragAction, relativeTo)
++            || ValidateGlobal(point, DockOperation.Right, dragAction, relativeTo)
++            || ValidateGlobal(point, DockOperation.Top, dragAction, relativeTo)
++            || ValidateGlobal(point, DockOperation.Bottom, dragAction, relativeTo);
+ 
+         AddAdorners(isLocalValid, isGlobalValid);
+     }
+ 
+     private void Over(Point point, DragAction dragAction, Control dropControl, Visual relativeTo)
+-    {
+-        var localOperation = DockOperation.Fill;
+-        var globalOperation = DockOperation.None;
+-
+-        if (LocalAdornerHelper.Adorner is DockTarget dockTarget)
+-        {
+-            localOperation = dockTarget.GetDockOperation(point, dropControl, relativeTo, dragAction, ValidateLocal, IsDockTargetVisible);
+-        }
+-
+-        if (GlobalAdornerHelper.Adorner is GlobalDockTarget globalDockTarget)
+-        {
+-            globalOperation = globalDockTarget.GetDockOperation(point, dropControl, relativeTo, dragAction, ValidateGlobal, IsDockTargetVisible);
+-        }
+-
+-        if (globalOperation != DockOperation.None)
+-        {
+-            ValidateGlobal(point, globalOperation, dragAction, relativeTo);
+-        }
+-        else
+-        {
+-            if (localOperation != DockOperation.Window)
+-            {
+-                ValidateLocal(point, localOperation, dragAction, relativeTo);
+-            } 
+-        }
+-
+-        LocalAdornerHelper.SetGlobalDockActive(globalOperation != DockOperation.None);
+-    }
++        => ResolveOperation(point, dragAction, dropControl, relativeTo,
++            ValidateLocal, ValidateGlobal, IsDockTargetVisible, _hostWindow.Window?.Layout?.ActiveDockable);
+ 
+     private bool Drop(Point point, DragAction dragAction, Control dropControl, Visual relativeTo)
+     {
+-        var localOperation = DockOperation.Window;
+-        var globalOperation = DockOperation.None;
+-
+-        if (LocalAdornerHelper.Adorner is DockTarget dockTarget)
+-        {
+-            localOperation = dockTarget.GetDockOperation(point, dropControl, relativeTo, dragAction, ValidateLocal, IsDockTargetVisible);
+-        }
+-
+-        if (GlobalAdornerHelper.Adorner is GlobalDockTarget globalDockTarget)
+-        {
+-            globalOperation = globalDockTarget.GetDockOperation(point, dropControl, relativeTo, dragAction, ValidateGlobal, IsDockTargetVisible);
+-        }
+-
++        var resolution = ResolveOperation(point, dragAction, dropControl, relativeTo,
++            ValidateLocal, ValidateGlobal, IsDockTargetVisible, _hostWindow.Window?.Layout?.ActiveDockable);
+         RemoveAdorners();
+-
+-        if (DropControl is null)
+-        {
++        if (!resolution.IsValid || _hostWindow.Window?.Layout?.ActiveDockable is not { } source)
+             return false;
+-        }
+-
+-        var layout = _hostWindow.Window?.Layout;
+-
+-        if (globalOperation != DockOperation.None)
+-        {
+-            if (DropControl is not { } dropCtrl)
+-            {
+-                return false;
+-            }
+-
+-            if (layout?.ActiveDockable is { } sourceDockable
+-                && ResolveGlobalTargetDock(dropCtrl) is { } targetDock)
+-            {
+-                if (!ValidateGlobalTarget(sourceDockable, targetDock))
+-                {
+-                    return false;
+-                }
+-
+-                Execute(point, globalOperation, dragAction, relativeTo, sourceDockable, targetDock);
+-                return true;
+-            }
+-        }
+-        else
+-        {
+-            if (layout?.ActiveDockable is { } sourceDockable
+-                && DropControl.DataContext is IDockable targetDockable)
+-            {
+-                if (localOperation != DockOperation.Window)
+-                {
+-                    Execute(point, localOperation, dragAction, relativeTo, sourceDockable, targetDockable);
+-                    return true;
+-                }
+-            }
+-        }
+-
+-        return false;
++        var target = resolution.UseGlobalOperation
++            ? ResolveGlobalTargetDock(dropControl)
++            : dropControl.DataContext as IDockable;
++        if (target is null) return false;
++        Execute(point, resolution.SelectedOperation, dragAction, relativeTo, source, target);
++        return true;
+     }
+ 
+     private void Leave()
+@@ -174,7 +113,7 @@ private bool ValidateLocal(Point point, DockOperation operation, DragAction drag
+         }
+ 
+         var layout = _hostWindow.Window?.Layout;
+-        if (layout?.FocusedDockable is not { } sourceDockable)
++        if (layout?.ActiveDockable is not { } sourceDockable)
+         {
+             LogDropRejection(nameof(ValidateLocal), "No focused dockable available for local validation.");
+             return false;
+@@ -207,7 +146,7 @@ private bool ValidateGlobal(Point point, DockOperation operation, DragAction dra
+         }
+ 
+         var layout = _hostWindow.Window?.Layout;
+-        if (layout?.FocusedDockable is not { } sourceDockable)
++        if (layout?.ActiveDockable is not { } sourceDockable)
+         {
+             LogDropRejection(nameof(ValidateGlobal), "No focused dockable available for global validation.");
+             return false;
+@@ -269,7 +208,7 @@ private bool ValidateGlobal(Point point, DockOperation operation, DragAction dra
+     private bool IsDockTargetVisible(Point point, DockOperation operation, DragAction dragAction, Visual relativeTo)
+     {
+         var layout = _hostWindow.Window?.Layout;
+-        if (layout?.FocusedDockable is not IDockable sourceDockable)
++        if (layout?.ActiveDockable is not IDockable sourceDockable)
+         {
+             return true;
+         }
+@@ -331,6 +270,13 @@ public void Process(PixelPoint point, EventType eventType)
+             {
+                 if (_context.DoDragDrop)
+                 {
++                    // 原生窗口协议中 Released 传入客户区像素偏移，而 Moved 传入窗口位置。
++                    // 先更新最终指针偏移和当前屏幕边框偏移，再复用目标查找，不能混用两种坐标。
++                    _context.DragStartPoint = point;
++                    var clientOrigin = _hostWindow.PointToScreen(default);
++                    _context.WindowOffset = new PixelPoint(clientOrigin.X - _hostWindow.Position.X,
++                        clientOrigin.Y - _hostWindow.Position.Y);
++                    Process(_hostWindow.Position, EventType.Moved);
+                     var executed = false;
+ 
+                     if (_context.TargetDockControl is { } && DropControl is { })
+@@ -451,6 +397,7 @@ public void Process(PixelPoint point, EventType eventType)
+                             DropControl = dropControl;
+                             _context.DragAction = DragAction.Move;
+                             Enter(_context.TargetPoint, _context.DragAction, _context.TargetDockControl);
++                            Over(_context.TargetPoint, _context.DragAction, dropControl, _context.TargetDockControl);
+                             found = true;
+                             break;
+                         }
+@@ -477,6 +424,8 @@ public void Process(PixelPoint point, EventType eventType)
+             }
+             case EventType.CaptureLost:
+             {
++                // 捕获丢失与正常松开都结束提示生命周期，避免透明覆盖层残留。
++                Leave();
+                 _context.End();
+                 DropControl = null;
+                 break;
+diff --git a/tests/Dock.Avalonia.HeadlessTests/DockAreaFillResolutionTests.cs b/tests/Dock.Avalonia.HeadlessTests/DockAreaFillResolutionTests.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..2e9522f68f3300b96aefeb0b8a5f971f1d23f2c6
+--- /dev/null
++++ b/tests/Dock.Avalonia.HeadlessTests/DockAreaFillResolutionTests.cs
+@@ -0,0 +1,106 @@
++using System;
++using Avalonia;
++using Avalonia.Controls;
++using Avalonia.Headless.XUnit;
++using Avalonia.Media;
++using Dock.Avalonia.Controls;
++using Dock.Avalonia.Contract;
++using Dock.Avalonia.Internal;
++using Dock.Model;
++using Dock.Model.Avalonia;
++using Dock.Model.Avalonia.Controls;
++using Dock.Model.Core;
++using Dock.Settings;
++using Xunit;
++
++namespace Dock.Avalonia.HeadlessTests;
++
++/// <summary>用独立坐标的局部和全局按钮验证统一决策，尤其是默认 Fill 不能吞掉全局按钮。</summary>
++public class DockAreaFillResolutionTests
++{
++    private sealed class LocalTarget : DockTarget
++    {
++        public Panel Indicator { get; } = new() { Width = 400, Height = 300 };
++        public void Register() { IndicatorOperations.Clear(); SelectorsOperations.Clear(); IndicatorOperations[DockOperation.Fill] = Indicator; }
++    }
++
++    private sealed class GlobalTarget : GlobalDockTarget
++    {
++        public Border Selector { get; } = new() { Width = 30, Height = 30, Background = Brushes.White };
++        public Panel Indicator { get; } = new();
++        public void Register()
++        {
++            IndicatorOperations.Clear(); SelectorsOperations.Clear();
++            IndicatorOperations[DockOperation.Top] = Indicator;
++            SelectorsOperations[DockOperation.Top] = Selector;
++        }
++    }
++
++    private sealed class PreviewFactory : Factory, IDockPreviewProvider
++    {
++        public Rect? GetPreviewBounds(IDockable source, IDockable target, DockOperation operation, Control dropControl)
++            => new Rect(-100, 20, 700, 80);
++    }
++
++    private sealed class State(LocalTarget local, GlobalTarget global) : DockManagerState(new DockManager(new DockService()))
++    {
++        public (DockOperation Operation, bool Valid, bool Global) Resolve(Control area, Point point, bool allowGlobal, IDockable? source)
++        {
++            LocalAdornerHelper.Adorner = local;
++            GlobalAdornerHelper.Adorner = global;
++            var result = ResolveOperation(point, DragAction.Move, area, area,
++                (_, _, _, _) => true, (_, _, _, _) => allowGlobal, (_, _, _, _) => true, source);
++            return (result.SelectedOperation, result.IsValid, result.UseGlobalOperation);
++        }
++    }
++
++    [AvaloniaTheory]
++    [InlineData(true)]
++    [InlineData(false)]
++    public void 全局明确按钮优先于区域合并且被拒绝时没有局部高亮(bool allowed)
++    {
++        WithScene((local, global, area) =>
++        {
++            var result = new State(local, global).Resolve(area, new Point(15, 15), allowed, null);
++            Assert.True(result.Global);
++            Assert.Equal(allowed, result.Valid);
++            Assert.Equal(allowed ? DockOperation.Top : DockOperation.None, result.Operation);
++            Assert.Equal(0, local.Indicator.Opacity);
++            Assert.Equal(allowed ? 0.5 : 0, global.Indicator.Opacity);
++        });
++    }
++
++    [AvaloniaFact]
++    public void 宿主预览矩形只调整高亮且下一次计算恢复模板范围()
++    {
++        WithScene((local, global, area) =>
++        {
++            var state = new State(local, global);
++            var source = new Document { Factory = new PreviewFactory() };
++            var point = new Point(200, 180);
++            var result = state.Resolve(area, point, true, source);
++            Assert.True(result.Valid);
++            Assert.Equal(DockOperation.Fill, result.Operation);
++            var transform = Assert.IsType<MatrixTransform>(local.Indicator.RenderTransform).Matrix;
++            Assert.Equal(new Point(-100, 20), transform.Transform(default));
++            Assert.Equal(new Point(600, 100), transform.Transform(new Point(400, 300)));
++            state.Resolve(area, point, true, null);
++            Assert.Null(local.Indicator.RenderTransform);
++            ((IDockTarget)local).Reset();
++            Assert.Equal(0, local.Indicator.Opacity);
++        });
++    }
++
++    private static void WithScene(Action<LocalTarget, GlobalTarget, Canvas> action)
++    {
++        var local = new LocalTarget { FillOnAreaDrop = true };
++        var global = new GlobalTarget();
++        var area = new Canvas { Width = 400, Height = 300, DataContext = new DocumentDock() };
++        DockProperties.SetIsDockTarget(area, true);
++        area.Children.Add(local); area.Children.Add(global); area.Children.Add(local.Indicator); area.Children.Add(global.Selector);
++        var window = new Window { Width = 400, Height = 300, Content = area };
++        window.Show();
++        try { window.UpdateLayout(); local.Register(); global.Register(); action(local, global, area); }
++        finally { window.Close(); }
++    }
++}
+diff --git a/tests/Dock.Avalonia.HeadlessTests/DockAreaFillStateTests.cs b/tests/Dock.Avalonia.HeadlessTests/DockAreaFillStateTests.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..8011124e52e3a568a241cc3b0bb0a44504c64672
+--- /dev/null
++++ b/tests/Dock.Avalonia.HeadlessTests/DockAreaFillStateTests.cs
+@@ -0,0 +1,173 @@
++using System;
++using System.Collections.Generic;
++using System.Linq;
++using Avalonia;
++using Avalonia.Controls;
++using Avalonia.Controls.Templates;
++using Avalonia.Headless.XUnit;
++using Avalonia.Media;
++using Avalonia.VisualTree;
++using Dock.Avalonia.Controls;
++using Dock.Avalonia.Internal;
++using Dock.Avalonia.Contract;
++using Dock.Model;
++using Dock.Model.Avalonia;
++using Dock.Model.Avalonia.Controls;
++using Dock.Model.Avalonia.Core;
++using Dock.Model.Core;
++using Dock.Settings;
++using Xunit;
++
++namespace Dock.Avalonia.HeadlessTests;
++
++/// <summary>用真实状态机输入验证悬停、最终位置与取消；记录执行而不在测试中复制状态机。</summary>
++public class DockAreaFillStateTests
++{
++    private sealed class GuardedFactory : Factory, IDockDropGuard
++    {
++        public bool Allowed { get; set; } = true;
++        public bool CanDrop(IDockable source, IDockable target, DockOperation operation) => Allowed;
++    }
++
++    private sealed class TabState(IDockManager manager) : DockControlState(manager, new DefaultDragOffsetCalculator())
++    {
++        public DockTarget? Target => LocalAdornerHelper.Adorner as DockTarget;
++        public bool HasTarget => DropControl is not null;
++        public int Executions { get; private set; }
++        public DockOperation? Executed { get; private set; }
++        protected override void Execute(Point p, DockOperation op, DragAction a, Visual v, IDockable source, IDockable target)
++        { Executions++; Executed = op; }
++    }
++
++    private sealed class WindowState(IDockManager manager, HostWindow window) : HostWindowState(manager, window)
++    {
++        public DockTarget? Target => LocalAdornerHelper.Adorner as DockTarget;
++        public bool HasTarget => DropControl is not null;
++        public int Executions { get; private set; }
++        public DockOperation? Executed { get; private set; }
++        protected override void Execute(Point p, DockOperation op, DragAction a, Visual v, IDockable source, IDockable target)
++        { Executions++; Executed = op; }
++    }
++
++    [AvaloniaTheory]
++    [InlineData("fill", 1)]
++    [InlineData("outside", 0)]
++    [InlineData("guard", 0)]
++    [InlineData("cancel", 0)]
++    [InlineData("disabled", 0)]
++    [InlineData("closed", 0)]
++    [InlineData("capability", 0)]
++    public void 标签拖动使用最终坐标及权限且只提交一次(string ending, int expected)
++    {
++        using var scene = new Scene();
++        var state = new TabState(new DockManager(new DockService()));
++        var controls = new List<IDockControl> { scene.TargetControl, scene.SourceControl };
++        var point = scene.SourceControl.PointToClient(scene.Area.PointToScreen(new Point(100, 170)));
++        state.StartDrag(scene.Header, new Point(5, 5), new Point(5, 5), scene.SourceControl);
++        state.Process(point, default, EventType.Moved, DragAction.Move, scene.SourceControl, controls);
++        Assert.NotNull(state.Target);
++        state.Target!.FillOnAreaDrop = true;
++        scene.Main.UpdateLayout();
++        global::Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
++        state.Process(point, default, EventType.Moved, DragAction.Move, scene.SourceControl, controls);
++        Assert.Equal(0, state.Executions);
++        if (ending == "outside") point = new Point(-3000, -3000);
++        if (ending == "guard") scene.Factory.Allowed = false;
++        if (ending == "disabled") DockProperties.SetIsDropEnabled(scene.Area, false);
++        if (ending == "closed") scene.Main.Close();
++        if (ending == "capability") ((IDockable)scene.Area.DataContext!).CanDrop = false;
++        state.Process(point, default, ending == "cancel" ? EventType.CaptureLost : EventType.Released,
++            DragAction.Move, scene.SourceControl, controls);
++        Assert.Equal(expected, state.Executions);
++        if (expected > 0) Assert.Equal(DockOperation.Fill, state.Executed);
++        Assert.Null(state.Target);
++        Assert.False(state.HasTarget);
++        state.Process(point, default, EventType.Released, DragAction.Move, scene.SourceControl, controls);
++        Assert.Equal(expected, state.Executions);
++    }
++
++    [AvaloniaTheory]
++    [InlineData("fill", 1)]
++    [InlineData("outside", 0)]
++    [InlineData("guard", 0)]
++    [InlineData("cancel", 0)]
++    [InlineData("disabled", 0)]
++    [InlineData("closed", 0)]
++    [InlineData("capability", 0)]
++    public void 浮窗遮挡目标时仍按最终客户区偏移决定回停(string ending, int expected)
++    {
++        using var scene = new Scene();
++        var state = new WindowState(new DockManager(new DockService()), scene.Floating);
++        state.Process(new PixelPoint(5, 5), EventType.Pressed);
++        // 模拟源浮窗覆盖目标；最终客户区偏移与最初抓取点不同，防止把 Released 当成窗口位置。
++        scene.Floating.Position = scene.Area.PointToScreen(new Point(90, 130));
++        state.Process(scene.Floating.Position, EventType.Moved);
++        Assert.True(state.Target is not null, $"drop={state.HasTarget}; source={scene.Floating.Window?.Layout?.ActiveDockable?.GetType().Name}; position={scene.Floating.Position}; main={scene.Main.Position}; groupCanDrag={scene.Floating.Window?.Layout?.ActiveDockable?.CanDrag}; controls={scene.Factory.DockControls.Count}");
++        state.Target!.FillOnAreaDrop = true;
++        scene.Main.UpdateLayout();
++        global::Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
++        state.Process(scene.Floating.Position, EventType.Moved);
++        Assert.Equal(0, state.Executions);
++        if (ending == "guard") scene.Factory.Allowed = false;
++        if (ending == "disabled") DockProperties.SetIsDropEnabled(scene.Area, false);
++        if (ending == "closed") scene.Main.Close();
++        if (ending == "capability") ((IDockable)scene.Area.DataContext!).CanDrop = false;
++        var offset = ending == "outside" ? new PixelPoint(-3000, -3000) : new PixelPoint(20, 30);
++        state.Process(offset, ending == "cancel" ? EventType.CaptureLost : EventType.Released);
++        Assert.Equal(expected, state.Executions);
++        if (expected > 0) Assert.Equal(DockOperation.Fill, state.Executed);
++        Assert.Null(state.Target);
++        Assert.False(state.HasTarget);
++        state.Process(offset, EventType.Released);
++        Assert.Equal(expected, state.Executions);
++    }
++
++    private sealed class Scene : IDisposable
++    {
++        public GuardedFactory Factory { get; } = new();
++        public DockControl TargetControl { get; }
++        public DockControl SourceControl { get; }
++        public Panel Area { get; }
++        public Border Header { get; }
++        public Window Main { get; }
++        public HostWindow Floating { get; }
++
++        public Scene()
++        {
++            var target = new DocumentDock { Id = "target", VisibleDockables = Factory.CreateList<IDockable>(), CanDrop = true };
++            var targetRoot = new RootDock { VisibleDockables = Factory.CreateList<IDockable>(target), ActiveDockable = target };
++            var document = new Document { Id = "source", CanFloat = false };
++            var group = new DocumentDock { VisibleDockables = Factory.CreateList<IDockable>(document), ActiveDockable = document };
++            var sourceRoot = new RootDock { VisibleDockables = Factory.CreateList<IDockable>(group), ActiveDockable = group, FocusedDockable = document };
++            Factory.InitLayout(targetRoot);
++            Factory.InitLayout(sourceRoot);
++            Area = new Panel { Background = Brushes.Transparent, DataContext = target };
++            DockProperties.SetIsDropArea(Area, true);
++            DockProperties.SetIsDockTarget(Area, true);
++            TargetControl = new DockControl { Layout = targetRoot, Template = new FuncControlTemplate<DockControl>((_, _) => Area) };
++            Header = new Border { Background = Brushes.White, DataContext = document };
++            DockProperties.SetIsDragArea(Header, true);
++            DockProperties.SetIsDragEnabled(Header, true);
++            SourceControl = new DockControl { Layout = sourceRoot, Template = new FuncControlTemplate<DockControl>((_, _) => Header) };
++            Main = new Window { Position = new PixelPoint(0, 0), Width = 600, Height = 450, Content = TargetControl };
++            Floating = new HostWindow { Position = new PixelPoint(0, 0), Width = 300, Height = 220,
++                Window = new DockWindow { Factory = Factory, Layout = sourceRoot }, Content = sourceRoot,
++                ContentTemplate = new FuncDataTemplate<RootDock>((_, _) => SourceControl) };
++            Main.Show();
++            Floating.Show();
++            Main.UpdateLayout();
++            Floating.UpdateLayout();
++            global::Avalonia.Threading.Dispatcher.UIThread.RunJobs();
++            Main.UpdateLayout();
++            Floating.UpdateLayout();
++            global::Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
++            Assert.NotNull(SourceControl.GetVisualRoot());
++            Assert.NotNull(DockHelpers.GetControl(TargetControl, new Point(100, 170), DockProperties.IsDropAreaProperty));
++            // 纯代码模板不依赖样例应用的初始化器，显式登记参与本次拖放的两个表面。
++            if (!Factory.DockControls.Contains(TargetControl)) Factory.DockControls.Add(TargetControl);
++            if (!Factory.DockControls.Contains(SourceControl)) Factory.DockControls.Add(SourceControl);
++        }
++
++        public void Dispose() { Floating.Close(); Main.Close(); }
++    }
++}
+diff --git a/tests/Dock.Avalonia.HeadlessTests/DockAreaFillTests.cs b/tests/Dock.Avalonia.HeadlessTests/DockAreaFillTests.cs
+new file mode 100644
+index 0000000000000000000000000000000000000000..b0dd491f152514a1d2895d99cbed1c12d4b267f7
+--- /dev/null
++++ b/tests/Dock.Avalonia.HeadlessTests/DockAreaFillTests.cs
+@@ -0,0 +1,137 @@
++using Avalonia;
++using Avalonia.Controls;
++using Avalonia.Headless.XUnit;
++using Avalonia.Media;
++using Dock.Avalonia.Controls;
++using Dock.Model.Avalonia.Controls;
++using Dock.Model.Core;
++using Dock.Settings;
++using Xunit;
++
++namespace Dock.Avalonia.HeadlessTests;
++
++/// <summary>
++/// 从实际目标控件的命中入口验证区域停靠，避免仅调用 DockManager 掩盖鼠标命中问题。
++/// 使用小型测试布局固定坐标，方向按钮与内容区域分别拥有独立边界。
++/// </summary>
++public class DockAreaFillTests
++{
++    private sealed class Target : DockTarget
++    {
++        public Panel FillIndicator { get; } = new();
++        public Panel LeftIndicator { get; } = new();
++        public Border LeftSelector { get; } = new() { Background = Brushes.White, Width = 30, Height = 30 };
++
++        public void Register()
++        {
++            IndicatorOperations.Clear();
++            SelectorsOperations.Clear();
++            IndicatorOperations[DockOperation.Left] = LeftIndicator;
++            IndicatorOperations[DockOperation.Fill] = FillIndicator;
++            SelectorsOperations[DockOperation.Left] = LeftSelector;
++        }
++    }
++
++    [AvaloniaTheory]
++    [InlineData(true, 200, 180, DockOperation.Fill)]
++    [InlineData(false, 200, 180, DockOperation.Window)]
++    [InlineData(true, 450, 180, DockOperation.Window)]
++    [InlineData(true, -1, 180, DockOperation.Window)]
++    public void 区域回退仅作用于启用后的内容边界(bool enabled, double x, double y, DockOperation expected)
++    {
++        WithTarget((target, area) =>
++        {
++            target.FillOnAreaDrop = enabled;
++            var result = target.GetDockOperation(new Point(x, y), area, area, DragAction.Move, (_, _, _, _) => true);
++            Assert.Equal(expected, result);
++            Assert.Equal(expected == DockOperation.Fill ? 0.5 : 0, target.FillIndicator.Opacity);
++        });
++    }
++
++    [AvaloniaTheory]
++    [InlineData(true, DockOperation.Left)]
++    [InlineData(false, DockOperation.Window)]
++    public void 明确方向优先且拒绝后不偷偷合并(bool allowDirection, DockOperation expected)
++    {
++        WithTarget((target, area) =>
++        {
++            var result = target.GetDockOperation(new Point(15, 15), area, area, DragAction.Move,
++                (_, operation, _, _) => operation != DockOperation.Left || allowDirection);
++            Assert.Equal(expected, result);
++            Assert.Equal(0, target.FillIndicator.Opacity);
++        });
++    }
++
++    [AvaloniaTheory]
++    [InlineData(false, true)]
++    [InlineData(true, false)]
++    public void 居中必须同时通过可见性与能力校验(bool allowed, bool visible)
++    {
++        WithTarget((target, area) =>
++        {
++            Assert.Equal(DockOperation.Window, target.GetDockOperation(new Point(200, 180), area, area,
++                DragAction.Move, (_, _, _, _) => allowed, (_, _, _, _) => visible));
++            Assert.Equal(0, target.FillIndicator.Opacity);
++        });
++    }
++
++    [AvaloniaFact]
++    public void 非停靠分组及复用状态不会触发区域合并()
++    {
++        WithTarget((target, area) =>
++        {
++            area.DataContext = new RootDock();
++            Assert.Equal(DockOperation.Window, target.GetDockOperation(new Point(200, 180), area, area,
++                DragAction.Move, (_, _, _, _) => true));
++            area.DataContext = new DocumentDock();
++            Assert.Equal(DockOperation.Fill, target.GetDockOperation(new Point(200, 180), area, area,
++                DragAction.Move, (_, _, _, _) => true));
++            ((IDockTarget)target).Reset();
++            Assert.Equal(0, target.FillIndicator.Opacity);
++            Assert.True(target.FillOnAreaDrop);
++        });
++    }
++
++    private static void WithTarget(System.Action<Target, Panel> check)
++    {
++        var target = new Target { FillOnAreaDrop = true };
++        var area = new Canvas { Width = 400, Height = 300, DataContext = new DocumentDock(), Background = Brushes.Transparent };
++        DockProperties.SetIsDockTarget(area, true);
++        area.Children.Add(target);
++        area.Children.Add(target.LeftSelector);
++        var window = new Window { Width = 400, Height = 300, Content = area };
++        window.Show();
++        try
++        {
++            window.UpdateLayout();
++            target.Register();
++            check(target, area);
++        }
++        finally { window.Close(); }
++    }
++
++    [AvaloniaTheory]
++    [InlineData(100, 10, false)]
++    [InlineData(100, 100, true)]
++    [InlineData(250, 100, false)]
++    public void 正文边框排除标签栏并服从祖先裁剪(double x, double y, bool expected)
++    {
++        var target = new Target { FillOnAreaDrop = true };
++        var area = new Canvas { Width = 400, Height = 300, DataContext = new DocumentDock() };
++        var content = new Border { Name = "PART_Border", Width = 400, Height = 270 };
++        Canvas.SetTop(content, 30);
++        area.Children.Add(content); area.Children.Add(target);
++        DockProperties.SetIsDockTarget(area, true);
++        var clip = new Canvas { Width = 200, Height = 300, ClipToBounds = true };
++        clip.Children.Add(area);
++        var window = new Window { Width = 400, Height = 300, Content = clip };
++        window.Show();
++        try
++        {
++            window.UpdateLayout(); target.Register();
++            var operation = target.GetDockOperation(new Point(x, y), area, area, DragAction.Move, (_, _, _, _) => true);
++            Assert.Equal(expected ? DockOperation.Fill : DockOperation.Window, operation);
++        }
++        finally { window.Close(); }
++    }
++}

@@ -1,0 +1,3 @@
+# 补丁与构建输入跨平台保持字节稳定，包收据的摘要不能依赖 checkout 的换行设置。
+patches/dock-area-fill/* text eol=lf
+tools/Build-DockAreaFillPackage.ps1 text eol=lf

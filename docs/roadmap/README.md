@@ -4,7 +4,7 @@
 
 | 工作名称 | 状态 / 所属范围 | 事实依据 | 完成条件 |
 | --- | --- | --- | --- |
-| Dock 区域默认居中停靠 | 方案已确认，实现未开始 / Host 拖放交互 | [可执行实施计划](host-dock-area-fill-implementation-plan.md) | 合法内容区域默认 Fill，方向按钮优先，预览与提交一致；交付可复现 Dock 补丁包、专项自动化和完整 verify，并独立完成遮挡及多屏真实桌面验收 |
+| Dock 区域默认居中停靠 | 实现和自动化已接入，真实桌面待补 / Host 拖放交互 | [实施计划](host-dock-area-fill-implementation-plan.md)、[专项记录](../archive/records/dock-area-fill/development-acceptance.md)、[最终开发证据](../archive/records/dock-area-fill/development-evidence.json) | 补丁支持内容区 Fill、方向优先及松开重新校验；本地完整 verify 和无缓存重建结果见证据。原生遮挡、混合浮窗、标签排序及多屏 DPI 仍需按矩阵独立验收 |
 | V11-P2 Tool 浮窗关闭黑框修复 | 源码与自动化已接入，桌面待补 / Host 补丁 | [P2 计划](host-v11-p2-tool-window-close-fix-plan.md)；[修复记录](../archive/records/host-v11/p2-tool-window-close-fix.md)；[最终开发证据](../archive/records/host-v11/p2-final-development-evidence.json) | 补真实 Tool 浮窗右上角关闭、菜单/工具中心隐藏、取消、再次显示与重启；自动化不代替桌面，本补丁部署另行交付 |
 | V11-P1 Tool 上下分割修复 | 源码与自动化已接入，桌面待补 / Host 补丁 | [P1 计划](host-v11-p1-tool-split-fix-plan.md)；[修复记录](../archive/records/host-v11/p1-tool-split-fix.md)；[最终开发证据](../archive/records/host-v11/p1-final-development-evidence.json) | 最终 verify 结果独立记录；实际补验截图位置上下投放、连续操作、浮窗回停与重启恢复。Headless 不代替桌面；安装目录部署为后续交付 |
 | V11 浮动窗口与工具布局保存恢复 | 实现已接入，开发结果见证据 / 主程序 Host | [V11 实施计划](host-v11-floating-windows-and-layout-v3-plan.md)；[阶段记录](../archive/records/host-v11/development-acceptance.md) | 实现与专项测试已接入；最终 [verify 结果](../archive/records/host-v11/final-development-evidence.json) 独立记录。补真实鼠标拖放、跨屏 DPI、原生选择器、视频/WebView/后台业务；Headless 不替代真人验收 |

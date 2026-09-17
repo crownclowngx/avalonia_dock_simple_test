@@ -1,0 +1,579 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-17",
+  "status": "automated-development-verification-passed; manual-desktop-pending",
+  "generatedAtUtc": "2026-09-17T00:14:32.6957835+00:00",
+  "baseRevision": "2d06744960a56ed05c63798a54283e8042ebccf6",
+  "branch": "codex/host-v11-floating-layout",
+  "committed": false,
+  "source": {
+    "gateSnapshotAtRun": {
+      "revision": "2d06744960a56ed05c63798a54283e8042ebccf6",
+      "tree": "5680aa13c98df28758b22e17846f0d0a40ada1f3",
+      "clean": false,
+      "files": 909,
+      "sha256": "7B5A9F4B55B9CCF5CB981084A2F655EEF98697CDE0E715D69FEE977C45A525D5"
+    },
+    "gateSnapshotNote": "此指纹包含当时占位的 development-evidence.json；最终证据只更新此非嵌入 JSON，未改动已验证的实现或 Markdown。写入前已逐字节重算并与 Gate 指纹相等。",
+    "finalInputsExcludingThisEvidence": {
+      "files": 908,
+      "sha256": "BF72325B870DD43261DAD17DD87127B66438D66D5C12E5D7D847AF8CE065136D",
+      "algorithm": "与 GitRepository.ComputeFingerprint 相同：Windows 相对路径 Ordinal 排序；UTF-8 正斜杠路径 + NUL + 文件字节 + NUL，累计 SHA-256。排除本 JSON 防止自引用。",
+      "manifest": {
+        "path": "artifacts/dock-area-fill/final-source-inputs.json",
+        "sha256": "9EEB4E6D2C8A052AEDC62B7426C07F9954171E96804EBFCD7A845ABD33A59009"
+      },
+      "changedFiles": [
+        {
+          "path": ".gitattributes",
+          "sha256": "C5A51D2737C0C2DA32AFE6D07D37C6BC1300BF0DA956382C27E91EE1F56549FC"
+        },
+        {
+          "path": "Directory.Packages.props",
+          "sha256": "A15D1F410BD9F22C22957FAD7B183F2BD55EBFD01337AAC5807FDDCFE8481158"
+        },
+        {
+          "path": "Directory.Version.props",
+          "sha256": "2528A992D40D02B09893C4235840E1C2D080C3B775BC441D0D0E4F8B69386115"
+        },
+        {
+          "path": "docs/archive/README.md",
+          "sha256": "C7823DAD790C85EAD673B47AD1975391D7B8C548E642A1F3F7ABB336CC45F488"
+        },
+        {
+          "path": "docs/archive/records/dock-area-fill/development-acceptance.md",
+          "sha256": "B343B6165B4B3B40B92EFE862B14C50B4809924ACC029D37B6261C59E883E1B7"
+        },
+        {
+          "path": "docs/maintenance/dock-area-fill-verification.md",
+          "sha256": "45502DD05F96E3FF1120F3B0B1717E3ED0A9DCAE9F495826AD627DAB66B91359"
+        },
+        {
+          "path": "docs/maintenance/floating-layout-verification.md",
+          "sha256": "6FC75D9D9390D2C798044FEE24F344EC485354BC7018B90BD4DCB5088623C1F2"
+        },
+        {
+          "path": "docs/maintenance/verification.md",
+          "sha256": "25789B518D721E1EFF468B71EF9F8768888D993091FEB8815280EF9E1DFDC5B3"
+        },
+        {
+          "path": "docs/quick-start/floating-windows-and-layout.md",
+          "sha256": "7D20186887A446EB4BC6D6BF8B23E1C98B04E6C341662EF46C3FA43C19A6CE79"
+        },
+        {
+          "path": "docs/README.md",
+          "sha256": "6DF2E30203FD6B86191DF64540F411551B0DC5D8DEB7C1FE2F5FCFFB03D9495F"
+        },
+        {
+          "path": "docs/reference/platform-baseline.md",
+          "sha256": "659723BE6B05B24605CB8161C070EAB88D1B30972F9F09869A41E8E57F0356D3"
+        },
+        {
+          "path": "docs/roadmap/host-dock-area-fill-implementation-plan.md",
+          "sha256": "31CE45426CE22B46601E5F549B5A7D66E1927B0D442EAA0812FFB73CEFD5E29B"
+        },
+        {
+          "path": "docs/roadmap/README.md",
+          "sha256": "AA13864DF868DE51E773D8F4734129D45D693E035C071ACECA00343D0D711AC4"
+        },
+        {
+          "path": "Host/MyAvaloniaManagement.PluginTests/packages.lock.json",
+          "sha256": "539EFFDB64292AC1A7683341B63076A3AF097A4B06EF7B39D12063F8B61C19A7"
+        },
+        {
+          "path": "Host/MyAvaloniaManagement.Tests/packages.lock.json",
+          "sha256": "B1C8C60387D999A782D363A4D3478C97879EF291AB307CAD70B0072E1D018EB7"
+        },
+        {
+          "path": "Host/MyAvaloniaManagement.UiTests/DockAreaFillUiTests.cs",
+          "sha256": "74EEE01C0517DF7D184C5F0E5CA15EC852D0A78EB7406736E415BDE265F78F26"
+        },
+        {
+          "path": "Host/MyAvaloniaManagement.UiTests/packages.lock.json",
+          "sha256": "88635167E597C2ACE73CC1BDAB5FF6D107768901B4B7B0485C80B2BC64CAF160"
+        },
+        {
+          "path": "Host/MyAvaloniaManagement/App.axaml",
+          "sha256": "574ADA3CCE78BA5F7C41C9DE11BE437558703CFC700230F0D2ACB16E6F1BC14C"
+        },
+        {
+          "path": "Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs",
+          "sha256": "9F14871162BF13192FB158A7D609A09C3CC81D048CC23AA08D8465EBA71A10F9"
+        },
+        {
+          "path": "Host/MyAvaloniaManagement/Business/Docking/HostDockPreview.cs",
+          "sha256": "21EA1D4059E35738718BEB6F6F879E7791F396CCEF052670F62141E4F86F612D"
+        },
+        {
+          "path": "Host/MyAvaloniaManagement/Business/Layout/DockSplitPolicy.cs",
+          "sha256": "CC69D80FA488F7E9E29DB6097FB26927545FC160B4EF19021715DA6343551C42"
+        },
+        {
+          "path": "Host/MyAvaloniaManagement/Business/Layout/ToolDockCoordinator.cs",
+          "sha256": "133354135DDC2D1BEC41064A732182A5D8BA5C5EABDA0EEA84778DCAFE0CDF12"
+        },
+        {
+          "path": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "sha256": "3EDC242437728ECA469FEC19CCA1DBC5520BD12F86E25699403064FD08D8D1F9"
+        },
+        {
+          "path": "Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md",
+          "sha256": "1A177B40A9F01800A2EA525E377AE8F5581C0DCCD1DA4C039C7AC5512D387108"
+        },
+        {
+          "path": "Host/MyAvaloniaManagement/packages.lock.json",
+          "sha256": "5CBE590A3A7BC5481278A1EC79CA36050B4827546DC753671E293FFD653AF414"
+        },
+        {
+          "path": "nuget.config",
+          "sha256": "65B153EB369125BEF441F6474EAFF5B4FD32DD102E4F214C1FB3895FECA5D7E8"
+        },
+        {
+          "path": "patches/dock-area-fill/area-fill.patch",
+          "sha256": "EB71327A16336D50FDFC590A7604D781E5700FC717ECC33FB1479D2305E23E95"
+        },
+        {
+          "path": "patches/dock-area-fill/baseline.json",
+          "sha256": "7BF091807EFC9A3338FD37594E62952CC2B7C8FE337589B1D0208621130E43B7"
+        },
+        {
+          "path": "patches/dock-area-fill/LICENSE.TXT",
+          "sha256": "CCB2F0059C6C527F588C381FE4D34321E977C8674F6568DC7B3F1958560C4D78"
+        },
+        {
+          "path": "patches/dock-area-fill/README.md",
+          "sha256": "D2B000C8A6B038E8C65F5A8DC8FC793347413171AD211ED9A712D6DDCED2EDAE"
+        },
+        {
+          "path": "README.md",
+          "sha256": "B1941A094B51C88A10EFB6C1F2495222294A3B1AA7CE2A1DB04C20BFB1C4E0A1"
+        },
+        {
+          "path": "tools/Build-DockAreaFillPackage.ps1",
+          "sha256": "B0C23403DB6F460D6B67D2843CE7AA1EC4139034F922A69A680A148381E8A9B0"
+        },
+        {
+          "path": "tools/MyAvaloniaManagement.Compatibility/packages.lock.json",
+          "sha256": "52BB5491D960B4C09F953A03C8FD9D4D2888CAB47780287ECC28ABD3C5CEA6B2"
+        },
+        {
+          "path": "tools/MyAvaloniaManagement.Gate.Tests/LocalGateTests.cs",
+          "sha256": "45007876CBCE1DBAD84197DF70B60FCA30F12B21DF1C164B5F30C33BD7ED1617"
+        },
+        {
+          "path": "tools/MyAvaloniaManagement.Gate/DockPatchIdentity.cs",
+          "sha256": "D9D4C04D2E94C314AE8E78C9F383886B88583549125A35CC392F99DF46DE4674"
+        },
+        {
+          "path": "tools/MyAvaloniaManagement.Gate/GateApplication.cs",
+          "sha256": "637C22C421DB3DA649D9124C6A7EE176387D2D29F32AE11958E2033FD62D4CA6"
+        },
+        {
+          "path": "tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs",
+          "sha256": "B782C9185C3EEC71461C54E3316A98252663EE14E0E195ABE15104A967C850B9"
+        }
+      ]
+    }
+  },
+  "toolchain": {
+    "dotnetSdk": "10.0.302",
+    "powerShell": "7.6.5",
+    "patchSdk": "10.0.302"
+  },
+  "dockPatch": {
+    "baseline": {
+      "repository": "https://github.com/wieslawsoltes/Dock.git",
+      "commit": "cc08602d02fde1b85067cec064da29f34785e505",
+      "upstreamVersion": "12.1.0.6",
+      "packageVersion": "12.1.0.7-area.5",
+      "minimumTests": 67,
+      "sdkVersion": "10.0.302",
+      "assemblyVersion": "12.1.0.6",
+      "packageTimestampUtc": "2026-09-17T00:00:00Z",
+      "packageSha256": "f697cff4f1411c6b437db3803671b761b441ab75cd7bed11e6ac0787389b33c9"
+    },
+    "patch": {
+      "path": "patches/dock-area-fill/area-fill.patch",
+      "sha256": "EB71327A16336D50FDFC590A7604D781E5700FC717ECC33FB1479D2305E23E95"
+    },
+    "buildScript": {
+      "path": "tools/Build-DockAreaFillPackage.ps1",
+      "sha256": "B0C23403DB6F460D6B67D2843CE7AA1EC4139034F922A69A680A148381E8A9B0"
+    },
+    "package": {
+      "path": "artifacts/dock-area-fill/feed/Dock.Avalonia.12.1.0.7-area.5.nupkg",
+      "sha256": "F697CFF4F1411C6B437DB3803671B761B441AB75CD7BED11E6AC0787389B33C9"
+    },
+    "assemblyVersion": "12.1.0.6",
+    "publicKeyToken": "535dd7fb7a6cf113",
+    "signing": "PublicSign，使用上游公开密钥；不是上游私钥签署的官方发行包。",
+    "payloadSha256": {
+      "net8.0": "BFFA75CA168A14D664DCDEF9C93FD7D5B7C38DD3A5F75C2A269C6A31B18C99DF",
+      "net10.0": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1"
+    },
+    "actualOutputDlls": [
+      {
+        "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/Dock.Avalonia.dll",
+        "sha256": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.Tests/bin/Release/net10.0/Dock.Avalonia.dll",
+        "sha256": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.PluginTests/bin/Release/net10.0/Dock.Avalonia.dll",
+        "sha256": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.UiTests/bin/Release/net10.0/Dock.Avalonia.dll",
+        "sha256": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1"
+      },
+      {
+        "path": "tools/MyAvaloniaManagement.Compatibility/bin/Release/net10.0/Dock.Avalonia.dll",
+        "sha256": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1"
+      }
+    ],
+    "reproducibleBuilds": [
+      {
+        "root": "artifacts/dock-area-fill/build/1c74df547e8f5192",
+        "receipt": {
+          "path": "artifacts/dock-area-fill/build/1c74df547e8f5192/receipt.json",
+          "sha256": "F37C2D36DA6ED1F87F1D8084C671640245153262A97A8C6D16424E542EF47FD9"
+        },
+        "receiptContent": {
+          "identity": "1c74df547e8f51924af7d2873760a9d92a85e4cc91f98ec085f2148b9852fbf0",
+          "upstream": "cc08602d02fde1b85067cec064da29f34785e505",
+          "patchSha256": "eb71327a16336d50fdfc590a7604d781e5700fc717ecc33fb1479d2305e23e95",
+          "packageVersion": "12.1.0.7-area.5",
+          "packageSha256": "f697cff4f1411c6b437db3803671b761b441ab75cd7bed11e6ac0787389b33c9",
+          "testsPassed": 67,
+          "testsFailed": 0,
+          "testsSkipped": 0
+        },
+        "package": {
+          "path": "artifacts/dock-area-fill/build/1c74df547e8f5192/canonical.nupkg",
+          "sha256": "F697CFF4F1411C6B437DB3803671B761B441AB75CD7BED11E6AC0787389B33C9"
+        },
+        "tests": {
+          "trx": "artifacts/dock-area-fill/build/1c74df547e8f5192/tests/dock-area-fill.trx",
+          "sha256": "BA9E424653889181E1250916AA12C68B7AAD461DB377AD9AF2346F9EC908F3D7",
+          "total": 67,
+          "passed": 67,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "root": "artifacts/dock-area-fill/build/1c74df547e8f5192-rebuild-b57c53cb",
+        "receipt": {
+          "path": "artifacts/dock-area-fill/build/1c74df547e8f5192-rebuild-b57c53cb/receipt.json",
+          "sha256": "F37C2D36DA6ED1F87F1D8084C671640245153262A97A8C6D16424E542EF47FD9"
+        },
+        "receiptContent": {
+          "identity": "1c74df547e8f51924af7d2873760a9d92a85e4cc91f98ec085f2148b9852fbf0",
+          "upstream": "cc08602d02fde1b85067cec064da29f34785e505",
+          "patchSha256": "eb71327a16336d50fdfc590a7604d781e5700fc717ecc33fb1479d2305e23e95",
+          "packageVersion": "12.1.0.7-area.5",
+          "packageSha256": "f697cff4f1411c6b437db3803671b761b441ab75cd7bed11e6ac0787389b33c9",
+          "testsPassed": 67,
+          "testsFailed": 0,
+          "testsSkipped": 0
+        },
+        "package": {
+          "path": "artifacts/dock-area-fill/build/1c74df547e8f5192-rebuild-b57c53cb/canonical.nupkg",
+          "sha256": "F697CFF4F1411C6B437DB3803671B761B441AB75CD7BED11E6AC0787389B33C9"
+        },
+        "tests": {
+          "trx": "artifacts/dock-area-fill/build/1c74df547e8f5192-rebuild-b57c53cb/tests/dock-area-fill.trx",
+          "sha256": "32D6F7B059AB3E53452667A6916AB45087836D8884A8C3E083608165AD4BFD6B",
+          "total": 67,
+          "passed": 67,
+          "failed": 0,
+          "skipped": 0
+        }
+      }
+    ],
+    "reproducedPackageBytesEqual": true,
+    "buildCommand": "pwsh -NoProfile -File tools/Build-DockAreaFillPackage.ps1",
+    "buildExitCode": 0,
+    "buildLog": {
+      "path": "artifacts/dock-area-fill/package-build.log",
+      "sha256": "5F8C68874A9B881AE8DB119E3431CC04A7705FE8952C11D4A01C69232CD9FDF6"
+    },
+    "rebuildCommand": "pwsh -NoProfile -File tools/Build-DockAreaFillPackage.ps1 -ForceRebuild",
+    "rebuildExitCode": 0,
+    "rebuildLog": {
+      "path": "artifacts/dock-area-fill/isolated-rebuild.log",
+      "sha256": "ED39D7B3ECDCC5CB056C4520653F05FB2E287C6AB7083FBBE7C1337AF4D0ECA5"
+    }
+  },
+  "isolatedCache": {
+    "NUGET_PACKAGES": "artifacts/dock-area-fill/isolated/nuget-packages",
+    "NUGET_HTTP_CACHE_PATH": "artifacts/dock-area-fill/isolated/http-cache",
+    "scope": "仅本轮子进程；未改用户全局环境、NuGet 配置或缓存。",
+    "provenance": "任务开始独立缓存验证时新建；调试重试期间复用。最终重建使用全新源码检出目录，但未把已复用的任务缓存称为最终一轮完全空缓存。",
+    "appliesTo": [
+      "最终 ForceRebuild",
+      "最终 locked restore",
+      "最终完整 verify"
+    ],
+    "lockedRestoreCommand": "dotnet restore MyAvaloniaManagement.sln --locked-mode --no-http-cache --nologo",
+    "lockedRestoreExitCode": 0,
+    "lockedRestoreLog": {
+      "path": "artifacts/dock-area-fill/isolated-restore.log",
+      "sha256": "3C537EF86D633227E0442C296CB2C063358F62AA2AB94EBD34506DB0BF0BF6ED"
+    }
+  },
+  "localVerify": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "exitCode": 0,
+    "runId": "20260917-000705-2d06744960a5",
+    "startedAtUtc": "2026-09-17T08:07:04.9785118+08:00",
+    "finishedAtUtc": "2026-09-17T08:08:35.7088945+08:00",
+    "profile": "verify",
+    "scope": "all",
+    "passed": true,
+    "summary": {
+      "path": "artifacts/gate/20260917-000705-2d06744960a5/summary.json",
+      "sha256": "97335A74950BB73C86B2D9FCD57D1680D0F9D8AEFB18884887E040A793077400"
+    },
+    "log": {
+      "path": "artifacts/dock-area-fill/gate-verify.log",
+      "sha256": "B95DBA2E92624ED10DB0FEB388E724D06B0E294652D6DD1999814C6A9880A728"
+    },
+    "stages": [
+      {
+        "id": "dock-patch",
+        "status": "passed",
+        "durationMilliseconds": 496
+      },
+      {
+        "id": "restore",
+        "status": "passed",
+        "durationMilliseconds": 2173
+      },
+      {
+        "id": "build",
+        "status": "passed",
+        "durationMilliseconds": 11789
+      },
+      {
+        "id": "tests",
+        "status": "passed",
+        "durationMilliseconds": 66106
+      },
+      {
+        "id": "contracts",
+        "status": "passed",
+        "durationMilliseconds": 8208
+      },
+      {
+        "id": "packages",
+        "status": "passed",
+        "durationMilliseconds": 16
+      },
+      {
+        "id": "package-acceptance",
+        "status": "passed",
+        "durationMilliseconds": 1490
+      }
+    ],
+    "releaseBuild": {
+      "warnings": 0,
+      "errors": 0,
+      "log": {
+        "path": "artifacts/gate/20260917-000705-2d06744960a5/pass-1/logs/build-main.log",
+        "sha256": "06E6A1C1E6F63A05103E9CB797B29828DC262F9A9851F7DCFB815257DBFA6061"
+      }
+    },
+    "suites": {
+      "sdk": {
+        "trx": "artifacts/gate/20260917-000705-2d06744960a5/pass-1/tests/sdk/sdk.trx",
+        "sha256": "62621AE1E6ED2CDCE34AD6563322F1FC602E56B0BB0BEB2F87BC71FC396B0D49",
+        "total": 91,
+        "passed": 91,
+        "failed": 0,
+        "skipped": 0
+      },
+      "host-unit": {
+        "trx": "artifacts/gate/20260917-000705-2d06744960a5/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "AD5AA2644DD64D5B6335178C304DCF0B24AF5E947918705402665A78510602F6",
+        "total": 496,
+        "passed": 496,
+        "failed": 0,
+        "skipped": 0
+      },
+      "host-plugin": {
+        "trx": "artifacts/gate/20260917-000705-2d06744960a5/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "7DB521C5FAA140781D763D0EA7C016CDD56611910CCF3201EF0F51A2B0C8AC92",
+        "total": 255,
+        "passed": 255,
+        "failed": 0,
+        "skipped": 0
+      },
+      "host-ui": {
+        "trx": "artifacts/gate/20260917-000705-2d06744960a5/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "931FC48D00B721D3CDD45B993DA18C48BBB588A6775906770D92674305940585",
+        "total": 185,
+        "passed": 185,
+        "failed": 0,
+        "skipped": 0
+      },
+      "my-plug-test": {
+        "trx": "artifacts/gate/20260917-000705-2d06744960a5/pass-1/tests/my-plug-test/my-plug-test.trx",
+        "sha256": "BE5F64F29600647B3339435325E67190A27F4142D442D53431A7C5E35ED74AC1",
+        "total": 11,
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0
+      },
+      "my-plug-test-package": {
+        "trx": "artifacts/gate/20260917-000705-2d06744960a5/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+        "sha256": "2BCA3EC92D6B8D721D827ACADFFDA0BC909CA8419FEF699CA8290B52FED5F59A",
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    "totals": {
+      "total": 1039,
+      "passed": 1039,
+      "failed": 0,
+      "skipped": 0
+    },
+    "contractAndApiCompatibility": "passed",
+    "hostReleaseEligible": false,
+    "hostPublishable": false,
+    "releaseRepeatability": {
+      "requested": false,
+      "verified": false
+    },
+    "pluginPackages": {
+      "my-plug-test": {
+        "pluginId": "myavalonia.plugin.my-plug-test",
+        "archivePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260917-000705-2d06744960a5\\pass-1\\packages\\my-plug-test\\build-1\\MyPlugTest-win-x64.zip",
+        "sha256": "510687D351B11436A36124DF5A3349DFA32BE600AB0604C05FB1CED5B7CF2521",
+        "files": 8,
+        "manifestSha256": "93B4006555E65634300C0E1AF204CCC345A1739B432AD6FD9CDC384E2A567AE1",
+        "deterministic": false
+      }
+    }
+  },
+  "supplementalTests": {
+    "hostAreaFill": {
+      "reproductionCommand": "dotnet test Host/MyAvaloniaManagement.UiTests -c Release -m:1 --filter FullyQualifiedName~DockAreaFill",
+      "exitCode": 0,
+      "report": {
+        "trx": "artifacts/dock-area-fill/host-tests/host-area-fill.trx",
+        "sha256": "82F45C5F2259E0EB5595FFFF8124DECC19C6FDC324520EE22C13559020E50934",
+        "total": 12,
+        "passed": 12,
+        "failed": 0,
+        "skipped": 0
+      },
+      "log": {
+        "path": "artifacts/dock-area-fill/host-test.log",
+        "sha256": "57FE1ED7E44EC24283191BB19550A937348FE60612A1A5A9ABE547DD852C2634"
+      },
+      "note": "这 12 项已包含在完整 verify 的 host-ui 185 项中，不重复计入 1039。"
+    },
+    "gateToolTests": {
+      "reproductionCommand": "dotnet test tools/MyAvaloniaManagement.Gate.Tests -c Release -m:1",
+      "exitCode": 0,
+      "report": {
+        "trx": "artifacts/dock-area-fill/gate-tools/gate-tools.trx",
+        "sha256": "C6CF47BC941ACD196934B2CAC4F730CC83A4353E63BAEA3F1D5F9E6CE799AF52",
+        "total": 59,
+        "passed": 59,
+        "failed": 0,
+        "skipped": 0
+      },
+      "log": {
+        "path": "artifacts/dock-area-fill/gate-tools.log",
+        "sha256": "2C6C4A81F94C0226CB52F255ED0678E022214A28D0C5DA2789431498C6803E9B"
+      }
+    }
+  },
+  "hostArtifacts": [
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.dll",
+      "sha256": "942283612780BD24D2B23543C7E8BF6176174CAC7AD6C4CC569A42E124C9558C"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/Dock.Avalonia.Themes.Fluent.dll",
+      "sha256": "F443EF948AC54823B5EA85112CBFF77872B1765DC7A1230FE6C6E15116A12FA9"
+    }
+  ],
+  "manualDesktop": {
+    "status": "not-run",
+    "reason": "当前会话无原生桌面输入工具；Headless 不替代遮挡、整窗原生拖动、多屏 DPI、混合浮窗和 WebView/视频验收。",
+    "cases": [
+      {
+        "id": "M01",
+        "status": "not-run"
+      },
+      {
+        "id": "M02",
+        "status": "not-run"
+      },
+      {
+        "id": "M03",
+        "status": "not-run"
+      },
+      {
+        "id": "M04",
+        "status": "not-run"
+      },
+      {
+        "id": "M05",
+        "status": "not-run"
+      },
+      {
+        "id": "M06",
+        "status": "not-run"
+      },
+      {
+        "id": "M07",
+        "status": "not-run"
+      },
+      {
+        "id": "M08",
+        "status": "not-run"
+      },
+      {
+        "id": "M09",
+        "status": "not-run"
+      },
+      {
+        "id": "M10",
+        "status": "not-run"
+      },
+      {
+        "id": "M11",
+        "status": "not-run"
+      },
+      {
+        "id": "M12",
+        "status": "not-run"
+      },
+      {
+        "id": "M13",
+        "status": "not-run"
+      },
+      {
+        "id": "M14",
+        "status": "not-run"
+      }
+    ],
+    "matrix": "docs/roadmap/host-dock-area-fill-implementation-plan.md#8-真实桌面验收矩阵"
+  },
+  "aiflow": "not-used",
+  "windowsCi": "not-run",
+  "releaseGate": "not-run",
+  "releaseSmoke": "not-run",
+  "deployedToInstalledApplication": false,
+  "localBuildPluginCopy": "既有构建目标复制 MyPlugTest 到 Host bin/Release 下 Controls 目录；没有安装部署。",
+  "published": false,
+  "neighboringPluginRepositoryChanged": false
+}

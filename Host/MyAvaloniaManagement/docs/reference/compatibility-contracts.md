@@ -261,6 +261,7 @@ reader 不读取 manifest v1，也不存在 v1/v2 双 reader；清单只解决�
 - Document、Tool 及其合法内容组允许浮动，固定主骨架不能浮动；浮动/回停不重建 View、模型或 Scope；
 - 浮窗不支持自动隐藏，回停后恢复；内容全屏期间先退出全屏再迁移；
 - 主窗口内部拖放与停靠继续可用；
+- 合法 DocumentDock / ToolDock 正文默认 Fill；明确局部/全局方向按钮优先，拒绝方向不回退为合并，标签栏保持原排序语义；松开重新检查目标和能力，内容全屏限制同时作用于预览与提交；
 - 每个 HostRuntime 只有一个 `WorkspaceSession` 和一个主 Root；浮窗 Root 归属该工作区，窗口只作为独立绑定消费者；
 - `HostDockFactory` 不拥有 Root、Document 或 Tool 集合；未绑定和重复绑定都必须快速失败；
 - 工具中心只消费不含 Dock 类型的 `ToolWorkspaceState` 快照；布局、可用性和收藏是独立状态。

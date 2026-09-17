@@ -13,7 +13,7 @@
     <PackageVersion Include="Avalonia.Headless.XUnit" Version="$(MyAvaloniaAvaloniaUiVersion)" />
     <PackageVersion Include="Avalonia.Themes.Fluent" Version="$(MyAvaloniaAvaloniaUiVersion)" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-    <PackageVersion Include="Dock.Avalonia" Version="$(MyAvaloniaDockUiVersion)" />
+    <PackageVersion Include="Dock.Avalonia" Version="$(MyAvaloniaDockAvaloniaVersion)" />
     <PackageVersion Include="Dock.Avalonia.Themes.Fluent" Version="$(MyAvaloniaDockUiVersion)" />
     <PackageVersion Include="Dock.Controls.ProportionalStackPanel" Version="$(MyAvaloniaDockUiVersion)" />
     <PackageVersion Include="Dock.Controls.Recycling" Version="$(MyAvaloniaDockUiVersion)" />

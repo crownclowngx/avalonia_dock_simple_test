@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Avalonia;
+using Avalonia.Controls;
+using Dock.Avalonia.Contract;
 using Dock.Model;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -75,7 +78,7 @@ internal interface IWorkspaceDockCallbacks
 /// <see cref="IWorkspaceDockCallbacks"/> 提供；Factory 只保留框架要求的 Locator、override、
 /// 浮动边界和回调顺序，从而满足里氏替换原则而不再充当应用服务。
 /// </remarks>
-internal sealed class HostDockFactory : Factory
+internal sealed class HostDockFactory : Factory, IDockDropGuard, IDockPreviewProvider
 {
     private IWorkspaceDockCallbacks? _callbacks;
     private int _layoutChangeDepth;
@@ -85,6 +88,18 @@ internal sealed class HostDockFactory : Factory
     internal bool IsLayoutChangeInProgress => _layoutChangeDepth != 0;
 
     internal WorkbenchWindowContext WindowContext { get; }
+
+    /// <summary>
+    /// 补丁在预览和松开提交时都会查询此端口。与 Move/Split 的最终防线保持同一限制，
+    /// 全屏期间不再出现“看起来可以放下、实际没有变化”的高亮；其余能力仍由 Dock 校验。
+    /// </summary>
+    bool IDockDropGuard.CanDrop(IDockable source, IDockable target, DockOperation operation) =>
+        !WindowContext.HasFullscreenContent;
+
+    /// <summary>只把纯预览查询转交给宿主策略，不在 Factory 中维护鼠标状态或绘制逻辑。</summary>
+    Rect? IDockPreviewProvider.GetPreviewBounds(IDockable source, IDockable target,
+        DockOperation operation, Control dropControl) =>
+        HostDockPreview.GetBounds(GetCallbacks().RootDock, source, target, operation, dropControl);
 
     public HostDockFactory(WorkbenchWindowContext? windows = null)
     {

@@ -5,7 +5,7 @@ internal sealed class GateExecutionGraph
     public static GateExecutionGraph ForProfile(GateProfile profile, Func<string, Task> execute)
     {
         var graph = new GateExecutionGraph();
-        foreach (var id in new[] { "restore", "build", "tests", "contracts", "packages", "package-acceptance" })
+        foreach (var id in new[] { "dock-patch", "restore", "build", "tests", "contracts", "packages", "package-acceptance" })
         {
             graph.Add(id, () => execute(id));
         }

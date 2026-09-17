@@ -137,8 +137,7 @@ internal sealed class ToolDockCoordinator(
 
         var rows = DockTreeNavigator.FindDockById<ProportionalDock>(root, DockLayoutIds.WorkspaceRows);
         var columns = DockTreeNavigator.FindDockById<ProportionalDock>(root, DockLayoutIds.WorkspaceColumns);
-        if (originalTarget is not IDocumentDock &&
-            !ReferenceEquals(originalTarget, rows) && !ReferenceEquals(originalTarget, columns)) return;
+        if (!DockSplitPolicy.IsMainFullWidthTarget(root, originalTarget)) return;
 
         // 不完整的稳定骨架不允许启动第二轮修改，保留基类已完成的局部分割供用户继续操作。
         if (rows?.VisibleDockables is null || columns is null || !rows.VisibleDockables.Contains(columns))

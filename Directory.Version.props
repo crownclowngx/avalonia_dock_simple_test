@@ -44,6 +44,8 @@
     -->
     <MyAvaloniaAvaloniaUiVersion>12.1.2</MyAvaloniaAvaloniaUiVersion>
     <MyAvaloniaDockUiVersion>12.1.0.6</MyAvaloniaDockUiVersion>
+    <!-- 仅 Host 呈现层使用可重建补丁；Model、Theme 与对外 UI Profile 保持官方版本。 -->
+    <MyAvaloniaDockAvaloniaVersion>12.1.0.7-area.5</MyAvaloniaDockAvaloniaVersion>
     <MyAvaloniaSemiUiVersion>12.1.0</MyAvaloniaSemiUiVersion>
     <MyAvaloniaUrsaUiVersion>2.1.0</MyAvaloniaUrsaUiVersion>
     <MyAvaloniaDependencyInjectionUiVersion>10.0.10</MyAvaloniaDependencyInjectionUiVersion>

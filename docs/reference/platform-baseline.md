@@ -10,6 +10,7 @@
 | Host 产品 | 3.0.0 |
 | 六个自有 NuGet 包 | 统一 3.4.1 |
 | Avalonia / Dock | 12.1.2 / 12.1.0.6 |
+| Host Dock 呈现层补丁 | Dock.Avalonia 12.1.0.7-area.5；程序集 12.1.0.6；[固定源码与重建](../../patches/dock-area-fill/README.md) |
 | Semi / Ursa | 12.1.0 / 2.1.0 |
 | manifest / Document envelope | schema 2 |
 | Layout | schema 3；布局文件 layout-v3.json；V2 仅首次只读迁移 |

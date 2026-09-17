@@ -220,6 +220,12 @@ internal sealed class GateRunner
             {
                 switch (id)
                 {
+                    case "dock-patch":
+                        // locked restore 之前生成唯一可信的本地依赖。脚本自身验证上游、补丁和包摘要，
+                        // 并保存通过的测试收据；不能靠开发机全局 NuGet 缓存碰巧存在来通过门禁。
+                        await processes.RunCheckedAsync("pwsh", ["-NoProfile", "-File", "tools/Build-DockAreaFillPackage.ps1"],
+                            roots["main"], environment, Path.Combine(evidenceRoot, "logs", "dock-patch.log"), cancellationToken);
+                        break;
                     case "restore":
                         await processes.RunCheckedAsync("dotnet", ["tool", "restore"], roots["main"], environment,
                             Path.Combine(evidenceRoot, "logs", "tool-restore.log"), cancellationToken);
@@ -231,6 +237,10 @@ internal sealed class GateRunner
                         await processes.RunCheckedAsync("dotnet",
                             ["build", configuration.MainSolution, "-c", "Release", "--no-restore", "--nologo", "-warnaserror", "-m:1"],
                             roots["main"], environment, Path.Combine(evidenceRoot, "logs", "build-main.log"), cancellationToken);
+                        var dockAssemblies = configuration.TestSuites.Select(suite => Path.Combine(roots["main"],
+                            Path.GetDirectoryName(suite.Project)!, "bin", "Release", "net10.0", "Dock.Avalonia.dll"))
+                            .Where(File.Exists).Prepend(Path.Combine(roots["main"], "Host", "MyAvaloniaManagement", "bin", "Release", "net10.0", "Dock.Avalonia.dll"));
+                        DockPatchIdentity.Verify(roots["main"], dockAssemblies);
                         break;
                     case "tests":
                         foreach (var suite in configuration.TestSuites)

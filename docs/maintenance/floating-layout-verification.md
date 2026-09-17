@@ -1,5 +1,7 @@
 # 浮窗与 Layout V3 开发验证
 
+区域默认居中回停的补丁重建、命中规则和新增验收见[区域回停专项](dock-area-fill-verification.md)。本文原有布局与关闭回归继续执行。
+
 > 用途：V11 专用开发操作与故障排查。状态：当前；核对日期：2026-09-16。实现与实际结果见 [V11 开发记录](../archive/records/host-v11/development-acceptance.md)，使用说明见 [浮动窗口指南](../quick-start/floating-windows-and-layout.md)。
 
 ## 开发入口

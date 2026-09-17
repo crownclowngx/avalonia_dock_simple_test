@@ -54,9 +54,45 @@ public sealed class LocalGateTests
         var graph = GateExecutionGraph.ForProfile(seal ? GateProfile.Seal : GateProfile.Verify,
             id => { executed.Add(id); return Task.CompletedTask; });
         await graph.ExecuteAsync((_, action) => action());
-        var expected = new List<string> { "restore", "build", "tests", "contracts", "packages", "package-acceptance" };
+        var expected = new List<string> { "dock-patch", "restore", "build", "tests", "contracts", "packages", "package-acceptance" };
         if (seal) expected.AddRange(["coverage", "windows-smoke"]);
         Assert.Equal(expected, executed);
+    }
+
+    [Fact]
+    public async Task 补丁验证失败必须阻断依赖还原和后续构建()
+    {
+        var executed = new List<string>();
+        var graph = GateExecutionGraph.ForProfile(GateProfile.Verify, id =>
+        {
+            executed.Add(id);
+            return id == "dock-patch" ? Task.FromException(new GateFailureException("补丁摘要不匹配")) : Task.CompletedTask;
+        });
+        await Assert.ThrowsAsync<GateFailureException>(() => graph.ExecuteAsync((_, action) => action()));
+        Assert.Equal(["dock-patch"], executed);
+    }
+
+    [Theory]
+    [InlineData("matching")]
+    [InlineData("old-dll")]
+    [InlineData("missing")]
+    public void 构建后核对补丁DLL原字节而不只依赖包号(string mode)
+    {
+        using var temporary = new TemporaryDirectory();
+        var metadata = Path.Combine(temporary.Path, "patches", "dock-area-fill");
+        var feed = Path.Combine(temporary.Path, "artifacts", "dock-area-fill", "feed");
+        Directory.CreateDirectory(metadata);
+        Directory.CreateDirectory(feed);
+        File.WriteAllText(Path.Combine(metadata, "baseline.json"), "{\"packageVersion\":\"test\"}");
+        using (var archive = ZipFile.Open(Path.Combine(feed, "Dock.Avalonia.test.nupkg"), ZipArchiveMode.Create))
+        {
+            using var stream = archive.CreateEntry("lib/net10.0/Dock.Avalonia.dll").Open();
+            stream.Write([1, 2, 3]);
+        }
+        var output = Path.Combine(temporary.Path, "Dock.Avalonia.dll");
+        if (mode != "missing") File.WriteAllBytes(output, mode == "matching" ? [1, 2, 3] : [3, 2, 1]);
+        if (mode == "matching") DockPatchIdentity.Verify(temporary.Path, [output]);
+        else Assert.Throws<GateFailureException>(() => DockPatchIdentity.Verify(temporary.Path, [output]));
     }
 
     [Fact]

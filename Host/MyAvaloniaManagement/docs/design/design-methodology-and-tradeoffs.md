@@ -71,3 +71,9 @@ SOLID 优先：Session 保持唯一业务所有权，Factory 适配框架，窗�
 窗口适配层处理 ToolChrome 的 Click/Command 联动，Factory 按当前窗口内容识别最后一个 Tool，将关闭和隐藏接入原生窗口协议。能力和框架取消事件必须在窗口仍可保留时执行；短期许可避免 Closed 阶段重复询问，正常消费、拒绝、异常或移除后清除。真正隐藏及 DockableClosed 仍由基类完成，不能先移除窗口模型再尝试关闭。
 
 这维持 SRP 的事件适配、工作区所有权、关闭范围保护与文件保存分离；OCP 按类型/拓扑而非业务 ID 分类；LSP 保留能力约束、取消及基类事件；ISP/DIP 继续使用原内部回调，不增加插件 API。只增加当前关闭所需的有限许可，不引入通用事务或第二份业务实例目录。窗口获准前保留位置，CloseWindow 批量清理后提交最终状态；详情见 [P2 记录](../../../../docs/archive/records/host-v11/p2-tool-window-close-fix.md)。
+
+### 区域默认居中回停：输入判定与宿主策略
+
+固定 Dock 补丁集中处理内容边界、明确按钮优先以及两条拖动入口的松开重算。Host 仅以样式开启 `FillOnAreaDrop`，通过 `IDockDropGuard` 提供全屏限制，通过 `IDockPreviewProvider` 提供宿主全宽预览；两个接口对应现存的库/宿主替换边界，不扩展 Plugin SDK。`DockSplitPolicy` 是预览和提交共用的纯查询，`HostDockPreview` 只处理几何范围；Factory 继续作为协议适配器。
+
+这使 SRP、ISP 和 DIP 落在明确职责上；默认关闭策略保留库的原行为，遵守 LSP；宿主策略通过窄端口扩展，保持 OCP。继续使用原 Dock 移动和关闭协议，不另建拖放服务容器、事务框架或实例缓存。预览不拥有模型，拒绝方向不改成合并，松开重算避免旧位置或过期权限被提交。源码补丁、可复现包及测试分层见[专项维护指南](../../../../docs/maintenance/dock-area-fill-verification.md)。

@@ -71,6 +71,10 @@
                  <DockFluentTheme DensityStyle="Compact" />
                  <StyleInclude Source="avares://MyAvaloniaManagement/Styles/HostToolStyles.axaml" />
 
+                 <!-- 区域回退只开启局部目标；全局方向按钮沿用明确命中的协议。 -->
+                 <Style Selector="DockTarget">
+                     <Setter Property="FillOnAreaDrop" Value="True" />
+                 </Style>
                  <Style Selector="DockControl">
                      <Setter Property="(ControlRecyclingDataTemplate.ControlRecycling)" Value="{DynamicResource ControlRecyclingKey}" />
                  </Style>

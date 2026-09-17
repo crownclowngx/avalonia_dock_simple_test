@@ -32,6 +32,9 @@
 
 ### host-v11
 
+- [Dock 区域回停专项开发记录](records/dock-area-fill/development-acceptance.md)
+- [Dock 区域回停最终开发证据](records/dock-area-fill/development-evidence.json)
+
 - [浮动窗口与 Layout V3 开发记录](records/host-v11/development-acceptance.md)
 - [最终开发验证证据](records/host-v11/final-development-evidence.json)
 - [V11-P1 Tool 上下分割故障修复记录](records/host-v11/p1-tool-split-fix.md)
