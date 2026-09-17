@@ -1,4 +1,5 @@
 <Project>
+  <Import Project="$(MSBuildThisFileDirectory)build\MyAvaloniaManagement.AvaloniaLayoutPatch.targets" />
   <!--
     Managed Plugin 只需要在项目文件中声明 ManagedPlugin=true 和自身元数据。
     根级入口统一导入构建协议，避免新插件再次复制一整段部署 Target。

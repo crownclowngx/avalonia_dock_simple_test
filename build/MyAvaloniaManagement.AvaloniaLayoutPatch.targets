@@ -1,0 +1,44 @@
+<Project>
+  <PropertyGroup>
+    <_LayoutPatchRoot>$(MSBuildThisFileDirectory)..\artifacts\avalonia-cross-window-layout\runtime\</_LayoutPatchRoot>
+  </PropertyGroup>
+  <Import Project="$(_LayoutPatchRoot)identity.props" Condition="Exists('$(_LayoutPatchRoot)identity.props')" />
+
+  <!-- SDK UI 保持官方 [12.1.2] 编译契约。补丁只参与宿主运行时资产选择，不进入 SDK 包。
+       在复制和单文件打包之前选择同一文件，避免发布后手工覆盖 DLL 导致 bundle 不一致。 -->
+  <Target Name="SelectAvaloniaLayoutRuntime" AfterTargets="ResolveAssemblyReferences"
+          Condition="'$(DesignTimeBuild)' != 'true' And '$(MyAvaloniaUseLayoutPatch)' == 'true'">
+    <Error Condition="!Exists('$(_LayoutPatchRoot)Avalonia.Base.dll') Or '$(MyAvaloniaLayoutPatchSha256)' == ''"
+           Text="缺少已验证的 Avalonia 布局补丁。请先执行 tools/Build-AvaloniaLayoutPatch.ps1。" />
+    <GetFileHash Files="$(_LayoutPatchRoot)Avalonia.Base.dll" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="_ActualLayoutPatchHash" />
+    </GetFileHash>
+    <Error Condition="'$(_ActualLayoutPatchHash)' != '$(MyAvaloniaLayoutPatchSha256)'" Text="Avalonia 布局补丁摘要不一致，请重新准备依赖。" />
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)%(Extension)' == 'Avalonia.Base.dll' Or '%(Filename)%(Extension)' == 'Avalonia.Base.pdb'" />
+      <ReferenceCopyLocalPaths Include="$(_LayoutPatchRoot)Avalonia.Base.dll;$(_LayoutPatchRoot)Avalonia.Base.pdb" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="SelectAvaloniaLayoutPublishRuntime" AfterTargets="ComputeResolvedFilesToPublishList" DependsOnTargets="SelectAvaloniaLayoutRuntime"
+          Condition="'$(MyAvaloniaUseLayoutPatch)' == 'true'">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Filename)%(Extension)' == 'Avalonia.Base.dll' Or '%(Filename)%(Extension)' == 'Avalonia.Base.pdb'" />
+      <ResolvedFileToPublish Include="$(_LayoutPatchRoot)Avalonia.Base.dll" RelativePath="Avalonia.Base.dll" CopyToPublishDirectory="Always" />
+      <ResolvedFileToPublish Include="$(_LayoutPatchRoot)Avalonia.Base.pdb" RelativePath="Avalonia.Base.pdb" CopyToPublishDirectory="Always" ExcludeFromSingleFile="true"
+                             Condition="'$(CopyOutputSymbolsToPublishDirectory)' != 'false' And '$(DebugType)' != 'none'" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="VerifyAvaloniaLayoutBundleInput" BeforeTargets="GenerateSingleFileBundle"
+          Condition="'$(MyAvaloniaUseLayoutPatch)' == 'true' And '$(PublishSingleFile)' == 'true'">
+    <ItemGroup>
+      <_LayoutBundleAssembly Include="@(FilesToBundle)" Condition="'%(Filename)%(Extension)' == 'Avalonia.Base.dll'" />
+    </ItemGroup>
+    <Error Condition="'@(_LayoutBundleAssembly->Count())' != '1'" Text="单文件打包输入必须包含唯一的 Avalonia.Base.dll。" />
+    <GetFileHash Files="@(_LayoutBundleAssembly)" Algorithm="SHA256">
+      <Output TaskParameter="Hash" PropertyName="_LayoutBundleHash" />
+    </GetFileHash>
+    <Error Condition="'$(_LayoutBundleHash)' != '$(MyAvaloniaLayoutPatchSha256)'" Text="单文件打包未采用已验证的 Avalonia 布局补丁。" />
+  </Target>
+</Project>

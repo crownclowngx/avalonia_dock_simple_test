@@ -54,7 +54,7 @@ public sealed class LocalGateTests
         var graph = GateExecutionGraph.ForProfile(seal ? GateProfile.Seal : GateProfile.Verify,
             id => { executed.Add(id); return Task.CompletedTask; });
         await graph.ExecuteAsync((_, action) => action());
-        var expected = new List<string> { "dock-patch", "restore", "build", "tests", "contracts", "packages", "package-acceptance" };
+        var expected = new List<string> { "avalonia-layout-patch", "dock-patch", "restore", "build", "tests", "contracts", "packages", "package-acceptance" };
         if (seal) expected.AddRange(["coverage", "windows-smoke"]);
         Assert.Equal(expected, executed);
     }
@@ -69,7 +69,7 @@ public sealed class LocalGateTests
             return id == "dock-patch" ? Task.FromException(new GateFailureException("补丁摘要不匹配")) : Task.CompletedTask;
         });
         await Assert.ThrowsAsync<GateFailureException>(() => graph.ExecuteAsync((_, action) => action()));
-        Assert.Equal(["dock-patch"], executed);
+        Assert.Equal(["avalonia-layout-patch", "dock-patch"], executed);
     }
 
     [Theory]

@@ -33,6 +33,7 @@
 ### host-v11
 
 - [Dock 区域回停专项开发记录](records/dock-area-fill/development-acceptance.md)
+- [Document 跨窗布局崩溃修复记录](records/dock-area-fill/cross-window-layout-fix.md)与[最终开发证据](records/dock-area-fill/cross-window-layout-fix-evidence.json)
 - [Dock 区域回停最终开发证据](records/dock-area-fill/development-evidence.json)
 - [Dock 区域回停单文件部署记录](records/dock-area-fill/local-deployment-20260917.json)
 - [Document 拖入已有浮窗的布局崩溃诊断](records/dock-area-fill/cross-window-layout-crash-20260917.md)

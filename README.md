@@ -13,6 +13,7 @@ MyAvaloniaManagement 是基于 .NET 10、Avalonia 和 Dock 的模块化桌面工
 安装 [global.json](global.json) 指定的 .NET SDK `10.0.302`（允许 latestPatch），在仓库根目录执行：
 
 ```powershell
+pwsh -NoProfile -File tools/Build-AvaloniaLayoutPatch.ps1
 pwsh -NoProfile -File tools/Build-DockAreaFillPackage.ps1
 dotnet build Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c Debug
 dotnet build Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj -c Debug

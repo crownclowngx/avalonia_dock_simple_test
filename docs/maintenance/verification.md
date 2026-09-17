@@ -10,7 +10,7 @@
 dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 ```
 
-`verify` 允许未提交修改，只使用本仓源码。它先通过 `dock-patch` 阶段测试或校验已测试的[固定 Dock 补丁](../../patches/dock-area-fill/README.md)，再执行 locked restore、Release 零警告构建、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约及已发布 API 比较、MyPlugTest 打包和真实 ZIP 验收。不采集覆盖率，不启动 Windows Smoke，不授予发布资格。首次补丁构建需要 Git、PowerShell 7、SDK 10.0.302 及上游下载；首次 API 比较需要下载已记录摘要的三个公共基线包，后续使用校验后的缓存。
+`verify` 允许未提交修改，只使用本仓源码。它先经过 `avalonia-layout-patch` 和 `dock-patch`，准备[布局运行时补丁](../../patches/avalonia-cross-window-layout/README.md)及[固定 Dock 补丁](../../patches/dock-area-fill/README.md)，再执行 locked restore、Release 零警告构建和输出 DLL 摘要检查、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约及已发布 API 比较、MyPlugTest 打包和真实 ZIP 验收。不采集覆盖率，不启动 Windows Smoke，不授予发布资格。首次补丁构建需要 Git、PowerShell 7、SDK 10.0.302 及上游下载；首次 API 比较需要下载已记录摘要的三个公共基线包，后续使用校验后的缓存。跨窗崩溃的回归与桌面待办见[专项指南](dock-cross-window-layout-verification.md)。
 
 `--scope host` 和 `--scope all` 都执行完整本仓验证。`workflow`、`workbench` scope 以及旧外部仓库参数均已退役；外部插件业务验证由各仓库独立负责。
 

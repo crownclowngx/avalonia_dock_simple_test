@@ -1,0 +1,8 @@
+<Project>
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.targets" />
+  <!-- 仅重建 Base 运行时。其 Build.Tasks 引用是上游整仓打包的构建依赖，Base 无 XAML，
+       不使用该项目产物。保留全部实际源生成器、分析器和编译输入。 -->
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'Avalonia.Base'">
+    <ProjectReference Remove="$(MSBuildProjectDirectory)/../Avalonia.Build.Tasks/Avalonia.Build.Tasks.csproj" />
+  </ItemGroup>
+</Project>

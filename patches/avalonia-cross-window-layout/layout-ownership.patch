@@ -1,0 +1,113 @@
+diff --git a/src/Avalonia.Base/Layout/LayoutManager.cs b/src/Avalonia.Base/Layout/LayoutManager.cs
+index fa82ff1..ca637fe 100644
+--- a/src/Avalonia.Base/Layout/LayoutManager.cs
++++ b/src/Avalonia.Base/Layout/LayoutManager.cs
+@@ -255,12 +255,19 @@ private void ExecuteMeasurePass()
+             {
+                 var control = _toMeasure.Dequeue();
+ 
++                // 控件可以在入队后迁往另一个布局根。旧管理器只丢弃自己的过期任务，
++                // 新根的挂接流程会独立安排布局；不能沿新父级继续测量或替新根入队。
++                if (!OwnsLayout(control))
++                    continue;
++
+                 if (!control.IsMeasureValid)
+                 {
+                     Measure(control);
+                 }
+ 
+-                _toArrange.Enqueue(control);
++                // Measure/模板回调也可能迁移子树，因此消费后再次核对归属。
++                if (OwnsLayout(control))
++                    _toArrange.Enqueue(control);
+             }
+         }
+ 
+@@ -271,7 +278,7 @@ private void ExecuteArrangePass()
+             {
+                 var control = _toArrange.Dequeue();
+ 
+-                if (!control.IsArrangeValid)
++                if (OwnsLayout(control) && !control.IsArrangeValid)
+                 {
+                     if (Arrange(control) == ArrangeResult.AncestorMeasureInvalid)
+                         _toArrangeAfterMeasure.Add(control);
+@@ -279,13 +286,18 @@ private void ExecuteArrangePass()
+             }
+ 
+             foreach (var i in _toArrangeAfterMeasure)
+-                InvalidateArrange(i);
++            {
++                // 本轮其他控件的回调可能已迁走前面暂存的控件。仅内部旧任务可跳过，
++                // InvalidateArrange/InvalidateMeasure 的错误根检查仍原样保留。
++                if (OwnsLayout(i))
++                    InvalidateArrange(i);
++            }
+             _toArrangeAfterMeasure.Clear();
+         }
+ 
+         private bool Measure(Layoutable control)
+         {
+-            if (!control.IsVisible || !control.IsAttachedToVisualTree)
++            if (!control.IsVisible || !OwnsLayout(control))
+                 return false;
+ 
+             // Controls closest to the visual root need to be arranged first. We don't try to store
+@@ -301,6 +313,9 @@ private bool Measure(Layoutable control)
+             // If the control being measured has IsMeasureValid == true here then its measure was
+             // handed by an ancestor and can be ignored. The measure may have also caused the
+             // control to be removed.
++            if (!OwnsLayout(control))
++                return false;
++
+             if (!control.IsMeasureValid)
+             {
+                 if (control.GetLayoutRoot()?.RootVisual == control)
+@@ -313,12 +328,12 @@ private bool Measure(Layoutable control)
+                 }
+             }
+ 
+-            return true;
++            return OwnsLayout(control);
+         }
+ 
+         private ArrangeResult Arrange(Layoutable control)
+         {
+-            if (!control.IsVisible || !control.IsAttachedToVisualTree)
++            if (!control.IsVisible || !OwnsLayout(control))
+                 return ArrangeResult.NotVisible;
+ 
+             if (control.VisualParent is Layoutable parent)
+@@ -327,6 +342,10 @@ private ArrangeResult Arrange(Layoutable control)
+                     return parentResult;
+             }
+ 
++            // 递归祖先可能运行用户 ArrangeOverride，返回时不能假定子树还属于本根。
++            if (!OwnsLayout(control))
++                return ArrangeResult.DetachedOrMoved;
++
+             if (!control.IsMeasureValid)
+                 return ArrangeResult.AncestorMeasureInvalid;
+ 
+@@ -342,9 +361,12 @@ private ArrangeResult Arrange(Layoutable control)
+                 }
+             }
+ 
+-            return ArrangeResult.Arranged;
++            return OwnsLayout(control) ? ArrangeResult.Arranged : ArrangeResult.DetachedOrMoved;
+         }
+ 
++        private bool OwnsLayout(Layoutable control) =>
++            control.IsAttachedToVisualTree && control.GetLayoutRoot() == _owner;
++
+         private void QueueLayoutPass()
+         {
+             if (!_queued && !_running)
+@@ -454,6 +476,7 @@ private enum ArrangeResult
+             Arranged,
+             NotVisible,
+             AncestorMeasureInvalid,
++            DetachedOrMoved,
+         }
+     }
+ }

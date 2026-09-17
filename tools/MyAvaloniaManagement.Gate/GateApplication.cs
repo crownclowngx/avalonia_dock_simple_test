@@ -220,6 +220,11 @@ internal sealed class GateRunner
             {
                 switch (id)
                 {
+                    case "avalonia-layout-patch":
+                        await processes.RunCheckedAsync("pwsh", ["-NoProfile", "-File", "tools/Build-AvaloniaLayoutPatch.ps1"],
+                            roots["main"], environment, Path.Combine(evidenceRoot, "logs", "avalonia-layout-patch.log"), cancellationToken);
+                        AvaloniaLayoutPatchIdentity.Verify(roots["main"], []);
+                        break;
                     case "dock-patch":
                         // locked restore 之前生成唯一可信的本地依赖。脚本自身验证上游、补丁和包摘要，
                         // 并保存通过的测试收据；不能靠开发机全局 NuGet 缓存碰巧存在来通过门禁。
@@ -241,6 +246,11 @@ internal sealed class GateRunner
                             Path.GetDirectoryName(suite.Project)!, "bin", "Release", "net10.0", "Dock.Avalonia.dll"))
                             .Where(File.Exists).Prepend(Path.Combine(roots["main"], "Host", "MyAvaloniaManagement", "bin", "Release", "net10.0", "Dock.Avalonia.dll"));
                         DockPatchIdentity.Verify(roots["main"], dockAssemblies);
+                        // 必需输出不能用 Where(File.Exists) 过滤，否则丢失 DLL 会被当作无需检查。
+                        var layoutAssemblies = configuration.TestSuites.Where(suite => suite.Id.StartsWith("host-", StringComparison.Ordinal))
+                            .Select(suite => Path.Combine(roots["main"], Path.GetDirectoryName(suite.Project)!, "bin", "Release", "net10.0", "Avalonia.Base.dll"))
+                            .Prepend(Path.Combine(roots["main"], "Host", "MyAvaloniaManagement", "bin", "Release", "net10.0", "Avalonia.Base.dll"));
+                        AvaloniaLayoutPatchIdentity.Verify(roots["main"], layoutAssemblies);
                         break;
                     case "tests":
                         foreach (var suite in configuration.TestSuites)

@@ -4,7 +4,7 @@
 
 ## 行为边界
 
-2026-09-17 已确认“Document 从存活主窗拖入已有浮窗”的布局崩溃，详见[诊断记录](../archive/records/dock-area-fill/cross-window-layout-crash-20260917.md)与[修复方案](../roadmap/host-document-cross-window-layout-crash-fix-plan.md)。下列既有自动化通过记录不代表该故障已修复；新回归需要覆盖旧窗口布局任务尚未完成的时序。
+2026-09-17 已为“Document 从存活主窗拖入已有浮窗”的崩溃接入固定 Avalonia 布局补丁。详见[独立维护指南](dock-cross-window-layout-verification.md)和[修复证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)。原区域回停验证与本次修复分别记录；桌面复验和安装目录更新仍待完成。
 
 鼠标在合法 DocumentDock / ToolDock 正文内、没有指向明确按钮时，默认选择 Fill。已有标签保留，内容合并到目标组；只有空组才表现为填满空区域。不能把“填满”解释为覆盖已有页面。局部四向和外侧全局按钮保留分屏，明确可见按钮被拒绝时不回退成 Fill。标签栏保持排序/插入协议。
 
@@ -17,6 +17,7 @@ Host 的 `DockSplitPolicy` 由预览与提交共同使用：Tool 对主文档区
 在仓库根目录执行：
 
 ```powershell
+pwsh -NoProfile -File tools/Build-AvaloniaLayoutPatch.ps1
 pwsh -NoProfile -File tools/Build-DockAreaFillPackage.ps1
 dotnet restore MyAvaloniaManagement.sln --locked-mode
 dotnet test Host/MyAvaloniaManagement.UiTests -c Release -m:1 --filter 'FullyQualifiedName~DockAreaFill|FullyQualifiedName~DockToolSplit|FullyQualifiedName~DockToolWindowClose|FullyQualifiedName~DockPointerCapture|FullyQualifiedName~DockLayoutV3'

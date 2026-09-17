@@ -6,6 +6,8 @@
 
 插件接入边界是内部可信 Managed Plugin、显式贡献、每插件私有 Provider。Document 是独立工作实例，Tool 是可隐藏的单例投影，业务服务的寿命不依赖面板可见性。修改内部类名不应迫使外部插件跟随；可观察行为由[兼容约束](../reference/compatibility-contracts.md)保护。
 
+跨窗口正文迁移依赖 Host 专用的 Avalonia 布局队列修复：旧根跳过已迁走控件的残留任务，新根正常布局；正文缓存只负责唯一 View 与最终释放。运行时资产选择和摘要检查属于构建层，不进入插件业务或页面生命周期。官方 SDK UI `[12.1.2]` 编译契约保持不变，详见[跨窗布局维护](../../../../docs/maintenance/dock-cross-window-layout-verification.md)。
+
 ## 1. 目标与边界
 
 `MyAvaloniaManagement` 是 Avalonia 桌面宿主，负责：

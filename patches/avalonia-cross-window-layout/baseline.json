@@ -1,0 +1,12 @@
+{
+  "repository": "https://github.com/AvaloniaUI/Avalonia.git",
+  "commit": "d3c867a9e2de379249b03dbeb3495bd7f076a81a",
+  "identity": "avalonia-12.1.2-host-layout.1",
+  "sdkVersion": "10.0.302",
+  "assemblyVersion": "12.1.2.0",
+  "informationalVersion": "12.1.2-host-layout.1",
+  "publicKeyToken": "c8d484a7012f9a8b",
+  "minimumTests": 7,
+  "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+  "pdbSha256": "6AFB032E58490DFB8176C69FB9F6395655AD72CD59E18CE3E0A521C55B22DC67"
+}

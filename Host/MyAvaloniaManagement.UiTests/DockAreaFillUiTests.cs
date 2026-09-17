@@ -342,5 +342,10 @@ public sealed class DockAreaFillUiTests
         public ValueTask InitializeAsync(DocumentActivation activation, CancellationToken cancellationToken) => ValueTask.CompletedTask;
         public void Dispose() => Disposed = true;
     }
-    public sealed class ProbeView : UserControl;
+    // 正文带真实子布局，确保整组移动也会经过测量/安排与模板挂接边界。
+    public sealed class ProbeView : UserControl
+    {
+        public ProbeView() => Content = new Border { Padding = new Thickness(8), Child = new StackPanel
+            { Children = { new TextBlock { Text = "区域回停正文" }, new TextBox { Text = "保留内容" } } } };
+    }
 }
