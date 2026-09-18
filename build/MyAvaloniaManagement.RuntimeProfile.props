@@ -3,7 +3,9 @@
   <PropertyGroup>
     <PluginRuntimeProfileSchema>1</PluginRuntimeProfileSchema>
     <!-- 前瞻不消费扩展名前的点：旧表达式误放行 Avalonia.dll / Ursa.dll，V10 修正该禁带漏洞。 -->
-    <PluginForbiddenAssemblyPattern>^(?:MyAvaloniaManagement(?!\.Icons\.dll$)(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?=\.|$)|Dock\.|Semi\.Avalonia|Ursa(?=\.|$)|Microsoft\.Extensions\.|Newtonsoft\.Json).*\.dll$</PluginForbiddenAssemblyPattern>
+    <!-- DependencyModel 只读取 deps 元数据，不承载 Host/插件公共类型；它不在实际共享闭包内。
+         精确按文件身份例外，不能放开整个 Extensions 家族或 DependencyModel.* 相似名称。 -->
+    <PluginForbiddenAssemblyPattern>^(?:MyAvaloniaManagement(?!\.Icons\.dll$)(?:Common)?|CommunityToolkit\.Mvvm|Avalonia(?=\.|$)|Dock\.|Semi\.Avalonia|Ursa(?=\.|$)|Microsoft\.Extensions\.(?!DependencyModel\.dll$)|Newtonsoft\.Json).*\.dll$</PluginForbiddenAssemblyPattern>
     <PluginForbiddenReferencePattern>^(?:Dock\.|MyAvaloniaManagement$)</PluginForbiddenReferencePattern>
   </PropertyGroup>
   <ItemGroup>
@@ -23,7 +25,8 @@
     <HostSharedAssemblyRoot Include="Microsoft.Extensions.Configuration.Json" Category="Framework" />
     <!-- 保留既有禁带策略，不将历史限制伪装成运行时提供承诺。 -->
     <PluginPackagingRestriction Include="Newtonsoft.Json" Reason="历史禁带；Host 不承诺提供。" />
-    <PluginPackagingRestriction Include="Microsoft.Extensions.*" Reason="家族禁带；Host 仅提供显式根及其实际闭包。" />
+    <PluginPackagingRestriction Include="Microsoft.Extensions.*" Reason="除精确声明的 DependencyModel 外维持禁带；Host 仅提供显式根及其实际闭包。" />
     <PluginPrivateAssembly Include="MyAvaloniaManagement.Icons" Reason="插件私有资源，允许不同版本共存。" />
+    <PluginPrivateAssembly Include="Microsoft.Extensions.DependencyModel" Reason="业务依赖的 deps 元数据读取器，不属于 Host 公共契约或共享闭包。" />
   </ItemGroup>
 </Project>
