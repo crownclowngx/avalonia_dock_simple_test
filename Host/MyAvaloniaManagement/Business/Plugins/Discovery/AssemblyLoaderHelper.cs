@@ -7,6 +7,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using MyAvaloniaManagement.Business.Diagnostics;
+using MyAvaloniaManagement.Business.Plugins.Enablement;
 
 namespace MyAvaloniaManagement.Business.Plugins.Discovery;
 
@@ -26,7 +27,9 @@ internal sealed class PluginDiscoverySnapshot
         IEnumerable<Assembly> assemblies,
         IReadOnlyDictionary<Assembly, PluginManifest> manifestsByAssembly,
         IReadOnlyDictionary<Assembly, Type> moduleTypesByAssembly,
-        IEnumerable<HostDiagnosticDraft> diagnostics)
+        IEnumerable<HostDiagnosticDraft> diagnostics,
+        IEnumerable<PluginDiscoveryCandidate>? candidates = null,
+        PluginEnablementReadResult? startupSettings = null)
     {
         Assemblies = new ReadOnlyCollection<Assembly>(assemblies.ToArray());
         _manifestsByAssembly = new ReadOnlyDictionary<Assembly, PluginManifest>(
@@ -34,6 +37,8 @@ internal sealed class PluginDiscoverySnapshot
         _moduleTypesByAssembly = new ReadOnlyDictionary<Assembly, Type>(
             new Dictionary<Assembly, Type>(moduleTypesByAssembly));
         Diagnostics = new ReadOnlyCollection<HostDiagnosticDraft>(diagnostics.ToArray());
+        Candidates = Array.AsReadOnly((candidates ?? []).ToArray());
+        StartupSettings = startupSettings ?? PluginEnablementReadResult.Default;
     }
 
     /// <summary>供无插件 Host 与测试组合根使用的显式空快照。</summary>
@@ -46,6 +51,11 @@ internal sealed class PluginDiscoverySnapshot
     internal IReadOnlyList<Assembly> Assemblies { get; }
 
     internal IReadOnlyList<HostDiagnosticDraft> Diagnostics { get; }
+
+    /// <summary>完整且不持有程序集的已验证候选；禁用或加载失败也必须留在看板中。</summary>
+    internal IReadOnlyList<PluginDiscoveryCandidate> Candidates { get; }
+    /// <summary>本次首次发现使用的冻结策略；运行中保存或重读配置不能改写它。</summary>
+    internal PluginEnablementReadResult StartupSettings { get; }
 
     /// <summary>
     /// 取得与已加载程序集来自同一次发现快照的已验证清单。
@@ -72,44 +82,54 @@ internal sealed class PluginDiscoverySnapshot
     }
 }
 
+/// <summary>清单和目录身份来自同次发现；能否加载只由启动策略决定，不冒充运行成功事实。</summary>
+internal sealed record PluginDiscoveryCandidate(string DirectoryPath, PluginManifest Manifest);
+
 /// <summary>
 /// 从部署目录建立使用 manifest schema 2 的 Managed Plugin 不可变发现快照。
 /// </summary>
 /// <remarks>
-/// 同一规范化根目录只生成一次不可变快照。每个插件目录必须通过清单、deps 和精确入口类型预检，
-/// 并使用独立加载上下文；失败目录不会进入后续服务注册或扩展发现。
+/// 同一规范化插件根与数据根组合只生成一次不可变快照。所有目录先验证清单身份，
+/// 启用项再通过 deps 和精确入口类型预检并使用独立加载上下文；禁用项只保留候选身份。
 /// </remarks>
 internal static class AssemblyLoaderHelper
 {
     private static readonly IPluginSharedAssemblyPolicy SharedAssemblyPolicy =
         new HostContractAssemblyPolicy();
 
-    private static readonly ConcurrentDictionary<string, Lazy<PluginDiscoverySnapshot>> RootSnapshots =
-        new(StringComparer.OrdinalIgnoreCase);
+    private static readonly ConcurrentDictionary<(string Root, string DataRoot), Lazy<PluginDiscoverySnapshot>> RootSnapshots = new();
 
     private sealed record ManifestCandidate(string DirectoryPath, PluginManifest Manifest);
 
     /// <summary>
     /// 取得生产组合根使用的完整发现快照。
     /// </summary>
-    internal static PluginDiscoverySnapshot Discover(string rootPluginsDirName)
+    internal static PluginDiscoverySnapshot Discover(string rootPluginsDirName,
+        PluginEnablementReadResult? startupSettings = null, string? dataRoot = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPluginsDirName);
         var rootPath = PluginRootDirectoryPolicy.Resolve(
             AppContext.BaseDirectory, rootPluginsDirName, OperatingSystem.IsMacOS());
+        // 仅规范路径参与缓存键；不能把设置摘要作为键，否则切换开关会产生第二次加载。
+        // 未传数据根的内部测试沿用默认全启用，不偷偷读取开发者的生产设置。
+        static string KeyPath(string path) => OperatingSystem.IsWindows() ? path.ToUpperInvariant() : path;
+        var key = (KeyPath(rootPath), dataRoot is null ? string.Empty : KeyPath(Path.GetFullPath(dataRoot)));
         return RootSnapshots.GetOrAdd(
-            rootPath,
-            static path => new Lazy<PluginDiscoverySnapshot>(
-                () => LoadRootSnapshot(path),
+            key,
+            _ => new Lazy<PluginDiscoverySnapshot>(
+                () => LoadRootSnapshot(rootPath, startupSettings ?? PluginEnablementReadResult.Default),
                 LazyThreadSafetyMode.ExecutionAndPublication)).Value;
     }
 
-    private static PluginDiscoverySnapshot LoadRootSnapshot(string rootPath)
+    private static PluginDiscoverySnapshot LoadRootSnapshot(string rootPath, PluginEnablementReadResult startupSettings)
     {
         var loaded = new List<Assembly>();
         var manifestsByAssembly = new Dictionary<Assembly, PluginManifest>();
         var moduleTypesByAssembly = new Dictionary<Assembly, Type>();
         var diagnostics = new List<HostDiagnosticDraft>();
+        var inventory = new List<PluginDiscoveryCandidate>();
+        if (startupSettings.ErrorCode is { } settingsError)
+            diagnostics.Add(new(settingsError, HostDiagnosticPhase.PluginRootDiscovery));
 
         try
         {
@@ -120,7 +140,7 @@ internal static class AssemblyLoaderHelper
                     loaded,
                     manifestsByAssembly,
                     moduleTypesByAssembly,
-                    diagnostics);
+                    diagnostics, inventory, startupSettings);
             }
 
             // 第一阶段严格限制为文件系统与 JSON 操作。只有所有清单身份都无歧义后，
@@ -143,6 +163,7 @@ internal static class AssemblyLoaderHelper
                 }
 
                 candidates.Add(new ManifestCandidate(pluginDirectory, manifest!));
+                inventory.Add(new(pluginDirectory, manifest!));
             }
 
             var duplicateIdentities = candidates
@@ -168,11 +189,14 @@ internal static class AssemblyLoaderHelper
                     loaded,
                     manifestsByAssembly,
                     moduleTypesByAssembly,
-                    diagnostics);
+                    diagnostics, inventory, startupSettings);
             }
 
             foreach (var candidate in candidates)
             {
+                // 保留清单供看板重新启用，但在任何 ALC、DLL、构造及兼容执行之前过滤。
+                // 无可靠配置表示暂停加载；不能将读取失败误解释为空禁用集合。
+                if (startupSettings.Settings?.IsEnabled(candidate.Manifest.PluginId) != true) continue;
                 if (!PluginCompatibilityEvaluator.TryEvaluate(
                         candidate.Manifest,
                         PluginSdkCompatibilityProfile.Current,
@@ -211,7 +235,7 @@ internal static class AssemblyLoaderHelper
             loaded,
             manifestsByAssembly,
             moduleTypesByAssembly,
-            diagnostics);
+            diagnostics, inventory, startupSettings);
     }
 
     private static void LoadPluginDirectory(

@@ -19,7 +19,16 @@ internal sealed record PluginStatusItem(
     public bool IsAvailable { get; init; }
     public bool HasProblem { get; init; }
     public string StatusSymbol => HasProblem ? "⚠" : IsAvailable ? "✓" : "○";
-    public string StatusLabel => HasProblem ? "异常 / 警告" : IsAvailable ? "可用" : "未就绪 / 已停止";
+    public string StatusLabel => (HasProblem ? "异常 / 警告" : IsDisabled ? "已禁用" : IsAvailable ? "可用" : "未就绪 / 已停止")
+        + (RequiresRestart ? " · " + RestartText : string.Empty);
+    /// <summary>启动与下次设置独立于可用性；null 表示无法确认，不能当作用户禁用。</summary>
+    public bool? EnabledAtStartup { get; init; }
+    public bool? NextStartupEnabled { get; init; }
+    public bool CanSetEnablement { get; init; }
+    public bool IsDisabled => EnabledAtStartup == false;
+    public bool RequiresRestart => EnabledAtStartup.HasValue && NextStartupEnabled.HasValue && EnabledAtStartup != NextStartupEnabled;
+    public string NextStartupText => NextStartupEnabled is null ? "设置未知" : NextStartupEnabled.Value ? "启用" : "禁用";
+    public string RestartText => !RequiresRestart ? string.Empty : NextStartupEnabled == true ? "待启用，重启后尝试加载" : "待禁用，重启后生效";
     public IReadOnlyList<PluginContributionItem> Contributions { get; init; } = [];
     public IReadOnlyList<PluginDiagnosticItem> Diagnostics { get; init; } = [];
     public bool HasContributions => Contributions.Count > 0;
@@ -27,7 +36,7 @@ internal sealed record PluginStatusItem(
     public string ContributionSummary => $"已声明 {Contributions.Count} 项贡献 · {(IsAvailable ? "插件可用" : "插件当前不可用")}";
 
     /// <summary>搜索仅扫描快照；输入关键词不会调用任何插件工厂或触发磁盘发现。</summary>
-    public bool Matches(string text) => new[] { PluginId, AssemblyName, VersionText, StatusText, Detail }
+    public bool Matches(string text) => new[] { PluginId, AssemblyName, VersionText, StatusText, StatusLabel, Detail, RestartText }
         .Concat(Diagnostics.Select(item => item.Code + " " + item.Message))
         .Any(value => value.Contains(text, System.StringComparison.OrdinalIgnoreCase));
 

@@ -7,6 +7,7 @@ using System.Runtime.Loader;
 using System.Threading;
 using System.Threading.Tasks;
 using MyAvaloniaManagement.Business.Plugins.Registration;
+using MyAvaloniaManagement.Business.Plugins.Discovery;
 
 namespace MyAvaloniaManagement.Business.Compatibility;
 
@@ -30,7 +31,7 @@ internal sealed record PluginDashboardSnapshot(HostCompatibilityIdentity? Host,
 /// 尚未执行首次检查时不声称拥有启动时的全目录摘要；报告读取和导入不会自动扫描大型插件。
 /// </remarks>
 internal sealed class PluginDashboardEvidence(PluginRegistry registry, CompatibilityReportStore store,
-    TimeProvider time, string? deliveredDirectory = null) : IPluginDashboardEvidence
+    TimeProvider time, string? deliveredDirectory = null, PluginDiscoverySnapshot? discovery = null) : IPluginDashboardEvidence
 {
     private readonly ConcurrentDictionary<string, string> _firstHashes = new(StringComparer.Ordinal);
 
@@ -75,6 +76,21 @@ internal sealed class PluginDashboardEvidence(PluginRegistry registry, Compatibi
             }
             catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or BadImageFormatException or System.Text.Json.JsonException)
             { artifacts.Add(new(id, null, "产物不可读取或检查期间发生变化；保留当前会话诊断，请重试。")); }
+        }
+        // 未加载候选只检查磁盘文件；不能为查看产物而加载 DLL，也不能使用已核对运行实例的文案。
+        foreach (var candidate in (discovery?.Candidates ?? []).DistinctBy(item => item.Manifest.PluginId))
+        {
+            var id = candidate.Manifest.PluginId.Value;
+            if (artifacts.Any(item => item.PluginId == id)) continue;
+            try
+            {
+                var artifact = await PluginArtifactReader.ReadAsync(candidate.DirectoryPath, token);
+                artifacts.Add(artifact.PluginId == id
+                    ? new(id, artifact, "已检查磁盘产物，本次未加载；不代表已验证运行兼容性。")
+                    : new(id, null, "磁盘插件身份已变化，请重启 Host 后重新检查。"));
+            }
+            catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException or BadImageFormatException or System.Text.Json.JsonException)
+            { artifacts.Add(new(id, null, "未加载候选的磁盘产物不可读取；插件开关与本次发现事实保持不变。")); }
         }
         return new PluginDashboardSnapshot(host, artifacts, reports, invalid, time.GetUtcNow(), notice);
     }, token);

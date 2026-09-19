@@ -12,6 +12,8 @@ using MyAvaloniaManagement.Business.Documents.Ownership;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Plugins.Discovery;
+using MyAvaloniaManagement.Business.Plugins.Enablement;
+using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels;
@@ -49,8 +51,17 @@ internal sealed class HostRuntime : IDisposable
         services.AddSingleton(diagnostics);
         services.AddSingleton<IHostDiagnosticSink>(diagnostics);
 
+        var dataRoot = HostDataRootPolicy.ResolveDefault();
+        var enablementStore = new PluginEnablementSettingsStore(System.IO.Path.Combine(dataRoot, PluginEnablementSettingsStore.FileName));
+        var settings = enablementStore.Load();
         var discovery = AssemblyLoaderHelper.Discover(
-            PluginDeploymentConstants.PluginsSubdirectory);
+            PluginDeploymentConstants.PluginsSubdirectory, settings, dataRoot);
+        // 本次启动事实由发现缓存拥有，下次意图由服务拥有；两个引用不能在保存时一起更新。
+        services.AddSingleton(discovery);
+        var enablement = new PluginEnablementService(enablementStore, settings,
+            discovery.Candidates.Select(candidate => candidate.Manifest.PluginId), diagnostics);
+        services.AddSingleton<IPluginEnablementState>(enablement);
+        services.AddSingleton<IPluginEnablementActions>(enablement);
         discovery.PublishDiagnostics(diagnostics);
         ThrowIfStartupMustAbort(diagnostics);
 

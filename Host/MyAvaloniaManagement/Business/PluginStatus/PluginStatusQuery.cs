@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Lifecycle;
+using MyAvaloniaManagement.Business.Plugins.Discovery;
+using MyAvaloniaManagement.Business.Plugins.Enablement;
+using System.IO;
 using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.Models.Plugins;
 using MyAvaloniaManagement.PluginSdk;
@@ -18,22 +21,30 @@ internal interface IPluginStatusQuery
 /// <summary>组合已提交的插件声明、生命周期事实和本次会话诊断，生成无副作用的状态快照。</summary>
 /// <remarks>
 /// 设计思路：Registry 决定声明，Availability 决定贡献是否开放，诊断补足加载失败的候选。
-/// 三者仍由原组件拥有；这里不建立第二套运行状态，不扫描目录，也不激活插件。
+/// 发现快照补足未加载身份，设置服务提供下次意图。各事实仍由原组件拥有；
+/// 这里不建立第二套运行状态，不扫描目录，也不激活插件。
 /// 诊断按稳定身份合并，避免同一插件因多个失败阶段重复占行。
 /// </remarks>
 internal sealed class PluginStatusQuery(
     PluginRegistry registry,
     PluginAvailabilityReadModel availability,
-    HostDiagnosticSession? diagnostics = null) : IPluginStatusQuery
+    HostDiagnosticSession? diagnostics = null,
+    PluginDiscoverySnapshot? discovery = null,
+    IPluginEnablementState? enablement = null) : IPluginStatusQuery
 {
     public IReadOnlyList<PluginStatusItem> Capture()
     {
         var records = diagnostics?.Snapshot ?? [];
+        var candidates = discovery?.Candidates ?? [];
+        var identities = candidates.ToLookup(candidate => candidate.Manifest.PluginId.Value, StringComparer.Ordinal);
+        var settings = enablement?.Current;
         // 早期诊断可能只有目录，后续诊断才取得 PluginId。只有目录明确对应唯一身份时才关联，
         // 防止把两个不同插件的故障混在一起；大小写策略与原目录发现机制保持一致。
         var directoryOwners = records.Where(item => item.PluginDirectory is not null && item.PluginId is not null)
-            .GroupBy(item => item.PluginDirectory!, StringComparer.OrdinalIgnoreCase)
-            .Select(group => (Directory: group.Key, Ids: group.Select(item => item.PluginId!).Distinct(StringComparer.Ordinal).ToArray()))
+            .Select(item => (Directory: item.PluginDirectory!, Id: item.PluginId!))
+            .Concat(candidates.Select(item => (Directory: Path.GetFileName(item.DirectoryPath), Id: item.Manifest.PluginId.Value)))
+            .GroupBy(item => item.Directory, StringComparer.OrdinalIgnoreCase)
+            .Select(group => (Directory: group.Key, Ids: group.Select(item => item.Id).Distinct(StringComparer.Ordinal).ToArray()))
             .Where(group => group.Ids.Length == 1)
             .ToDictionary(group => group.Directory, group => group.Ids[0], StringComparer.OrdinalIgnoreCase);
         string? Identity(HostDiagnosticRecord record)
@@ -67,6 +78,29 @@ internal sealed class PluginStatusQuery(
                 Diagnostics = ToDiagnostics(pluginRecords)
             });
         }
+        // Registry 只含成功提交的插件。候选快照补足禁用和加载前失败，不依靠伪造错误来保留行。
+        var registeredKeys = result.Select(item => item.Key).ToHashSet(StringComparer.Ordinal);
+        foreach (var candidate in candidates.DistinctBy(item => item.Manifest.PluginId))
+        {
+            var manifest = candidate.Manifest;
+            var key = "plugin:" + manifest.PluginId.Value;
+            if (registeredKeys.Contains(key)) continue;
+            var candidateRecords = groups.GetValueOrDefault(key) ?? [];
+            groups.Remove(key);
+            var enabled = discovery!.StartupSettings.Settings?.IsEnabled(manifest.PluginId);
+            var item = enabled == true && candidateRecords.Length > 0
+                ? PluginStatusPresentation.ForRejectedCandidate(candidateRecords)
+                : new PluginStatusItem(manifest.PluginId.Value, Path.GetFileNameWithoutExtension(manifest.EntryPoint.Assembly),
+                    enabled == false ? "已禁用 · 未加载" : enabled is null ? "配置不可用 · 本次未加载" : "未完成加载",
+                    "—", "不可用", enabled == false ? "本次启动按用户设置跳过插件；重新启用将在重启 Host 后尝试加载。" :
+                    enabled is null ? discovery.StartupSettings.Message : "插件未进入已提交的注册表，请查看本次诊断。");
+            result.Add(item with
+            {
+                Key = key, PluginId = manifest.PluginId.Value,
+                VersionText = PluginVersionText.Format(manifest.PluginVersion), CompatibilityText = $"Plugin SDK {manifest.Sdk}",
+                HasProblem = enabled != false || candidateRecords.Any(IsProblem), Diagnostics = ToDiagnostics(candidateRecords),
+            });
+        }
         foreach (var group in groups)
         {
             // 插件专属的后续命令诊断不代表发现了一个新插件。只有加载/注册阶段的事实才能补候选。
@@ -78,7 +112,18 @@ internal sealed class PluginStatusQuery(
                 Diagnostics = ToDiagnostics(group.Value)
             });
         }
-        return result.OrderByDescending(item => item.HasProblem)
+        return result.Select(item =>
+            {
+                var matches = identities[item.PluginId];
+                if (matches.Count() != 1) return item;
+                var id = matches.First().Manifest.PluginId;
+                return item with
+                {
+                    EnabledAtStartup = discovery!.StartupSettings.Settings?.IsEnabled(id),
+                    NextStartupEnabled = settings?.Settings?.IsEnabled(id),
+                    CanSetEnablement = settings?.CanWrite == true,
+                };
+            }).OrderByDescending(item => item.HasProblem)
             .ThenBy(item => item.PluginId, StringComparer.Ordinal).ToArray();
     }
 

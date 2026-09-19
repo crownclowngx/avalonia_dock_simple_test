@@ -34,7 +34,7 @@
         <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
             <StackPanel Spacing="5">
                 <TextBlock Text="插件看板" FontSize="25" FontWeight="SemiBold" />
-                <TextBlock Text="当前状态 · 版本与产物 · 分层验收证据" Classes="secondary" />
+                <TextBlock Text="当前状态 · 插件开关（重启生效） · 版本与验收证据" Classes="secondary" />
             </StackPanel>
             <WrapPanel Grid.Column="1" MaxWidth="300" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <Button x:Name="RefreshButton" Content="刷新状态" Command="{Binding RefreshCommand}" Margin="4" />
@@ -97,6 +97,21 @@
                 <TabItem Header="概览">
                     <ScrollViewer HorizontalScrollBarVisibility="Disabled">
                         <StackPanel Spacing="12" Margin="0,12,10,0">
+                            <Border Classes="details-card">
+                                <StackPanel Spacing="8">
+                                    <TextBlock Text="插件启用设置" Classes="section-title" />
+                                    <TextBlock Text="{Binding SelectedItem.StatusText, StringFormat='当前会话：{0}'}" TextWrapping="Wrap" />
+                                    <ToggleSwitch x:Name="PluginEnablementSwitch" Content="下次启动启用" OnContent="启用" OffContent="禁用"
+                                                  IsChecked="{Binding SelectedNextStartupEnabled, Mode=OneWay}"
+                                                  Command="{Binding ToggleEnablementCommand}" IsEnabled="{Binding CanChangeEnablement}" />
+                                    <TextBlock Text="{Binding SelectedItem.RestartText}" IsVisible="{Binding SelectedItem.RequiresRestart}" TextWrapping="Wrap" />
+                                    <TextBlock Text="修改保存后，完整退出并重新启动 Host 才会生效。" Classes="secondary" />
+                                    <TextBlock Text="{Binding EnablementUnavailableReason}" IsVisible="{Binding !CanChangeEnablement}" Classes="secondary" />
+                                    <TextBlock x:Name="EnablementFeedbackText" Text="{Binding EnablementFeedback}" IsVisible="{Binding HasEnablementFeedback}" TextWrapping="Wrap" />
+                                    <Button x:Name="ReloadEnablementButton" Content="重新读取设置" Command="{Binding ReloadEnablementCommand}"
+                                            HorizontalAlignment="Left" ToolTip.Tip="读取其他实例保存的下次启动选择，不重新加载插件。" />
+                                </StackPanel>
+                            </Border>
                             <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsInspecting}" Height="3" />
                             <TextBlock Text="{Binding EvidenceNotice}" Classes="secondary" />
                             <TextBlock Text="{Binding EvidenceTimeText}" Classes="secondary" FontSize="11" />

@@ -6,6 +6,7 @@ using MyAvaloniaManagement.Business.Compatibility;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels.PluginStatus;
 using MyAvaloniaManagement.Views.PluginStatus;
+using MyAvaloniaManagement.Business.Plugins.Enablement;
 
 namespace MyAvaloniaManagement.Business.Presentation;
 
@@ -16,7 +17,7 @@ namespace MyAvaloniaManagement.Business.Presentation;
 /// 主窗口真正关闭才释放窗口，取消主窗口关闭不会破坏后续使用。
 /// </remarks>
 internal sealed class PluginStatusWindowService(IPluginStatusQuery query, WorkspaceSession workspace, TimeProvider time,
-    IPluginDashboardEvidence? evidence = null) : IDisposable
+    IPluginDashboardEvidence? evidence = null, IPluginEnablementActions? enablement = null) : IDisposable
 {
     private Window? _owner;
     private PluginStatusWindow? _window;
@@ -45,7 +46,7 @@ internal sealed class PluginStatusWindowService(IPluginStatusQuery query, Worksp
             existing.Activate();
             return;
         }
-        var model = new PluginStatusWindowViewModel(query, time, evidence);
+        var model = new PluginStatusWindowViewModel(query, time, evidence, enablement, () => workspace.CanOperateTools);
         model.Refresh();
         var window = new PluginStatusWindow { DataContext = model };
         _window = window;
@@ -63,6 +64,8 @@ internal sealed class PluginStatusWindowService(IPluginStatusQuery query, Worksp
             }
             window.Activated += WindowActivated;
             window.Closed += WindowClosed;
+            workspace.LayoutChanged += WorkspaceChanged;
+            workspace.PagesChanged += WorkspaceChanged;
             window.Show(_owner);
             _ = model.LoadEvidenceAsync();
         }
@@ -81,11 +84,18 @@ internal sealed class PluginStatusWindowService(IPluginStatusQuery query, Worksp
     private void WindowActivated(object? sender, EventArgs args) => Refresh();
     private void OwnerClosed(object? sender, EventArgs args) => Dispose();
     private void WindowClosed(object? sender, EventArgs args) => ReleaseWindow();
+    private void WorkspaceChanged(object? sender, EventArgs args)
+    {
+        void Update() => (_window?.DataContext as PluginStatusWindowViewModel)?.NotifyEnablementChanged();
+        if (Dispatcher.UIThread.CheckAccess()) Update(); else Dispatcher.UIThread.Post(Update);
+    }
 
     private void ReleaseWindow()
     {
         if (_window is not { } window) return;
         _window = null;
+        workspace.LayoutChanged -= WorkspaceChanged;
+        workspace.PagesChanged -= WorkspaceChanged;
         window.Activated -= WindowActivated;
         window.Closed -= WindowClosed;
         (window.DataContext as PluginStatusWindowViewModel)?.Dispose();

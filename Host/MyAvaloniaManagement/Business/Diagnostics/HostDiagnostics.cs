@@ -286,6 +286,10 @@ internal static class HostDiagnosticRedactionPolicy
             "诊断持久化暂不可用，本次会话仍保留受控内存记录。",
         HostDiagnosticCodes.PluginRootScanFailed =>
             "无法完成插件根目录扫描，宿主不能确认本次启动的插件集合。",
+        "PLUGIN_ENABLEMENT_RECOVERED" or "PLUGIN_ENABLEMENT_SCHEMA_UNSUPPORTED" or
+        "PLUGIN_ENABLEMENT_INVALID" or "PLUGIN_ENABLEMENT_READ_FAILED" or
+        "PLUGIN_ENABLEMENT_CONFLICT" or "PLUGIN_ENABLEMENT_WRITE_FAILED" =>
+            MyAvaloniaManagement.Business.Plugins.Enablement.PluginEnablementMessages.ForCode(code),
         HostDiagnosticCodes.PluginManifestMissing or
         HostDiagnosticCodes.PluginManifestInvalid or
         HostDiagnosticCodes.PluginManifestSchemaUnsupported or
@@ -509,7 +513,7 @@ internal static class HostDiagnosticFailurePolicy
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(code);
 
-        if (code == HostDiagnosticCodes.PersistenceUnavailable ||
+        if (code == "PLUGIN_ENABLEMENT_RECOVERED" || code == HostDiagnosticCodes.PersistenceUnavailable ||
             phase is HostDiagnosticPhase.Layout or HostDiagnosticPhase.IconPresentation)
         {
             return (HostDiagnosticSeverity.Warning, HostDiagnosticDisposition.Continue);

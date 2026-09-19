@@ -22,6 +22,7 @@ using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Presentation.Commands;
 using MyAvaloniaManagement.Business.Presentation.Icons;
 using MyAvaloniaManagement.Business.Plugins.Discovery;
+using MyAvaloniaManagement.Business.Plugins.Enablement;
 using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Workspace;
@@ -95,12 +96,14 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<IPluginStatusQuery>(provider => new PluginStatusQuery(
             provider.GetRequiredService<PluginRegistry>(),
             provider.GetRequiredService<PluginAvailabilityReadModel>(),
-            provider.GetService<HostDiagnosticSession>() ?? provider.GetService<IHostDiagnosticSink>() as HostDiagnosticSession));
+            provider.GetService<HostDiagnosticSession>() ?? provider.GetService<IHostDiagnosticSink>() as HostDiagnosticSession,
+            provider.GetService<PluginDiscoverySnapshot>(), provider.GetService<IPluginEnablementState>()));
         services.AddSingleton<PluginStatusWindowService>();
         services.AddSingleton(_ => new CompatibilityReportStore(System.IO.Path.Combine(HostDataRootPolicy.ResolveDefault(), "compatibility", "reports")));
         services.AddSingleton<IPluginDashboardEvidence>(provider => new PluginDashboardEvidence(
             provider.GetRequiredService<PluginRegistry>(), provider.GetRequiredService<CompatibilityReportStore>(),
-            provider.GetRequiredService<TimeProvider>(), System.IO.Path.Combine(AppContext.BaseDirectory, "CompatibilityReports")));
+            provider.GetRequiredService<TimeProvider>(), System.IO.Path.Combine(AppContext.BaseDirectory, "CompatibilityReports"),
+            provider.GetService<PluginDiscoverySnapshot>()));
         services.AddSingleton<HostOpenPluginStatusCommandHandler>();
         services.AddSingleton<ApplicationThemeService>();
         services.AddSingleton<HelpContentCatalog>();

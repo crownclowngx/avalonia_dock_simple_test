@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MyAvaloniaManagement.Business.PluginStatus;
 using MyAvaloniaManagement.Models.Plugins;
+using MyAvaloniaManagement.Business.Plugins.Enablement;
 
 namespace MyAvaloniaManagement.ViewModels.PluginStatus;
 
@@ -24,11 +25,14 @@ internal sealed partial class PluginStatusWindowViewModel : ObservableObject, ID
     private bool _updatingSelection;
 
     public PluginStatusWindowViewModel(IPluginStatusQuery query, TimeProvider time,
-        MyAvaloniaManagement.Business.Compatibility.IPluginDashboardEvidence? evidence = null)
+        MyAvaloniaManagement.Business.Compatibility.IPluginDashboardEvidence? evidence = null,
+        IPluginEnablementActions? enablement = null, Func<bool>? canOperate = null)
     {
         _query = query ?? throw new ArgumentNullException(nameof(query));
         _time = time ?? throw new ArgumentNullException(nameof(time));
         _evidence = evidence;
+        _enablement = enablement;
+        _canOperate = canOperate ?? (() => true);
     }
 
     [ObservableProperty] private string _searchText = string.Empty;
@@ -42,7 +46,7 @@ internal sealed partial class PluginStatusWindowViewModel : ObservableObject, ID
     [ObservableProperty] private string _errorMessage = string.Empty;
     [ObservableProperty] private string _copyFeedback = string.Empty;
 
-    public IReadOnlyList<string> Filters { get; } = ["全部", "可用", "异常"];
+    public IReadOnlyList<string> Filters { get; } = ["全部", "可用", "异常", "已禁用", "待重启"];
     public bool HasSelection => SelectedItem is not null;
     public bool HasNoResults => VisibleItems.Count == 0;
     public bool HasError => ErrorMessage.Length > 0;
@@ -63,6 +67,7 @@ internal sealed partial class PluginStatusWindowViewModel : ObservableObject, ID
             UpdatedText = $"更新于 {_time.GetLocalNow():HH:mm:ss} · 当前会话";
             ErrorMessage = string.Empty;
             ApplyFilter();
+            NotifyEnablementChanged();
         }
         catch (Exception)
         {
@@ -80,13 +85,15 @@ internal sealed partial class PluginStatusWindowViewModel : ObservableObject, ID
         CopyFeedback = string.Empty;
         OnPropertyChanged(nameof(HasSelection));
         UpdateEvidenceSelection();
+        NotifyEnablementChanged();
     }
 
     private void ApplyFilter()
     {
         var search = SearchText.Trim();
         var next = _items.Where(item => SelectedFilter switch
-            { "可用" => item.IsAvailable, "异常" => item.HasProblem, _ => true })
+            { "可用" => item.IsAvailable, "异常" => item.HasProblem, "已禁用" => item.IsDisabled,
+                "待重启" => item.RequiresRestart, _ => true })
             .Where(item => search.Length == 0 || item.Matches(search)).ToArray();
         // ItemsSource 更新可能让 ListBox 暂时回写 null，不能让这一瞬间覆盖稳定选择键。
         _updatingSelection = true;
@@ -111,6 +118,7 @@ internal sealed partial class PluginStatusWindowViewModel : ObservableObject, ID
             .AppendLine($"版本：{item.VersionText}").AppendLine($"兼容：{item.CompatibilityText}")
             .AppendLine($"程序集：{item.AssemblyName}").AppendLine($"状态：{item.StatusText}")
             .AppendLine($"可用性：{item.AvailabilityText}").AppendLine($"耗时：{item.DurationText}")
+            .AppendLine($"下次启动：{item.NextStartupText}").AppendLine(item.RestartText).AppendLine(EnablementNotice)
             .AppendLine(item.Detail).AppendLine(UpdatedText);
         foreach (var record in item.Diagnostics)
             text.AppendLine($"{record.TimeText} [{record.SeverityText}] [{record.Code}] {record.PhaseText}：{record.Message}")
