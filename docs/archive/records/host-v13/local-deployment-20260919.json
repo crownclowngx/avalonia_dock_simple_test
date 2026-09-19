@@ -1,7 +1,516 @@
 {
   "schemaVersion": 1,
-  "status": "pending-build-and-deployment",
+  "recordType": "host-v13-local-single-exe-deployment",
+  "status": "completed",
+  "deploymentCompleted": true,
+  "date": "2026-09-19",
   "target": "C:\\Users\\admin\\Desktop\\工作台",
-  "format": "Release win-x64 self-contained single EXE",
-  "deploymentCompleted": false
+  "executable": "C:\\Users\\admin\\Desktop\\工作台\\MyAvaloniaManagement.exe",
+  "sourceRevision": "83902b9feb4211e83f83d910c26f42fcbee14376",
+  "sourceCommit": "83902b9",
+  "branch": "master",
+  "sourceWorkingTreeCleanAtArchive": true,
+  "format": "Release win-x64 self-contained single EXE; native libraries bundled; compression enabled; no trimming",
+  "buildConfiguration": {
+    "sdk": "10.0.302",
+    "configuration": "Release",
+    "runtimeIdentifier": "win-x64",
+    "selfContained": true,
+    "publishSingleFile": true,
+    "includeNativeLibrariesForSelfExtract": true,
+    "enableCompressionInSingleFile": true,
+    "publishTrimmed": false,
+    "skipPluginDeploy": true,
+    "debugType": "embedded",
+    "restoreArguments": [
+      "restore",
+      "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj",
+      "-r",
+      "win-x64",
+      "-p:SelfContained=true",
+      "-p:PublishSingleFile=true",
+      "-p:PublishTrimmed=false",
+      "-p:SkipPluginDeploy=true",
+      "--nologo"
+    ],
+    "publishArguments": [
+      "publish",
+      "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj",
+      "-c",
+      "Release",
+      "-r",
+      "win-x64",
+      "--self-contained",
+      "true",
+      "--no-restore",
+      "--nologo",
+      "-p:PublishSingleFile=true",
+      "-p:IncludeNativeLibrariesForSelfExtract=true",
+      "-p:EnableCompressionInSingleFile=true",
+      "-p:PublishTrimmed=false",
+      "-p:SkipPluginDeploy=true",
+      "-p:DebugType=embedded",
+      "-p:CopyOutputSymbolsToPublishDirectory=false",
+      "-p:SourceRevisionId=83902b9feb4211e83f83d910c26f42fcbee14376",
+      "-warnaserror",
+      "-m:1",
+      "-o",
+      "D:\\code\\bishe\\common\\avalonia_dock_simple_test\\artifacts\\host-v13\\deployment-20260919-desktop\\publish"
+    ],
+    "restoreExitCode": 0,
+    "publishExitCode": 0,
+    "warnings": 0,
+    "errors": 0,
+    "sourceSnapshot": "git archive of fixed commit; RID restore and publish only in isolated source; main repository lock files unchanged"
+  },
+  "exeSha256": "2B9002EFBF784D7B770E207CFB5723E5A4980ED20EFE11956ABE5220479E4852",
+  "exeBytes": 53514327,
+  "exeProductVersion": "3.0.0+83902b9feb4211e83f83d910c26f42fcbee14376",
+  "includedFrameworks": [
+    {
+      "name": "Microsoft.NETCore.App",
+      "version": "10.0.10"
+    }
+  ],
+  "bundleVerification": {
+    "passed": true,
+    "exe": "C:\\Users\\admin\\Desktop\\工作台\\MyAvaloniaManagement.exe",
+    "exeSha256": "2B9002EFBF784D7B770E207CFB5723E5A4980ED20EFE11956ABE5220479E4852",
+    "exeBytes": 53514327,
+    "bundleVersion": "6.0",
+    "bundleId": "bleosqlse_DV",
+    "entryCount": 238,
+    "hostAndCoreLibBundled": true,
+    "nativeGraphicsLibrariesBundled": true,
+    "selfContained": true,
+    "includedFrameworks": [
+      {
+        "name": "Microsoft.NETCore.App",
+        "version": "10.0.10"
+      }
+    ],
+    "avaloniaSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+    "dockSha256": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1",
+    "dockVersion": "12.1.0.7-area.5",
+    "checkedAtUtc": "2026-09-19T16:16:08.340832+08:00"
+  },
+  "avaloniaPatchReceipt": {
+    "identity": "avalonia-12.1.2-host-layout.1",
+    "fingerprint": "9DB8A580DD77C384C8969F2284FFB27240CCFF35424CA23E1DB38E44DE3BA46C",
+    "commit": "d3c867a9e2de379249b03dbeb3495bd7f076a81a",
+    "sdk": "10.0.302",
+    "publicSigned": true,
+    "assembly": "Avalonia.Base, Version=12.1.2.0, Culture=neutral, PublicKeyToken=c8d484a7012f9a8b",
+    "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+    "pdbSha256": "6AFB032E58490DFB8176C69FB9F6395655AD72CD59E18CE3E0A521C55B22DC67",
+    "buildRoot": "D:\\code\\bishe\\common\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\9DB8A580DD77C384-01c7da5c",
+    "isolatedRestore": false,
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "testTrx": "D:\\code\\bishe\\common\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\9DB8A580DD77C384-01c7da5c\\results\\layout-patch.trx",
+    "testSha256": "FD1D67DBA0666497A4DED20BAA00A3B8AB99C4A4956FCB8C742DA619C8D58437"
+  },
+  "dockPackageSha256": "F697CFF4F1411C6B437DB3803671B761B441AB75CD7BED11E6AC0787389B33C9",
+  "startupVerification": {
+    "passed": true,
+    "exitCode": 0,
+    "pid": 34520,
+    "isolatedData": "D:\\code\\bishe\\common\\avalonia_dock_simple_test\\artifacts\\host-v13\\deployment-20260919-desktop\\startup-data",
+    "originalUserDataTouched": false,
+    "externalPluginsLoaded": false,
+    "layoutSchema": 3,
+    "stderrEmpty": true,
+    "dotnetRootOverride": "D:\\code\\bishe\\common\\avalonia_dock_simple_test\\artifacts\\host-v13\\deployment-20260919-desktop\\nonexistent-dotnet",
+    "exeSha256": "2B9002EFBF784D7B770E207CFB5723E5A4980ED20EFE11956ABE5220479E4852",
+    "completedAtUtc": "2026-09-19T16:13:30.8003497+08:00"
+  },
+  "startupVerificationMethod": "Final staged EXE with an empty Controls directory, isolated MYAVALONIA_DATA_DIRECTORY and bundle extraction directory, nonexistent DOTNET_ROOT/DOTNET_ROOT_X64. Existing MYAVALONIA_SMOKE_TEST=1 auto-close hook exercised the real opened/closing path. No formal Windows Smoke gate or installed business plugin execution.",
+  "deployment": {
+    "passed": true,
+    "deploymentCompleted": true,
+    "target": "C:\\Users\\admin\\Desktop\\工作台",
+    "backupRoot": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510",
+    "replacedFiles": [
+      "HelpWeb/demo-models.js",
+      "HelpWeb/demos.js",
+      "HelpWeb/index.html",
+      "HelpWeb/math-config.js",
+      "HelpWeb/reader.css",
+      "HelpWeb/reader.js",
+      "HelpWeb/vendor/fonts/mathjax-newcm-font/package.json",
+      "HelpWeb/vendor/mathjax/input/tex/extensions/mhchem.js",
+      "HelpWeb/vendor/mathjax/LICENSE",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/af.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/base.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/ca.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/da.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/de.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/en.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/es.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/euro.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/fr.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/hi.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/it.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/ko.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/nb.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/nemeth.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/nn.json",
+      "HelpWeb/vendor/mathjax/sre/mathmaps/sv.json",
+      "HelpWeb/vendor/mathjax/sre/require.d.mts",
+      "HelpWeb/vendor/mathjax/sre/require.mjs",
+      "HelpWeb/vendor/mermaid.js",
+      "HelpWeb/vendor/mermaid.js.LEGAL.txt",
+      "HelpWeb/vendor/THIRD-PARTY-NOTICES.txt",
+      "MyAvaloniaManagement.exe"
+    ],
+    "filesBefore": 1128,
+    "filesAfter": 1128,
+    "deliveryFilesVerified": 139,
+    "retainedFilesUnchanged": 1097,
+    "controlsFilesUnchanged": 983,
+    "controlsDirectories": 12,
+    "directoryTreeUnchanged": true,
+    "exeSha256": "2B9002EFBF784D7B770E207CFB5723E5A4980ED20EFE11956ABE5220479E4852",
+    "exeBytes": 53514327,
+    "rootDllCount": 0,
+    "completedAtUtc": "2026-09-19T16:15:27.2254949+08:00"
+  },
+  "backups": [
+    {
+      "relativePath": "HelpWeb/demo-models.js",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\demo-models.js",
+      "originalSha256": "F22C73CF9610C46227B1F289A60B40762C34363DAC4DA84E928FDE0BBA8B53B5",
+      "originalBytes": 1364
+    },
+    {
+      "relativePath": "HelpWeb/demos.js",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\demos.js",
+      "originalSha256": "7884F6FAA90EA508CC65697B7F8B27187EFC3CC1741E048C396BBB75B9B8FBD0",
+      "originalBytes": 15510
+    },
+    {
+      "relativePath": "HelpWeb/index.html",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\index.html",
+      "originalSha256": "77426D0641C593114C9C2095F4928E0B0D4802A0713FDE324C7475726D3D6DB8",
+      "originalBytes": 1778
+    },
+    {
+      "relativePath": "HelpWeb/math-config.js",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\math-config.js",
+      "originalSha256": "B87B8ACE691742730679A5B75DF02A0DC20DA912DE6219FE4291504024DBE555",
+      "originalBytes": 597
+    },
+    {
+      "relativePath": "HelpWeb/reader.css",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\reader.css",
+      "originalSha256": "898DCC1953D4142E15A281CA1E95111438A049F505C527145EA7F33FB01DA04A",
+      "originalBytes": 10763
+    },
+    {
+      "relativePath": "HelpWeb/reader.js",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\reader.js",
+      "originalSha256": "D9E9A0415D9B4307698D957879BFD2E71381CD881565ED16AD9E75CF0AC8E17A",
+      "originalBytes": 11395
+    },
+    {
+      "relativePath": "HelpWeb/vendor/fonts/mathjax-newcm-font/package.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\fonts\\mathjax-newcm-font\\package.json",
+      "originalSha256": "3C79149A085BA109B2DDAE02DD3B7F1ADDB01EB50ED3D592A0562DD6E3BB5E76",
+      "originalBytes": 5093
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/input/tex/extensions/mhchem.js",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\input\\tex\\extensions\\mhchem.js",
+      "originalSha256": "04A579DF179662C0292AE956229198EA3ED2A02916CFC971CF45B4FE0C7394E2",
+      "originalBytes": 38953
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/LICENSE",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\LICENSE",
+      "originalSha256": "3DDF9BE5C28FE27DAD143A5DC76EEA25222AD1DD68934A047064E56ED2FA40C5",
+      "originalBytes": 11560
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/af.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\af.json",
+      "originalSha256": "93D1C1A8BE2FCDF8ED5A38CE09EDF81192BCA0523FBED86E52323EB75383E744",
+      "originalBytes": 267538
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/base.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\base.json",
+      "originalSha256": "52A3D2C1FBAAABD74D6A49B7868DB11CEA16F45E2832AEE35193466CDCFDDE38",
+      "originalBytes": 217297
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/ca.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\ca.json",
+      "originalSha256": "E3FC00F4A9CFA725C873690D037A434C585FBEE9C8990CB0AC90C3B0BD5323BF",
+      "originalBytes": 247468
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/da.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\da.json",
+      "originalSha256": "455787EC107EF78AB05A66A0754EDA04B56C1ED99F6B05521ADAB0B9D612FBAB",
+      "originalBytes": 247508
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/de.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\de.json",
+      "originalSha256": "711493683D1DB278D2D2281FE4C5FB427A82E584B1422EF1BA7A9DC66C9BF77E",
+      "originalBytes": 284226
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/en.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\en.json",
+      "originalSha256": "A4B07BD66F18143E61BDFEE91103086E46DC0495592A59BC832DD8B0210F4CE6",
+      "originalBytes": 364362
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/es.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\es.json",
+      "originalSha256": "8E4ECFA5E5D04D146A2ECF0859F721088449D15801BCC8629A4B08C9A9082080",
+      "originalBytes": 251061
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/euro.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\euro.json",
+      "originalSha256": "F9F2746255EAA5600D59C494D5DCCF0DB06CA984FA19031F9F167A3A27B3413B",
+      "originalBytes": 12813
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/fr.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\fr.json",
+      "originalSha256": "E1A9D40F6BCB645A5A4F6C11003D24E8481CBE42C47E52DFDAB9C9CA4BE13F3A",
+      "originalBytes": 276549
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/hi.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\hi.json",
+      "originalSha256": "8AB6AD0353BD7F72839480DB963751F3E9DC477D14A035CC1F0F10A36D06E37C",
+      "originalBytes": 394714
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/it.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\it.json",
+      "originalSha256": "981863FCD552DFA7883C7CCB5C3BF7852A42BFF0E6591D5D8AC71FDF59679C89",
+      "originalBytes": 282211
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/ko.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\ko.json",
+      "originalSha256": "958F82F6E4301083F51D4B1EC7315E7CA8742B49CD22F6FDB241AD55EE8C3569",
+      "originalBytes": 392160
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/nb.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\nb.json",
+      "originalSha256": "8BC0E2986767E6C311564D32CA2D118A99F0FAEBB9ABB625C98B93B765A4D057",
+      "originalBytes": 260891
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/nemeth.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\nemeth.json",
+      "originalSha256": "859638D56039B28251B877911CE532B056C315A96D3DF5A4050C3F60CDFC4414",
+      "originalBytes": 227597
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/nn.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\nn.json",
+      "originalSha256": "098BB5F203A87792710AB5C334CB15A3664083528B70BD915F0C3F72409809FE",
+      "originalBytes": 262304
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/mathmaps/sv.json",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\mathmaps\\sv.json",
+      "originalSha256": "523DD5A662E61B079A8138D72A03C50F2F24B2C6E46C074FC15AB4C987CC2691",
+      "originalBytes": 272100
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/require.d.mts",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\require.d.mts",
+      "originalSha256": "529CB780B7D6B2D69F0804524579B880A054E4F21CADBF6697C5D06FBCC4063E",
+      "originalBytes": 45
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mathjax/sre/require.mjs",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mathjax\\sre\\require.mjs",
+      "originalSha256": "1BC5768791578E065A9323FD1C40A3DD20A0238986E82CBDF2CD75EFDB69D39D",
+      "originalBytes": 89
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mermaid.js",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mermaid.js",
+      "originalSha256": "29E1C8A1C426E4D0D0F5AC7ED839495D6CBD01E4F513649C2C1E15A813B1A328",
+      "originalBytes": 3453566
+    },
+    {
+      "relativePath": "HelpWeb/vendor/mermaid.js.LEGAL.txt",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\mermaid.js.LEGAL.txt",
+      "originalSha256": "DCBD5CB48C5FA27B8B9E9690193F8AF4A617217D495D65E96E3E2112F4B53EE6",
+      "originalBytes": 2220
+    },
+    {
+      "relativePath": "HelpWeb/vendor/THIRD-PARTY-NOTICES.txt",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\HelpWeb\\vendor\\THIRD-PARTY-NOTICES.txt",
+      "originalSha256": "47439459EBDC5738F93D9D06CD50BC773A0D5576DD269D1A576083436ABCE624",
+      "originalBytes": 194605
+    },
+    {
+      "relativePath": "MyAvaloniaManagement.exe",
+      "backupPath": "C:\\Users\\admin\\Desktop\\工作台-host-backups\\host-v13-20260919-161510\\MyAvaloniaManagement.exe",
+      "originalSha256": "979CECB1BC09FE48D90114089BCAE0FDF3966EF6672CCFB2A0ED6B235BAA7D75",
+      "originalBytes": 52816750
+    }
+  ],
+  "preservation": "All 983 files in 12 installed plugin directories and all other retained files matched their original hashes. No user settings or business data reset. Existing unrelated PDBs retained. Only EXE and changed HelpWeb delivery files replaced, with verified backups.",
+  "rollback": "Close the installed Host, restore each relativePath from its backupPath, and verify originalSha256. Preserve Controls and user data.",
+  "sourceVerification": {
+    "developmentGateRun": "20260919-080207-ef2bc30987f1",
+    "totalPassed": 1143,
+    "newCases": 37,
+    "failed": 0,
+    "skipped": 0,
+    "developmentEvidence": "docs/archive/records/host-v13/final-development-evidence.json",
+    "productionCodeUnchanged": true,
+    "changesAfterVerifiedImplementation": [
+      "Host/MyAvaloniaManagement/docs/README.md",
+      "Host/MyAvaloniaManagement/docs/design/architecture.md",
+      "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+      "Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md",
+      "docs/README.md",
+      "docs/archive/README.md",
+      "docs/archive/records/host-v13/development-acceptance.md",
+      "docs/archive/records/host-v13/final-development-evidence.json",
+      "docs/archive/records/host-v13/local-deployment-20260919.json",
+      "docs/maintenance/host-v13-local-deployment.md",
+      "docs/maintenance/host-v13-plugin-enablement-verification.md",
+      "docs/maintenance/plugin-compatibility-verification.md",
+      "docs/maintenance/verification.md",
+      "docs/quick-start/floating-windows-and-layout.md",
+      "docs/quick-start/plugin-status.md",
+      "docs/quick-start/tool-center.md",
+      "docs/reference/plugin-compatibility.md",
+      "docs/reference/plugin-enablement.md",
+      "docs/roadmap/README.md",
+      "docs/roadmap/host-v13-plugin-enablement-plan.md"
+    ],
+    "note": "Subsequent changes are documentation and acceptance records only. Final embedded Markdown was rebuilt into this EXE and the actual bundle/startup were checked; no need to repeat unchanged production tests."
+  },
+  "documentChecks": {
+    "files": 5,
+    "checkedLinks": 121,
+    "externalRepositoryLinks": [
+      "docs/README.md: ../../avalonia_dock_plug_test/myavalonia-workflow-studio/README.md",
+      "docs/README.md: ../../avalonia_dock_plug_test/myavalonia-bili-downloader/README.md",
+      "docs/README.md: ../../avalonia_dock_plug_test/myavalonia-video-security-player/README.md",
+      "docs/README.md: ../../avalonia_dock_plug_test/myavalonia-datang-work/README.md"
+    ],
+    "failures": []
+  },
+  "artifacts": [
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/source.zip",
+      "sha256": "0CFC142D7FE3233DFE4B265EAC7D304D092F4D24DA785C5618159D1E3E6DE351"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/build-inputs.json",
+      "sha256": "2BDA3C40F310DEBF2A7F405F93EC67EDDF0748AE05D8F6687335DF7665274ED1"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/build-result.json",
+      "sha256": "72821703AEA43CB4106328E13992C2276D1F8B5213C63EE13ED07E4BBA3D9535"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/restore.log",
+      "sha256": "5E427F09D8836683372AA60B9169EDAD8C87803C24D837BC8A7CE3B3D72BB30F"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/publish.log",
+      "sha256": "48B392D7AC28FD2CD5117840CAC6C6CB136421EA190CE2104FA1DC5949022E91"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/bundle-verification.json",
+      "sha256": "42DC4F1A748F332952F04CEA1D6EE97214CF336A8C4E2F3741C7874022482B29"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/installed-bundle-verification.json",
+      "sha256": "0D6153E753AC4123C6040181BE2395C05BDE3187B65F46EFC23F91F97CCBDF0D"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/startup-result.json",
+      "sha256": "57E1F105D85FCDE1D26AEB1CB522BE9D76A29ADB322F801E670CCFFD3B51D071"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/startup.stdout.log",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/startup.stderr.log",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/deployment-plan.json",
+      "sha256": "385428BEEBFE839B0D43FE74A78E0DA39055E90F1E3EAF6D43047C21BE7AD71A"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/deployment-result.json",
+      "sha256": "A7775EAB90D5DC5EDEAC34B1ED5F0453BF2BABEEFDB263D421E55973764FD65B"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/installed-files-before.json",
+      "sha256": "437F7B62C57A30E667639FF7014C3A15CE86D38865E736E0264301A0D9547774"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/installed-files-after.json",
+      "sha256": "04C60A30A5D7D5067570A62757BC1FC3A7941018CE2471B566C1A8131399E925"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/directories-before.json",
+      "sha256": "DD1F845662D6CB605726D81D270DF286FFA5EC1067E793502576C56C9CF28602"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/delivery-files.json",
+      "sha256": "43984BB0F3E20CB4C499BE52D015924ECE5DF372D4395B7A43F723A477150087"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/document-links.json",
+      "sha256": "662A6EB3C070F413FA40C28885C94AB91B6F46C90BCC0B57C6B3F60C36932629"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/build.ps1",
+      "sha256": "215283D457BD99F5A41C272349261EBCC7A17258541EA06AE3567A739CC94E00"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/verify-bundle.ps1",
+      "sha256": "8EFDC2A1B1A6B1DF6DA95DE0A4A74AF930091680CDA73469E96366982BFAF9FF"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/check-startup.ps1",
+      "sha256": "BFDBF42F339D8CD8928169B519DC29C7379DA05005B2483A7663E812810D65CD"
+    },
+    {
+      "path": "artifacts/host-v13/deployment-20260919-desktop/deploy.ps1",
+      "sha256": "381C44839393569CBCE09E4B7A51D01305E7F1EEB3EC9F2B21625A7D5F6E1E20"
+    }
+  ],
+  "manualAcceptance": {
+    "status": "pending-user-verification",
+    "checklist": "docs/maintenance/host-v13-plugin-enablement-verification.md",
+    "cases": [
+      "M01",
+      "M02",
+      "M03",
+      "M04",
+      "M05"
+    ]
+  },
+  "windowsCI": "not-run",
+  "formalReleaseGates": "not-run",
+  "AIFLOW": "not-used",
+  "publicPublication": "not-run",
+  "gitPush": "not-run",
+  "evidenceNote": "This is the user-authorized local folder deployment. Only this non-embedded JSON is updated after publishing; the deployed source and embedded Markdown remain unchanged.",
+  "finalizedAtUtc": "2026-09-19T08:17:09.1588168+00:00"
 }
