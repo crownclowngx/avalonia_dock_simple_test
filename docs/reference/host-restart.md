@@ -41,7 +41,7 @@ Workbench 重启 Handler 只在 UI Dispatcher 的 Background 优先级安排请�
 
 ## 启动形式与环境
 
-apphost 使用当前 `Environment.ProcessPath`；`dotnet Host.dll` 保留 dotnet 可执行路径及实际入口 DLL。单文件按可执行路径处理，不依赖 `Assembly.Location`；真实单文件样本尚未验证。`dotnet run` 只按最终进程形态重建，不重新执行构建命令。
+apphost 使用当前 `Environment.ProcessPath`；`dotnet Host.dll` 保留 dotnet 可执行路径及实际入口 DLL。单文件按可执行路径处理，不依赖 `Assembly.Location`；单文件交付与实际启动检查见[本机部署记录](../maintenance/host-v14-local-deployment.md)，菜单/看板重启往返仍独立验收。`dotnet run` 只按最终进程形态重建，不重新执行构建命令。
 
 保留工作目录、逐项复制的原始用户参数、有效数据根，以 `ProcessStartInfo.ArgumentList` 启动，`UseShellExecute=false`；中文、空格、引号和 shell 元字符不参与命令拼接。显式设置 `MYAVALONIA_DATA_DIRECTORY`，其余环境继承，清除以 `MYAVALONIA_` 开头且含 `TEST` 或 `PROBE` 的一次性测试变量。助手参数只进入助手，不传给普通后继 Host。启动信息验证先检查可执行文件、入口 DLL 和目录存在性；操作系统执行权限或随后文件变化仍由真实创建失败路径处理。
 

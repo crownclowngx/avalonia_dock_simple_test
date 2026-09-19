@@ -1,6 +1,6 @@
 # 项目文档导航
 
-V14 一键自动重启已接入文件菜单和插件看板，见[使用指南](quick-start/restart-host.md)、[行为契约](reference/host-restart.md)、[执行方案](roadmap/host-v14-automatic-restart-plan.md)及[专用开发验证](maintenance/host-v14-automatic-restart-verification.md)。最终本地 verify 结果见[开发记录与证据](archive/records/host-v14/development-acceptance.md)；原生桌面、单文件样本及安装部署独立跟踪。本轮不使用 AIFLOW、Windows CI 或发布门禁。
+V14 一键自动重启已接入文件菜单和插件看板，见[使用指南](quick-start/restart-host.md)、[行为契约](reference/host-restart.md)、[执行方案](roadmap/host-v14-automatic-restart-plan.md)及[专用开发验证](maintenance/host-v14-automatic-restart-verification.md)。最终本地 verify 结果见[开发记录与证据](archive/records/host-v14/development-acceptance.md)；单文件、自包含安装交付见[桌面工作台部署](maintenance/host-v14-local-deployment.md)，原生桌面体验仍独立验收。本轮不使用 AIFLOW、Windows CI 或正式发布门禁。
 
 V13 插件开关已实现：在[插件看板](quick-start/plugin-status.md)保存下次启动设置，重启生效。见[行为契约](reference/plugin-enablement.md)、[实施计划](roadmap/host-v13-plugin-enablement-plan.md)、[专用验证](maintenance/host-v13-plugin-enablement-verification.md)及[开发记录](archive/records/host-v13/development-acceptance.md)；最终 verify 结果以记录内 JSON 为准，原生桌面待验收。本机单文件、自包含交付见[桌面工作台部署](maintenance/host-v13-local-deployment.md)。
 
