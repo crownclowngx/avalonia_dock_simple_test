@@ -12,6 +12,8 @@ namespace MyAvaloniaManagement.ViewModels.Bindings;
 /// </remarks>
 internal interface IMainWindowViewBindings
 {
+    string RestartMessage { get; }
+    bool HasRestartMessage { get; }
     string LayoutMessage { get; }
     bool HasLayoutMessage { get; }
     IAsyncRelayCommand RetryLayoutSaveCommand { get; }

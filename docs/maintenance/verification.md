@@ -1,6 +1,6 @@
 # 主仓验证与封板
 
-V14 一键自动重启尚未实施，规划的测试矩阵、子进程证据和本地命令见[专用开发验证](host-v14-automatic-restart-verification.md)。本次只交付方案文档；后续实施使用本地专项和 verify，不使用 AIFLOW、Windows CI 或正式发布门禁。
+V14 一键自动重启已接入；实际测试矩阵、真实子进程边界和本地命令见[专用开发验证](host-v14-automatic-restart-verification.md)，最终结果见[开发记录与证据](../archive/records/host-v14/development-acceptance.md)。本轮使用本地专项和完整 verify，不使用 AIFLOW、Windows CI 或正式发布门禁。
 
 V13 插件开关已实现，矩阵与命令见[专用开发验证](host-v13-plugin-enablement-verification.md)，实际结果见[开发记录](../archive/records/host-v13/development-acceptance.md)。本轮只使用本地专项和 verify，不使用 AIFLOW、Windows CI 或下文正式发布门禁；发布命令不属于 V13 执行范围。
 

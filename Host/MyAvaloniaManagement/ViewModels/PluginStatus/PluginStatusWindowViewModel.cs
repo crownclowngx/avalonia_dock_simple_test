@@ -7,6 +7,7 @@ using CommunityToolkit.Mvvm.Input;
 using MyAvaloniaManagement.Business.PluginStatus;
 using MyAvaloniaManagement.Models.Plugins;
 using MyAvaloniaManagement.Business.Plugins.Enablement;
+using MyAvaloniaManagement.Business.Restart;
 
 namespace MyAvaloniaManagement.ViewModels.PluginStatus;
 
@@ -26,13 +27,15 @@ internal sealed partial class PluginStatusWindowViewModel : ObservableObject, ID
 
     public PluginStatusWindowViewModel(IPluginStatusQuery query, TimeProvider time,
         MyAvaloniaManagement.Business.Compatibility.IPluginDashboardEvidence? evidence = null,
-        IPluginEnablementActions? enablement = null, Func<bool>? canOperate = null)
+        IPluginEnablementActions? enablement = null, Func<bool>? canOperate = null, IHostRestartActions? restart = null)
     {
         _query = query ?? throw new ArgumentNullException(nameof(query));
         _time = time ?? throw new ArgumentNullException(nameof(time));
         _evidence = evidence;
         _enablement = enablement;
         _canOperate = canOperate ?? (() => true);
+        _restart = restart;
+        if (_restart is not null) _restart.Changed += RestartChanged;
     }
 
     [ObservableProperty] private string _searchText = string.Empty;

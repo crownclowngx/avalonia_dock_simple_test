@@ -34,6 +34,7 @@ using MyAvaloniaManagement.Views.Tools;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 using MyAvaloniaManagement.Business.WorkflowActions;
+using MyAvaloniaManagement.Business.Restart;
 
 namespace MyAvaloniaManagement.Business.Composition;
 
@@ -145,6 +146,15 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<DocumentRecoveryRegistry>();
         services.AddSingleton<DocumentSaveService>();
         services.AddSingleton<DocumentOperationState>();
+        services.AddSingleton(provider =>
+        {
+            var feedback = provider.GetRequiredService<DocumentOperationState>();
+            return new HostRestartCoordinator(provider.GetService<IHostRestartHandoff>(),
+                provider.GetService<IPluginEnablementRestartBarrier>(),
+                message => feedback.Apply(DocumentOperationResult.Failure(message)));
+        });
+        services.AddSingleton<IHostRestartActions>(provider => provider.GetRequiredService<HostRestartCoordinator>());
+        services.AddSingleton<HostRestartCommandHandler>();
         services.AddSingleton<DocumentPersistenceCoordinator>();
         services.AddSingleton<HostOpenDocumentCommandHandler>();
         services.AddSingleton<HostSaveDocumentCommandHandler>();
@@ -154,7 +164,8 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<HostOpenHelpCommandHandler>(),
             provider.GetRequiredService<HostNewDocumentCommandHandler>(),
             provider.GetRequiredService<HostOpenToolCenterCommandHandler>(),
-            provider.GetRequiredService<HostOpenPluginStatusCommandHandler>()));
+            provider.GetRequiredService<HostOpenPluginStatusCommandHandler>(),
+            provider.GetRequiredService<HostRestartCommandHandler>()));
         services.AddSingleton<IHostDocumentOpenService>(provider =>
             provider.GetRequiredService<DocumentPersistenceCoordinator>());
         services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();
@@ -192,7 +203,8 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<WorkbenchCommandCatalog>(),
             provider.GetRequiredService<PluginAvailabilityReadModel>(),
             provider.GetRequiredService<WorkbenchContextStore>(),
-            provider.GetService<IHostDiagnosticSink>()));
+            provider.GetService<IHostDiagnosticSink>(),
+            provider.GetRequiredService<IHostRestartActions>()));
         services.AddSingleton(provider =>
         {
             var instance = new WorkbenchCommandExecutor(
@@ -382,7 +394,8 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<DockLayoutLifecycle>(),
             provider.GetRequiredService<ApplicationThemeService>(),
             provider.GetRequiredService<IWorkbenchCommandPresentationBindings>(),
-            provider.GetRequiredService<DocumentOperationState>()));
+            provider.GetRequiredService<DocumentOperationState>(),
+            provider.GetRequiredService<IHostRestartActions>()));
 
         services.AddTransient<IHostDesktopShell, HostDesktopShell>();
         services.AddTransient(provider => new App(

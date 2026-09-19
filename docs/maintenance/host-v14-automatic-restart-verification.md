@@ -1,7 +1,7 @@
 # V14 一键自动重启：专用开发验证
 
 > 用途：定义 V14 的自动化测试、真实进程交接、桌面检查、本地开发门禁和证据规范。
-> 状态：验证计划，尚未实施或执行；表中类名和新增测试均为拟议名称，不代表已经存在。日期：2026-09-19。
+> 状态：实现和自动化已接入；矩阵到实际测试的映射见第 10 节，最终判定/计数见[开发证据](../archive/records/host-v14/final-development-evidence.json)。原生桌面和单文件样本未执行。日期：2026-09-19。
 > 关联：[V14 执行方案](../roadmap/host-v14-automatic-restart-plan.md)、[当前主仓验证](verification.md)、[插件开关契约](../reference/plugin-enablement.md)。
 
 ## 1. 范围与证据原则
@@ -16,7 +16,7 @@
 
 ## 2. C：重启协调与可撤销准备
 
-建议归属 `Host/MyAvaloniaManagement.Tests`，拟议类名 `HostRestartCoordinatorTests`，结合现有 `DocumentCloseTests` 和 `DocumentOperationShutdownTests`。
+归属 `Host/MyAvaloniaManagement.Tests` 的 `HostRestartTests`，结合现有 `DocumentCloseTests` 和 `DocumentOperationShutdownTests`，窗口集成由 `HostRestartUiTests` 覆盖。
 
 | 编号 | 场景 | 必需断言 |
 | --- | --- | --- |
@@ -37,7 +37,7 @@
 
 ## 3. L/H：启动描述与助手协议
 
-启动规则单元测试建议类名 `HostRestartLaunchTests`，助手协议建议类名 `HostRestartHandoffTests`，放入 Host Unit 项目；真实管道和进程等待另由 X 系列证明。
+启动规则位于 `HostRestartTests`，助手协议位于 `HostRestartHandoffTests`，均在 Host Unit 项目；真实管道和进程等待另由 X 系列证明。
 
 | 编号 | 场景 | 必需断言 |
 | --- | --- | --- |
@@ -62,7 +62,7 @@
 
 ## 4. R：退出与资源所有权
 
-建议在 `Host/MyAvaloniaManagement.PluginTests` 增加 `HostRestartLifecycleTests`，复用 `HostLifecycleOwnershipTests` 和 `PluginLifecycleCoordinatorTests`；命令、文档、工作流门的单元回归继续放在原项目。
+`Host/MyAvaloniaManagement.PluginTests/HostRestartLifecycleTests` 复用真实 Shutdown 结果，结合 `HostLifecycleOwnershipTests` 和 `PluginLifecycleCoordinatorTests`；命令、文档、工作流门的单元回归继续放在原项目。
 
 | 编号 | 场景 | 必需断言 |
 | --- | --- | --- |
@@ -78,7 +78,7 @@
 
 ## 5. U：真实绑定与 Headless UI
 
-建议在 `Host/MyAvaloniaManagement.UiTests` 增加 `HostRestartUiTests`，同时回归 `ApplicationAndWindowTests`、`PluginEnablementUiTests`、`PluginStatusWindowTests` 和 `DockLayoutV3UiTests`。
+`Host/MyAvaloniaManagement.UiTests/HostRestartUiTests` 验证窗口关闭接入，同时回归 `ApplicationAndWindowTests`、`PluginEnablementUiTests`、`PluginStatusWindowTests` 和 `DockLayoutV3UiTests`。
 
 | 编号 | 场景 | 必需断言 |
 | --- | --- | --- |
@@ -93,7 +93,7 @@
 
 ## 6. X：真实子进程与状态恢复
 
-建议由 Plugin 测试中的 `HostRestartProcessTests` 编排，使用隔离 Controls、临时数据根及可控旧/新进程探针；协议夹具与真实 Host 验证分别记录。至少一条完整验收必须经过真实 Host 的 Program、助手分流、正常退出和新 Host 启动路径，不能全部用自建假 Host 替代。
+Plugin 测试中的 `HostRestartProcessTests` 编排隔离 Controls、临时数据根与真实旧/新进程。`TestAssets/RestartHarness` 直接调用生产 `Program.Run`，保留 HostRuntime、窗口关闭、真实管道和助手；仅注入 Avalonia.Headless 桌面启动及测试错误收据。测试资产由 Plugin 工程依赖、构建和复制，自动进入完整 verify；没有生产测试参数开关或假 Host 协议副本。
 
 | 编号 | 场景 | 必需断言 |
 | --- | --- | --- |
@@ -113,7 +113,7 @@ X01–X08 为必需自动化。真实 Host 的驱动若需要新增测试侧适�
 
 ## 7. 本地开发命令
 
-以下为实施阶段命令，从主仓根目录串行执行；本次只编写文档，不运行这些功能测试。过滤器中的 `HostRestart` 对应拟议测试命名，落地后同步为实际名称。
+以下命令从主仓根目录串行执行；过滤器中的 `HostRestart` 对应已落地类名。实际轮次报告见最终 JSON，不覆盖旧失败报告。
 
 ### 7.1 基线与最终完整门禁
 
@@ -175,10 +175,33 @@ dotnet test tools/MyAvaloniaManagement.Gate.Tests -c Release -m:1 -warnaserror
 
 ## 9. 实施记录与最终证据
 
-实施时创建 `docs/archive/records/host-v14/development-acceptance.md`，记录设计取舍、P0–P5、SOLID 审查、测试映射、未解决问题及原生桌面状态。最终验证后写入同目录 `final-development-evidence.json`，并接入归档导航。当前不建立虚假的成功记录。
+已创建[开发记录](../archive/records/host-v14/development-acceptance.md)，记录设计取舍、P0–P5、SOLID 审查与原生桌面状态。最终验证后写入同目录 `final-development-evidence.json`，并接入归档导航；不预填成功。
 
 证据至少包含：日期、HEAD、未提交差异身份、阶段提交、实际命令及退出码、测试通过/失败/跳过数、TRX 路径和摘要、Gate run-id/summary、C/L/H/R/U/X 到实际测试的映射。子进程证据记录旧/助手/新进程身份、有效信号、退出码、启动次序、数据根的脱敏标识及失败清理结果；不记录会话令牌、敏感用户参数或业务内容。
 
 Markdown 嵌入 Host，先定稿再跑最终完整 verify；最终计数和产物身份写入非嵌入 JSON。若后续修改影响源码或嵌入资源，旧结果不能冒充新产物验证，需按影响重新验证。
 
 开发完成要求：所有必需自动化实际执行并通过、完整 verify 成功、原有效断言及兼容政策未削弱、SOLID 与详细中文注释审查完成、文档一致。缺测试、零命中、缺报告、必需项跳过或失败均不满足完成条件。开发通过、原生桌面通过、单文件样本通过、部署与发布分别标记。
+
+## 10. 实际测试映射与观察边界
+
+下表描述实际实现的自动化覆盖；计数和运行状态以最终 TRX/JSON 为准。复用测试保护原关闭协议，新增测试保护重启与该协议的接合点，不复制一套保存实现。
+
+| 矩阵 | 实际测试/核对 |
+| --- | --- |
+| C01、C02、C10、C11 | `HostRestartTests.重复请求只准备一次_取消恢复设置入口且下一次仍可关闭`、`普通关闭不创建助手且准备取消后不残留请求`；`HostRestartUiTests.菜单重启释放自身命令租约_助手就绪后才关闭` |
+| C03、C04 | `DocumentCloseTests.窗口关闭覆盖干净_放弃_保存取消和重复请求`、`窗口保存期间出现新修订_保持打开且再次保存后允许关闭`、`范围关闭取消或文件选择取消保持整组与生命周期`；重启复用此调用链 |
+| C05、C06、C09、C12、U04、U05 | `DockLayoutV3UiTests.最终布局写入失败保留窗口与命令且重试成功后可以退出`、`主窗等待干净文档命令后被原生取消会恢复命令与创建入口`、`主窗口退出先保存可见浮窗再拆除且重启不恢复文档`；`HostRestartUiTests` 最终否决和迟到继续关闭测试 |
+| C07、C08、U02、U03 | `HostRestartTests` 在途操作成功/失败、冻结取消和双重冻结；`PluginEnablementServiceTests` 真实存储冻结；`PluginEnablementUiTests` 保存期间关窗、改回设置和冲突重读 |
+| L01–L05 | `HostRestartTests.启动参数逐项保留_助手参数不污染普通启动`，含缺可执行/入口 DLL/目录；`HostRestartProcessTests` 两种启动形式完整往返；操作系统创建失败在协议测试注入，真实单文件仅实现路径规则，X09 未执行 |
+| H01–H05、H08、H09、H11 | `HostRestartHandoffTests` 许可/退出/取消/未知助手/重复许可；`HostRestartProcessTests.无许可或未成功退出不能产生后继Host` 覆盖 ordinary、cancel、crash、kill、bad-exit；`最终许可已确认但旧进程仍存活时不能提前拉起`；DI 借用与早分流经代码审查 |
+| H06、H07 | `HostRestartHandoffTests.父进程身份不符或指向自身时在连接前拒绝`；`HostRestartTests` 截断/不匹配身份及固定字节读取；真实会话使用 PID+启动时间及保留句柄，未强造系统 PID 复用 |
+| H10、X06 | `HostRestartHandoffTests.父进程等待取消不启动也不强杀`、`新进程创建失败不重试`；真实进程延迟退出及取消断管。90 秒超时用确定性取消验证；创建失败采用系统副作用替身，原生错误窗口待 M06 |
+| R01–R05、R07 | `HostRestartLifecycleTests` 的有/无释放异常、幂等、Scope 失败保留；`HostLifecycleOwnershipTests` 正常关闭、挂起/取消/排空及启动回滚；`PluginLifecycleCoordinatorTests`；真实进程失败退出无后继 |
+| R06 | Program 顺序审查：Shutdown 后关闭诊断并检查新增记录，再发送最终结果；`HostDiagnosticsTests` 诊断容错与脱敏、`HostLifecycleOwnershipTests` 关闭诊断/迟到异常及 `bad-exit` 回归。未通过真实磁盘故障强制注入日志 Dispose 失败 |
+| U01、U06 | `HostRestartUiTests` 真实菜单投影；进程 Harness 点击看板实际 XAML 按钮 Command；`WorkbenchCommandProjectionTests`、`WorkbenchCommandPresentationUiTests` 精确命令集合和无默认快捷键；既有看板窄窗主题回归。原生键盘/可读性待 M 项 |
+| X01–X04、X07、X08 | `HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式`：三个 Host、两个助手、实际 MyPlugTest 启动策略、独占布局锁、额外页面不重开、参数/目录/数据根；`PluginEnablementLoadingTests` 验证禁用前置过滤无加载，`PluginEnablementRetentionTests` 验证工具/偏好保留 |
+| X05 | `无许可或未成功退出不能产生后继Host` 的 crash、kill 与普通退出；身份限定的进程清理 |
+| X09、M01–M07 | 未执行，分别保留单文件/自包含和原生桌面检查；不作为已通过的自动化计数 |
+
+测试输出目录 `TestResults/v14-restart/<随机标识>` 保留测试进程收据；最终 JSON 只汇总测试标识、进程角色/身份、结果和报告哈希，不收录会话令牌、原始参数或用户数据路径。旧安装版和本轮工作树结果不能混用。

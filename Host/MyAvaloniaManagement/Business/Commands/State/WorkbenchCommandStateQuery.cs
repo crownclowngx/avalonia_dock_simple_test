@@ -4,6 +4,7 @@ using MyAvaloniaManagement.Business.Commands.Context;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.Business.Restart;
 
 namespace MyAvaloniaManagement.Business.Commands.State;
 
@@ -55,17 +56,20 @@ internal sealed class WorkbenchCommandStateQuery : IDisposable
     private long _subscribedRevision;
     private bool _subscriptionHealthy = true;
     private bool _disposed;
+    private readonly IHostRestartActions? _restart;
 
     internal WorkbenchCommandStateQuery(
         WorkbenchCommandCatalog catalog,
         PluginAvailabilityReadModel availability,
         WorkbenchContextStore context,
-        IHostDiagnosticSink? diagnostics = null)
+        IHostDiagnosticSink? diagnostics = null, IHostRestartActions? restart = null)
     {
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
         _availability = availability ?? throw new ArgumentNullException(nameof(availability));
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _diagnostics = diagnostics;
+        _restart = restart;
+        if (_restart is not null) _restart.Changed += OnRestartChanged;
         _context.ContextChanged += OnContextChanged;
         SwitchTarget(_context.Capture());
     }
@@ -182,6 +186,9 @@ internal sealed class WorkbenchCommandStateQuery : IDisposable
         SwitchTarget(capture);
         PublishInvalidation(null, args.Snapshot.Revision, isFullRefresh: true);
     }
+
+    private void OnRestartChanged(object? sender, EventArgs args) =>
+        PublishInvalidation(HostWorkbenchCommandIds.Restart, _context.Capture().Snapshot.Revision, isFullRefresh: false);
 
     private void SwitchTarget(WorkbenchContextCapture capture)
     {
@@ -332,6 +339,7 @@ internal sealed class WorkbenchCommandStateQuery : IDisposable
 
     public void Dispose()
     {
+        if (_restart is not null) _restart.Changed -= OnRestartChanged;
         IWorkbenchDocumentCommandTarget? target;
         lock (_gate)
         {

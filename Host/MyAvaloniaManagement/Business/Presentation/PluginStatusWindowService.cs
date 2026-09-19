@@ -7,6 +7,7 @@ using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels.PluginStatus;
 using MyAvaloniaManagement.Views.PluginStatus;
 using MyAvaloniaManagement.Business.Plugins.Enablement;
+using MyAvaloniaManagement.Business.Restart;
 
 namespace MyAvaloniaManagement.Business.Presentation;
 
@@ -17,7 +18,8 @@ namespace MyAvaloniaManagement.Business.Presentation;
 /// 主窗口真正关闭才释放窗口，取消主窗口关闭不会破坏后续使用。
 /// </remarks>
 internal sealed class PluginStatusWindowService(IPluginStatusQuery query, WorkspaceSession workspace, TimeProvider time,
-    IPluginDashboardEvidence? evidence = null, IPluginEnablementActions? enablement = null) : IDisposable
+    IPluginDashboardEvidence? evidence = null, IPluginEnablementActions? enablement = null,
+    IHostRestartActions? restart = null) : IDisposable
 {
     private Window? _owner;
     private PluginStatusWindow? _window;
@@ -46,7 +48,7 @@ internal sealed class PluginStatusWindowService(IPluginStatusQuery query, Worksp
             existing.Activate();
             return;
         }
-        var model = new PluginStatusWindowViewModel(query, time, evidence, enablement, () => workspace.CanOperateTools);
+        var model = new PluginStatusWindowViewModel(query, time, evidence, enablement, () => workspace.CanOperateTools, restart);
         model.Refresh();
         var window = new PluginStatusWindow { DataContext = model };
         _window = window;

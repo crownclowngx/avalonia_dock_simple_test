@@ -18,6 +18,7 @@ using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.Business.WorkflowActions;
+using MyAvaloniaManagement.Business.Restart;
 
 namespace MyAvaloniaManagement.Business.Composition;
 
@@ -38,7 +39,7 @@ internal sealed class HostRuntime : IDisposable
         _shutdown = shutdown;
     }
 
-    internal static HostRuntime Create(HostDiagnosticSession diagnostics)
+    internal static HostRuntime Create(HostDiagnosticSession diagnostics, IHostRestartHandoff? restart = null)
     {
         ArgumentNullException.ThrowIfNull(diagnostics);
         var services = new ServiceCollection();
@@ -50,6 +51,8 @@ internal sealed class HostRuntime : IDisposable
         services.AddViewModels();
         services.AddSingleton(diagnostics);
         services.AddSingleton<IHostDiagnosticSink>(diagnostics);
+        // 实例由 Program 创建和释放，DI 只借用窄端口，不能拥有跨进程交接的寿命。
+        if (restart is not null) services.AddSingleton(restart);
 
         var dataRoot = HostDataRootPolicy.ResolveDefault();
         var enablementStore = new PluginEnablementSettingsStore(System.IO.Path.Combine(dataRoot, PluginEnablementSettingsStore.FileName));
@@ -62,6 +65,7 @@ internal sealed class HostRuntime : IDisposable
             discovery.Candidates.Select(candidate => candidate.Manifest.PluginId), diagnostics);
         services.AddSingleton<IPluginEnablementState>(enablement);
         services.AddSingleton<IPluginEnablementActions>(enablement);
+        services.AddSingleton<IPluginEnablementRestartBarrier>(enablement);
         discovery.PublishDiagnostics(diagnostics);
         ThrowIfStartupMustAbort(diagnostics);
 
@@ -189,15 +193,21 @@ internal sealed class HostRuntime : IDisposable
 
     public void Dispose()
     {
+        var result = Shutdown();
+        if (result.Failures.Count > 0)
+            throw new AggregateException("HostRuntime 退出时一个或多个资源释放失败。", result.Failures);
+    }
+
+    /// <summary>向进程入口交付完整关闭事实；保留资源与 Dispose 失败都不能被解释成可重启。</summary>
+    internal HostRuntimeShutdownResult Shutdown()
+    {
         _disposed = true;
         // 消息循环可能已经停止。仅在同步桥接期间清除上下文，回滚返回后恢复调用方上下文。
         var previous = SynchronizationContext.Current;
         SynchronizationContext.SetSynchronizationContext(null);
         try
         {
-            var result = _shutdown.RunAsync().GetAwaiter().GetResult();
-            if (result.Failures.Count > 0)
-                throw new AggregateException("HostRuntime 退出时一个或多个资源释放失败。", result.Failures);
+            return _shutdown.RunAsync().GetAwaiter().GetResult();
         }
         finally { SynchronizationContext.SetSynchronizationContext(previous); }
     }

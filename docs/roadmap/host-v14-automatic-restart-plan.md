@@ -1,7 +1,7 @@
 # V14：Host 一键自动重启执行方案
 
 > 用途：规定一键自动重启的用户行为、职责边界、进程交接协议、实施阶段及开发完成条件。
-> 状态：方案已编写，尚未实施；本文不是功能已交付或测试已通过的证明。日期：2026-09-19。
+> 状态：P0–P5 实现、测试及文档已接入；最终开发判定见[开发记录与 JSON 证据](../archive/records/host-v14/development-acceptance.md)，原生桌面和单文件样本单独待验收。日期：2026-09-19。
 > 调研基线：`a6f0e2eff2ac5a77bf0a74270a1b00ede41de3dd`，`master`，编写前工作树干净。实施开始时重新记录 HEAD 和已有差异。
 > V14 是 Host 改造序号，不调整产品、程序集、SDK、NuGet 版本或持久化 schema。
 > 专项矩阵、执行命令和证据要求见 [V14 专用开发验证](../maintenance/host-v14-automatic-restart-verification.md)。
@@ -12,7 +12,7 @@
 
 采用真实进程重启。窗口会短暂关闭再出现；不在当前进程重建 Avalonia App、HostRuntime 或插件加载上下文，也不将关闭全部 Document 称为完整重启。
 
-本次文档交付只新增执行方案、专用验证指南及导航，不实施生产代码。以下阶段和命令供后续实施使用，不表示本次已经执行。
+本文保留实施设计与验收目标。初次方案文档提交为 `3cff108523ad`；本轮从该干净基线直接在 master 实施。实际类名、阶段交付与取舍见开发记录，现行行为以[自动重启契约](../reference/host-restart.md)为准。
 
 ### 1.1 必须满足的约束
 
@@ -51,7 +51,7 @@
 5. 对命令排空、自身命令租约、设置保存竞态、助手确认、晚到回调、超时及资源保留分支说明设计思路，并映射到专项测试。
 6. 不逐句翻译代码；注释必须与实现和实际测试一起更新。
 
-## 3. 当前事实与接入位置
+## 3. 实施前基线与接入位置
 
 | 入口 | 已有事实及实施方向 |
 | --- | --- |
@@ -179,19 +179,19 @@ Ready 只是“助手可用”，不是启动新 Host 的许可；CleanExitReady
 
 ## 8. 文档交付与同步
 
-当前文档保持现有能力描述。实现完成时才将新入口写入用户指南和现行契约，不提前把方案表述为已发布功能。
+以下文档已随实现同步；当前工作树实现不代表安装目录或公开发布已经更新。
 
 | 文档 | 同步内容 |
 | --- | --- |
 | 本方案与 [专用开发验证](../maintenance/host-v14-automatic-restart-verification.md) | 阶段状态、最终选定的类/方法和实际测试名映射 |
 | [插件看板指南](../quick-start/plugin-status.md) 与 [插件开关契约](../reference/plugin-enablement.md) | 自动重启入口、保存与取消、全部已保存设置及当前/下次事实；仍保持进程重启生效 |
-| `docs/reference/host-restart.md`（实施时新建） | 自动重启的唯一现行详细契约：交接、取消、失败、启动形式和诊断，计划不长期复制该契约 |
-| `docs/quick-start/restart-host.md`（实施时新建） | 点击入口、未保存内容、窗口短暂关闭、文档不自动恢复及失败处理，不向普通用户解释内部 IPC |
+| [自动重启契约](../reference/host-restart.md) | 自动重启的唯一现行详细契约：交接、取消、失败、启动形式和诊断，计划不长期复制该契约 |
+| [重启指南](../quick-start/restart-host.md) | 点击入口、未保存内容、窗口短暂关闭、文档不自动恢复及失败处理，不向普通用户解释内部 IPC |
 | [浮窗与布局指南](../quick-start/floating-windows-and-layout.md) | 工具布局复用及 Document 不跨重启恢复 |
 | [内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)、[兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md) | 协调、退出资源所有权、助手寿命、SDK/schema 不变、取消和清理失败边界 |
 | [总导航](../README.md)、[待办](README.md)、[Host 入口](../../Host/MyAvaloniaManagement/docs/README.md)、[主仓验证](../maintenance/verification.md) | 方案/现行契约/专项/实际证据的入口及状态 |
-| `docs/archive/records/host-v14/development-acceptance.md`（实施时新建） | 实际设计取舍、阶段提交、测试映射、未完成项、人工验证与发布边界 |
-| `docs/archive/records/host-v14/final-development-evidence.json`（最终验证后生成） | 实际源码身份、命令、退出码、TRX、Gate run-id 和子进程证据；未运行不预填成功 |
+| [开发记录](../archive/records/host-v14/development-acceptance.md) | 实际设计取舍、阶段提交、测试映射、未完成项、人工验证与发布边界 |
+| [最终开发证据](../archive/records/host-v14/final-development-evidence.json) | 实际源码身份、命令、退出码、TRX、Gate run-id 和子进程证据；最终验证后写入，未运行不预填成功 |
 
 V13 原方案是当时的实施边界，不倒写为包含自动重启；必要时追加“由 V14 扩展”的链接。根 README、包及模板文档仅在确有相关内容变化时同步，不机械改版本或无关说明。开发记录建立后再接入归档导航，避免悬空链接。
 

@@ -19,10 +19,11 @@ internal sealed partial class PluginStatusWindowViewModel
     public bool HasEnablementNotice => EnablementNotice.Length > 0;
     public bool HasEnablementFeedback => EnablementFeedback.Length > 0;
     partial void OnEnablementFeedbackChanged(string value) => OnPropertyChanged(nameof(HasEnablementFeedback));
-    public bool CanChangeEnablement => !_disposed && !IsSavingEnablement && _canOperate() &&
+    public bool CanChangeEnablement => !_disposed && !IsSavingEnablement && _restart?.IsRequested != true && _canOperate() &&
         _enablement?.Current.CanWrite == true && SelectedItem?.CanSetEnablement == true;
-    public bool CanReloadEnablement => !_disposed && !IsSavingEnablement && _canOperate() && _enablement is not null;
+    public bool CanReloadEnablement => !_disposed && !IsSavingEnablement && _restart?.IsRequested != true && _canOperate() && _enablement is not null;
     public string EnablementUnavailableReason => IsSavingEnablement ? "正在保存设置…" :
+        _restart?.IsRequested == true ? "正在准备重启。" :
         !_canOperate() ? "工作区尚未就绪或正在退出。" : HasEnablementNotice ? EnablementNotice :
         SelectedItem?.CanSetEnablement != true ? "该候选没有可操作的插件身份或设置服务。" : string.Empty;
 
@@ -76,6 +77,7 @@ internal sealed partial class PluginStatusWindowViewModel
     internal void NotifyEnablementChanged()
     {
         if (_disposed) return;
+        NotifyRestartChanged();
         OnPropertyChanged(nameof(SelectedNextStartupEnabled));
         OnPropertyChanged(nameof(EnablementNotice));
         OnPropertyChanged(nameof(HasEnablementNotice));

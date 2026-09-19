@@ -7,6 +7,23 @@ namespace MyAvaloniaManagement.Tests;
 public sealed class PluginEnablementServiceTests
 {
     [Fact]
+    public async Task 重启冻结期间拒绝写入和重读_解除后仍能提交原设置()
+    {
+        using var files = new EnablementTestFiles();
+        var id = new PluginId("myavalonia.plugin.first");
+        var service = new PluginEnablementService(files.Store, files.Store.Load(), [id]);
+        using (await service.PauseForRestartAsync(CancellationToken.None))
+        {
+            var rejected = await service.SetEnabledAsync(id, false);
+            Assert.False(rejected.Success);
+            Assert.Equal("PLUGIN_ENABLEMENT_RESTART_PENDING", rejected.ErrorCode);
+            await Assert.ThrowsAsync<InvalidOperationException>(service.ReloadAsync);
+            Assert.True(files.Store.Load().Settings!.IsEnabled(id));
+        }
+        Assert.True((await service.SetEnabledAsync(id, false)).Success);
+        Assert.False(files.Store.Load().Settings!.IsEnabled(id));
+    }
+    [Fact]
     public async Task 连续保存与改回只更新已保存意图并拒绝未知身份()
     {
         using var files = new EnablementTestFiles();

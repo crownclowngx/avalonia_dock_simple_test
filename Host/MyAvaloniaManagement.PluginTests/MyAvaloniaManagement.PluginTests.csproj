@@ -13,6 +13,7 @@
     <Compile Remove="TestAssets\PluginIsolation\**\*.cs" />
     <Compile Remove="TestAssets\ManagedOnly\**\*.cs" />
     <Compile Remove="TestAssets\WorkflowActionG1\**\*.cs" />
+    <Compile Remove="TestAssets\RestartHarness\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -36,6 +37,7 @@
       <AdditionalProperties Condition="'$(BuildingSolutionFile)' != 'true'">SkipPluginDeploy=true</AdditionalProperties>
     </ProjectReference>
     <!-- 隔离夹具只参与构建，不进入测试进程默认上下文。 -->
+    <ProjectReference Include="TestAssets\RestartHarness\RestartHarness.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="TestAssets\PluginIsolation\PluginV1\PluginV1.csproj"
                       ReferenceOutputAssembly="false" />
     <ProjectReference Include="TestAssets\PluginIsolation\PluginV2\PluginV2.csproj"
@@ -52,6 +54,11 @@
                       ReferenceOutputAssembly="false" />
   </ItemGroup>
 
+  <Target Name="CopyRestartHarness" AfterTargets="Build">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)TestAssets\RestartHarness\RestartHarness.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <ItemGroup><RestartHarnessFile Include="$(MSBuildThisFileDirectory)TestAssets\RestartHarness\bin\$(Configuration)\$(TargetFramework)\**\*" /></ItemGroup>
+    <Copy SourceFiles="@(RestartHarnessFile)" DestinationFiles="@(RestartHarnessFile->'$(OutDir)RestartHarness\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
   <Target Name="CopyOldIconSdkFixture" AfterTargets="Build">
     <PropertyGroup>
       <OldIconSdkRoot>$(MSBuildThisFileDirectory)TestAssets\ManagedOnly\OldIconSdk</OldIconSdkRoot>

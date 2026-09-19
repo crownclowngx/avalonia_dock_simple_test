@@ -6,6 +6,7 @@ using MyAvaloniaManagement.Business.Appearance;
 using MyAvaloniaManagement.Business.Help;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.Views;
+using MyAvaloniaManagement.Business.Restart;
 
 namespace MyAvaloniaManagement.Business.Presentation;
 
@@ -37,7 +38,8 @@ internal sealed class HostDesktopShell(
     FunctionCenterWindowService functionCenter,
     ToolCenterWindowService toolCenter,
     PluginStatusWindowService pluginStatus,
-    WorkbenchWindowContext windows) : IHostDesktopShell
+    WorkbenchWindowContext windows,
+    HostRestartCoordinator? restart = null) : IHostDesktopShell
 {
     public void Attach(
         App application,
@@ -47,7 +49,7 @@ internal sealed class HostDesktopShell(
         ArgumentNullException.ThrowIfNull(desktop);
 
         themeService.Initialize(application);
-        var mainWindow = new MainWindow(windows);
+        var mainWindow = new MainWindow(windows, restart);
         desktop.MainWindow = mainWindow;
         helpWindows.Attach(mainWindow);
         functionCenter.Attach(mainWindow);

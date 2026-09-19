@@ -1,6 +1,6 @@
 # Host 内部文档
 
-V14 一键自动重启尚处方案阶段，见[执行方案](../../../docs/roadmap/host-v14-automatic-restart-plan.md)与[专用开发验证](../../../docs/maintenance/host-v14-automatic-restart-verification.md)。重点是复用原关闭所有权与一次性进程交接，不重建进程内 Runtime 或插件加载上下文。
+V14 一键自动重启已接入，见[现行契约](../../../docs/reference/host-restart.md)、[执行方案](../../../docs/roadmap/host-v14-automatic-restart-plan.md)、[专用验证](../../../docs/maintenance/host-v14-automatic-restart-verification.md)及[开发记录](../../../docs/archive/records/host-v14/development-acceptance.md)。复用原关闭所有权与一次性进程交接；最终开发、桌面、单文件与部署状态分别记载。
 
 V13 插件开关已接入：在看板保存下次启动设置，在 DLL 加载前过滤。见[行为契约](../../../docs/reference/plugin-enablement.md)、[实施计划](../../../docs/roadmap/host-v13-plugin-enablement-plan.md)、[专用验证](../../../docs/maintenance/host-v13-plugin-enablement-verification.md)及[开发记录](../../../docs/archive/records/host-v13/development-acceptance.md)。
 

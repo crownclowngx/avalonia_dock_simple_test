@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>MyAvaloniaManagement.RestartHarness</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <MyAvaloniaUseLayoutPatch>true</MyAvaloniaUseLayoutPatch>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../../MyAvaloniaManagement/MyAvaloniaManagement.csproj" />
+    <PackageReference Include="Avalonia.Headless" />
+  </ItemGroup>
+</Project>

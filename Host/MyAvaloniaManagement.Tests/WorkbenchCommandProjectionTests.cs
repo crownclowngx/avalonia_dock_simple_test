@@ -33,7 +33,7 @@ public sealed class WorkbenchCommandProjectionTests
         var secondPresentation = second.Provider.GetRequiredService<WorkbenchCommandPresentation>();
 
         Assert.Equal(
-            ["功能中心…", "打开…", "保存", "|", "Alpha File"],
+            ["功能中心…", "打开…", "保存", "重新启动 Host…", "|", "Alpha File"],
             Snapshot(firstPresentation.Menu, WorkbenchMenuLocations.FileShared));
         Assert.Equal(
             ["|", "Alpha View"],
@@ -189,6 +189,12 @@ public sealed class WorkbenchCommandProjectionTests
                 Assert.Equal("打开…", open.DisplayName);
                 Assert.True(open.IsEnabled);
                 Assert.Equal(string.Empty, open.ShortcutText);
+            },
+            restart =>
+            {
+                Assert.Equal(HostWorkbenchCommandIds.Restart, restart.CommandId);
+                Assert.False(restart.IsEnabled); // 纯目录夹具没有已附加主窗及进程交接端口。
+                Assert.Equal(string.Empty, restart.ShortcutText);
             });
         Assert.DoesNotContain(items, item => item.CommandId!.Value.Contains(
             "shortcut-active",

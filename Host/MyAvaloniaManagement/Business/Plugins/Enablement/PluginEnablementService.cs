@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Threading;
@@ -29,8 +30,9 @@ internal sealed class PluginEnablementService(
     PluginEnablementSettingsStore store,
     PluginEnablementReadResult initial,
     IEnumerable<PluginId> knownIds,
-    IHostDiagnosticSink? diagnostics = null) : IPluginEnablementActions
+    IHostDiagnosticSink? diagnostics = null) : IPluginEnablementActions, IPluginEnablementRestartBarrier
 {
+    private readonly PluginEnablementOperationGate _operations = new();
     private readonly SemaphoreSlim _writes = new(1, 1);
     private readonly FrozenSet<PluginId> _knownIds = knownIds.ToFrozenSet();
     private PluginEnablementReadResult _current = initial;
@@ -38,6 +40,8 @@ internal sealed class PluginEnablementService(
 
     public async Task<PluginEnablementSaveResult> SetEnabledAsync(PluginId id, bool enabled)
     {
+        if (!_operations.TryEnter()) return new(false, Current, "PLUGIN_ENABLEMENT_RESTART_PENDING");
+        var success = false;
         await _writes.WaitAsync().ConfigureAwait(false);
         try
         {
@@ -45,18 +49,28 @@ internal sealed class PluginEnablementService(
             if (!_knownIds.Contains(id)) return new(false, current, "PLUGIN_ENABLEMENT_UNKNOWN_PLUGIN");
             if (!current.CanWrite) return new(false, current, "PLUGIN_ENABLEMENT_READ_ONLY");
             var result = await Task.Run(() => store.TrySave(current, current.Settings!.WithEnabled(id, enabled))).ConfigureAwait(false);
+            success = result.Success;
             if (result.Success) Volatile.Write(ref _current, result.Snapshot);
             else diagnostics?.Report(new(result.ErrorCode!, HostDiagnosticPhase.PluginRootDiscovery));
             return result;
         }
-        finally { _writes.Release(); }
+        finally { _writes.Release(); _operations.Exit(success); }
     }
 
     /// <summary>显式读取外部新设置以解决写冲突；只更改下次意图，本次启动策略仍由发现快照拥有。</summary>
     public async Task ReloadAsync()
     {
+        if (!_operations.TryEnter()) throw new InvalidOperationException("正在准备重启，暂不能重新读取设置。");
+        var success = false;
         await _writes.WaitAsync().ConfigureAwait(false);
-        try { Volatile.Write(ref _current, await Task.Run(store.Load).ConfigureAwait(false)); }
-        finally { _writes.Release(); }
+        try
+        {
+            Volatile.Write(ref _current, await Task.Run(store.Load).ConfigureAwait(false));
+            success = Current.ErrorCode is null;
+        }
+        finally { _writes.Release(); _operations.Exit(success); }
     }
+
+    public Task<IDisposable> PauseForRestartAsync(CancellationToken cancellationToken) =>
+        _operations.PauseForRestartAsync(cancellationToken);
 }

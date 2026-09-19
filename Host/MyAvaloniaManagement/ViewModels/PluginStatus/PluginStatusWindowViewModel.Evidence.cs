@@ -133,6 +133,7 @@ internal sealed partial class PluginStatusWindowViewModel
     {
         if (_disposed) return;
         _disposed = true;
+        if (_restart is not null) _restart.Changed -= RestartChanged;
         ++_generation;
         _reading?.Cancel();
         // 任务在 finally 中释放自身 CTS，避免异步 I/O 尚未观察取消就被窗口提前释放。

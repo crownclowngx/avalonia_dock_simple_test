@@ -35,6 +35,9 @@
             <StackPanel Spacing="5">
                 <TextBlock Text="插件看板" FontSize="25" FontWeight="SemiBold" />
                 <TextBlock Text="当前状态 · 插件开关（重启生效） · 版本与验收证据" Classes="secondary" />
+                <Button x:Name="RestartHostButton" Content="重启并应用更改…" IsVisible="{Binding HasPendingRestart}"
+                        Command="{Binding RestartCommand}" ToolTip.Tip="应用全部已保存设置。重启将关闭所有文档，未保存内容会先询问。" />
+                <TextBlock Text="{Binding RestartMessage}" Classes="secondary" />
             </StackPanel>
             <WrapPanel Grid.Column="1" MaxWidth="300" VerticalAlignment="Center" HorizontalAlignment="Right">
                 <Button x:Name="RefreshButton" Content="刷新状态" Command="{Binding RefreshCommand}" Margin="4" />

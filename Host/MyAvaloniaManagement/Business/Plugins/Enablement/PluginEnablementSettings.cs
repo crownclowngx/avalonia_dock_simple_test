@@ -39,6 +39,7 @@ internal static class PluginEnablementMessages
     internal static string ForCode(string? code) => code switch
     {
         null => string.Empty,
+        "PLUGIN_ENABLEMENT_RESTART_PENDING" => "正在准备重启，暂不能修改插件设置。",
         "PLUGIN_ENABLEMENT_RECOVERED" => "插件开关主文件不可用，本次采用有效备份；原文件保留，请修复后重启，当前设置只读。",
         "PLUGIN_ENABLEMENT_SCHEMA_UNSUPPORTED" => "插件开关配置版本不受支持，本次不加载插件；请使用匹配版本或修复配置后重启。",
         "PLUGIN_ENABLEMENT_INVALID" => "插件开关配置损坏且无有效备份，本次不加载插件；原文件保留，请修复后重启。",

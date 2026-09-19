@@ -8,6 +8,7 @@ using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Presentation.Commands;
 using MyAvaloniaManagement.Business.Workspace;
+using MyAvaloniaManagement.Business.Restart;
 using MyAvaloniaManagement.ViewModels.Bindings;
 
 namespace MyAvaloniaManagement.ViewModels;
@@ -23,6 +24,9 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
     private readonly ApplicationThemeService _themeService;
     private readonly DocumentOperationState _documentOperationState;
     private ApplicationThemeMode _themeMode;
+    private readonly IHostRestartActions? _restart;
+    public string RestartMessage => _restart?.Message ?? string.Empty;
+    public bool HasRestartMessage => RestartMessage.Length > 0;
     private IRootDock? _layout;
 
     public string LayoutMessage => _layoutLifecycle.Message;
@@ -52,7 +56,8 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
         DockLayoutLifecycle layoutLifecycle,
         ApplicationThemeService themeService,
         IWorkbenchCommandPresentationBindings workbenchCommands,
-        DocumentOperationState documentOperationState)
+        DocumentOperationState documentOperationState,
+        IHostRestartActions? restart = null)
     {
         _workspace = workspace ?? throw new ArgumentNullException(nameof(workspace));
         _layoutLifecycle = layoutLifecycle ??
@@ -64,6 +69,8 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
         _documentOperationState = documentOperationState ??
             throw new ArgumentNullException(nameof(documentOperationState));
         _themeMode = _themeService.CurrentMode;
+        _restart = restart;
+        if (_restart is not null) _restart.Changed += OnRestartChanged;
 
         // Factory 和文档状态都由根容器持有，而主窗口是瞬态对象。先登记定向通知，
         // Dispose 时再成对解除，避免单例服务通过委托延长窗口生命周期。
@@ -176,10 +183,17 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
 
     private void ReleaseCoordinationSubscriptions()
     {
+        if (_restart is not null) _restart.Changed -= OnRestartChanged;
         // .NET 事件解除不存在匹配委托时是安全的，因此该入口天然支持重复 Dispose。
         _workspace.LayoutChanged -= OnLayoutChanged;
         _layoutLifecycle.StatusChanged -= OnLayoutStatusChanged;
         _documentOperationState.Changed -= OnDocumentOperationStateChanged;
+    }
+
+    private void OnRestartChanged(object? sender, EventArgs args)
+    {
+        OnPropertyChanged(nameof(RestartMessage));
+        OnPropertyChanged(nameof(HasRestartMessage));
     }
 
     private void OnLayoutChanged(object? sender, EventArgs args) =>

@@ -12,7 +12,10 @@
         <design:MainWindowDesignData />
     </Design.DataContext>
     <Grid RowDefinitions="Auto,Auto,Auto,*" Background="Transparent">
-        <views:MenuView Grid.Row="0" />
+        <StackPanel Grid.Row="0">
+            <views:MenuView />
+            <TextBlock Text="{Binding RestartMessage}" IsVisible="{Binding HasRestartMessage}" Margin="12,4" TextWrapping="Wrap" />
+        </StackPanel>
         <Border x:Name="DocumentOperationErrorBanner"
                 Grid.Row="1"
                 IsVisible="{Binding HasDocumentOperationError}"

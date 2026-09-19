@@ -6,6 +6,8 @@
 
 ## 1. public API
 
+V14 自动重启属于 Host internal 能力，不新增插件 SDK API，不修改程序集/包版本或持久化 schema。未保存确认、修订校验、命令排空、资源保留及工具布局恢复继续遵守原约束；Document 不增加跨启动重开能力，默认欢迎页仍创建。普通退出与启动失败不得消费历史重启请求，完整行为见[自动重启契约](../../../../docs/reference/host-restart.md)。
+
 当前 public 插件契约只来自 `MyAvaloniaManagement.PluginSdk`、
 `MyAvaloniaManagement.PluginSdk.UI` 与 `MyAvaloniaManagement.PluginSdk.Workflow`。Host 窗口、View、ViewModel、加载器、注册表、工厂、消息和
 内建贡献实现均为 internal；插件不得编译引用 Host 可执行程序集。Host 生产模块入口已使用最终 UI SDK；

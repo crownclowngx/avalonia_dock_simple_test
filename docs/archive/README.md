@@ -1,5 +1,7 @@
 # 历史归档
 
+新增 [V14 自动重启开发记录](records/host-v14/development-acceptance.md)与[最终开发证据](records/host-v14/final-development-evidence.json)：共享重启用例、正常关闭交接、真实进程和独立保留的原生桌面/单文件验收范围。
+
 新增 [V13 插件开关开发记录](records/host-v13/development-acceptance.md)：实现、SOLID 取舍、专项与三进程重启验收；最终本地门禁结果见记录内 JSON，原生桌面、外部业务和发布状态分别保留。
 
 > 用途：查找过去的设计、验收与交付证据。归档日期：2026-09-17。正文中的“当前”、版本、命令及通过结果只对原始基线成立，不能作为当前操作指令。

@@ -15,6 +15,8 @@ namespace MyAvaloniaManagement.ViewModels.Design;
 /// </remarks>
 internal sealed class MainWindowDesignData : IMainWindowViewBindings
 {
+    public string RestartMessage => string.Empty;
+    public bool HasRestartMessage => false;
     public MainWindowDesignData()
     {
         Layout = CreateLayout();

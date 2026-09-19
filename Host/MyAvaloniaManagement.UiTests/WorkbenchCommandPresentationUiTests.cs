@@ -487,7 +487,9 @@ public sealed class WorkbenchCommandPresentationUiTests
             Assert.True(layer.IsVisible);
             Assert.True(search.IsFocused);
             Assert.Empty(window.KeyBindings);
-            Assert.Equal(12, list.ItemCount);
+            Assert.Equal(13, list.ItemCount);
+            Assert.Contains(list.Items.OfType<WorkbenchCommandPaletteProjectionEntry>(),
+                entry => entry.CommandId == HostWorkbenchCommandIds.Restart && !entry.IsEnabled);
 
             search.Text = "保存";
             await FlushUiAsync();

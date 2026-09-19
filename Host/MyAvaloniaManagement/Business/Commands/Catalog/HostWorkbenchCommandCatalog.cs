@@ -16,6 +16,7 @@ namespace MyAvaloniaManagement.Business.Commands.Catalog;
 /// </remarks>
 internal static class HostWorkbenchCommandIds
 {
+    internal static readonly CommandId Restart = new("myavalonia.host.command.restart");
     internal static readonly CommandId OpenToolCenter = new("myavalonia.host.command.tool-center.open");
     internal static readonly CommandId OpenPluginStatus = new("myavalonia.host.command.plugin-status.open");
     internal static readonly CommandId NewDocument =
@@ -55,9 +56,13 @@ internal sealed class HostWorkbenchCommandCatalog
         HostOpenHelpCommandHandler openHelp,
         HostNewDocumentCommandHandler newDocument,
         HostOpenToolCenterCommandHandler? openToolCenter = null,
-        HostOpenPluginStatusCommandHandler? openPluginStatus = null)
+        HostOpenPluginStatusCommandHandler? openPluginStatus = null,
+        HostRestartCommandHandler? restart = null)
         : this(
         [
+            .. (restart is null ? Array.Empty<HostWorkbenchCommandRegistration>() :
+                new[] { new HostWorkbenchCommandRegistration(new CommandDescriptor(
+                    HostWorkbenchCommandIds.Restart, "重新启动 Host…", "重启将关闭所有文档，未保存内容会先询问。"), restart) }),
             new HostWorkbenchCommandRegistration(
                 new CommandDescriptor(HostWorkbenchCommandIds.NewDocument,
                     "功能中心…", "查找功能，在新标签中开始使用。"),
