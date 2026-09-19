@@ -1,0 +1,926 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "date": "2026-09-19",
+  "scope": "V14 Host automatic process restart; local development validation only",
+  "branch": "master",
+  "implementationCommits": [
+    "787fe71a097c9c7575439f7b2a58522ae3cd2945"
+  ],
+  "baseline": {
+    "clean": true,
+    "revision": "3cff108523ade5267d8f7742d47737745262913d",
+    "passed": true,
+    "summary": {
+      "path": "artifacts/gate/20260919-084359-3cff108523ad/summary.json",
+      "sha256": "0bd4a961c3233fdbb6cc161c16e9b90e687ee376bf08c77973eadf018bc40d36"
+    }
+  },
+  "finalGate": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "exitCode": 0,
+    "runId": "20260919-093141-787fe71a097c",
+    "summary": {
+      "path": "artifacts/gate/20260919-093141-787fe71a097c/summary.json",
+      "sha256": "e381dd2a82347f44fe03304c4e6470cd4ecaf1ac42a01b7b1d8810d76561d45b"
+    },
+    "sources": {
+      "main": {
+        "revision": "787fe71a097c9c7575439f7b2a58522ae3cd2945",
+        "tree": "627142c41993baae7cfe2e64701a4883f9148434",
+        "clean": true,
+        "files": 996,
+        "sha256": "3B3A7B61B6085F3FF5079DE143EAE023F87AEF1C0EE4279A0DC8B52728181840"
+      }
+    },
+    "startedAtUtc": "2026-09-19T17:31:40.6353337+08:00",
+    "finishedAtUtc": "2026-09-19T17:34:00.3412348+08:00",
+    "stages": [
+      {
+        "id": "avalonia-layout-patch",
+        "status": "passed",
+        "durationMilliseconds": 638
+      },
+      {
+        "id": "dock-patch",
+        "status": "passed",
+        "durationMilliseconds": 622
+      },
+      {
+        "id": "restore",
+        "status": "passed",
+        "durationMilliseconds": 1725
+      },
+      {
+        "id": "build",
+        "status": "passed",
+        "durationMilliseconds": 16101
+      },
+      {
+        "id": "tests",
+        "status": "passed",
+        "durationMilliseconds": 114886
+      },
+      {
+        "id": "contracts",
+        "status": "passed",
+        "durationMilliseconds": 3784
+      },
+      {
+        "id": "packages",
+        "status": "passed",
+        "durationMilliseconds": 31
+      },
+      {
+        "id": "package-acceptance",
+        "status": "passed",
+        "durationMilliseconds": 1447
+      }
+    ],
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "testReports": [
+      {
+        "suite": "host-plugin",
+        "report": {
+          "path": "artifacts/gate/20260919-093141-787fe71a097c/pass-1/tests/host-plugin/host-plugin.trx",
+          "sha256": "c4c6541ac855777d76c9a6479bc56f85b356545ec5c40852de0d843f565fc97d"
+        },
+        "total": 277,
+        "passed": 277,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "host-ui",
+        "report": {
+          "path": "artifacts/gate/20260919-093141-787fe71a097c/pass-1/tests/host-ui/host-ui.trx",
+          "sha256": "0ee44c7acce9a029670551a1033c801bae92e9255d59e29bbc1d169d6aea7dc3"
+        },
+        "total": 228,
+        "passed": 228,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "host-unit",
+        "report": {
+          "path": "artifacts/gate/20260919-093141-787fe71a097c/pass-1/tests/host-unit/host-unit.trx",
+          "sha256": "0a5ca59839e8638636a272ef4f54f4267b82c8b7794e8ee778844d49dd8baa9a"
+        },
+        "total": 578,
+        "passed": 578,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "my-plug-test",
+        "report": {
+          "path": "artifacts/gate/20260919-093141-787fe71a097c/pass-1/tests/my-plug-test/my-plug-test.trx",
+          "sha256": "aced946d4a4e0ed60f84676d1d9f374d60bc92452384995ca4d66b669e4ed00e"
+        },
+        "total": 11,
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "my-plug-test-package",
+        "report": {
+          "path": "artifacts/gate/20260919-093141-787fe71a097c/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+          "sha256": "95de458f35d23beff7bb3a1e102151d38746e5ce43f41bf35b9f6b229ec068ea"
+        },
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "sdk",
+        "report": {
+          "path": "artifacts/gate/20260919-093141-787fe71a097c/pass-1/tests/sdk/sdk.trx",
+          "sha256": "43fd37eb2980a2e9299bfd8395cf177cae2504f5a3b4861a18f1f2801180e9e2"
+        },
+        "total": 91,
+        "passed": 91,
+        "failed": 0,
+        "skipped": 0
+      }
+    ],
+    "totalPassed": 1186.0,
+    "totalFailed": 0,
+    "totalSkipped": 0
+  },
+  "artifacts": [
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.dll",
+      "sha256": "79a0a32d5cce62ae0df75c6d35a7829986135fbc882e9551d362b838b252ba7c"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement.PluginTests/bin/Release/net10.0/RestartHarness/MyAvaloniaManagement.RestartHarness.dll",
+      "sha256": "40501bf32bcb6388958ebe4e1ecc22eb7913d4e4741fc04cf5e951e2c293ffa0"
+    }
+  ],
+  "newRestartTests": [
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostRestartLifecycleTests.关闭结果保留释放异常且重复关闭不重复释放(fail: False)",
+      "outcome": "Passed",
+      "suite": "host-plugin"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"cancel\", error: False)",
+      "outcome": "Passed",
+      "suite": "host-plugin"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"crash\", error: False)",
+      "outcome": "Passed",
+      "suite": "host-plugin"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"ordinary\", error: False)",
+      "outcome": "Passed",
+      "suite": "host-plugin"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式(dotnet: True)",
+      "outcome": "Passed",
+      "suite": "host-plugin"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式(dotnet: False)",
+      "outcome": "Passed",
+      "suite": "host-plugin"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"bad-exit\", error: True)",
+      "outcome": "Passed",
+      "suite": "host-plugin"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"kill\", error: False)",
+      "outcome": "Passed",
+      "suite": "host-plugin"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostRestartLifecycleTests.关闭结果保留释放异常且重复关闭不重复释放(fail: True)",
+      "outcome": "Passed",
+      "suite": "host-plugin"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.最终许可已确认但旧进程仍存活时不能提前拉起",
+      "outcome": "Passed",
+      "suite": "host-plugin"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostRestartLifecycleTests.无法关闭文档Scope时保留Provider且不伪装成功",
+      "outcome": "Passed",
+      "suite": "host-plugin"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.HostRestartUiTests.等待助手期间另一轮原生否决不会被迟到继续关闭",
+      "outcome": "Passed",
+      "suite": "host-ui"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.HostRestartUiTests.助手失败恢复窗口与布局调度并显示中文反馈",
+      "outcome": "Passed",
+      "suite": "host-ui"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.HostRestartUiTests.菜单重启释放自身命令租约_助手就绪后才关闭",
+      "outcome": "Passed",
+      "suite": "host-ui"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.HostRestartUiTests.最终关窗拒绝撤销助手且原工作区可继续使用",
+      "outcome": "Passed",
+      "suite": "host-ui"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.冻结取消不取消已经接受的提交且双重冻结被拒绝",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartHandoffTests.重复最终许可不会造成二次启动",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartHandoffTests.缺少最终成功许可不等待或启动(message: 1)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartHandoffTests.缺少最终成功许可不等待或启动(message: -1)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.冻结等待所有已接受操作且失败不能解释为保存完成(success: False)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.截断或不匹配身份不能完成握手(length: 0)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.冻结等待所有已接受操作且失败不能解释为保存完成(success: True)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartHandoffTests.许可后必须等到成功退出才启动一次(exitCode: 0)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartHandoffTests.父进程身份不符或指向自身时在连接前拒绝(tickOffset: 0)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartHandoffTests.父进程等待取消不启动也不强杀",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartHandoffTests.缺少最终成功许可不等待或启动(message: 3)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.握手身份通过后只读取一个固定字节",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.普通关闭不创建助手且准备取消后不残留请求",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.截断或不匹配身份不能完成握手(length: 31)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.截断或不匹配身份不能完成握手(length: 32)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.启动参数逐项保留_助手参数不污染普通启动(dotnet: False)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.助手验证或准备失败不授予最终关闭且释放冻结(validation: False)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartHandoffTests.新进程创建失败不重试",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartHandoffTests.许可后必须等到成功退出才启动一次(exitCode: 1)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartHandoffTests.不完整或未知助手命令不能落回普通Host(flag: \"--host-restart-helper-v1\")",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartHandoffTests.父进程身份不符或指向自身时在连接前拒绝(tickOffset: 1)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.启动参数逐项保留_助手参数不污染普通启动(dotnet: True)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.设置提交失败让请求可重试而不是丢失已保存意图",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.助手验证或准备失败不授予最终关闭且释放冻结(validation: True)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartTests.重复请求只准备一次_取消恢复设置入口且下一次仍可关闭",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartHandoffTests.缺少最终成功许可不等待或启动(message: 99)",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostRestartHandoffTests.不完整或未知助手命令不能落回普通Host(flag: \"--host-restart-helper-v2\")",
+      "outcome": "Passed",
+      "suite": "host-unit"
+    }
+  ],
+  "processRuns": [
+    {
+      "test": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"bad-exit\", error: True)",
+      "outcome": "Passed",
+      "dataRootTestId": "082652424a34475cb172160a33cbc600",
+      "mode": "bad-exit",
+      "processes": [
+        {
+          "role": "helper",
+          "stage": 1,
+          "pid": 12560,
+          "startTicksUtc": 639254071433628436,
+          "startedAtUtc": "2026-09-19T09:32:23.4355793+00:00",
+          "programReturnCode": 1,
+          "programReturnReceipt": "2026-09-19T09:32:23.9534748+00:00"
+        },
+        {
+          "role": "host",
+          "stage": 0,
+          "pid": 31748,
+          "startTicksUtc": 639254071400558569,
+          "startedAtUtc": "2026-09-19T09:32:20.2367513+00:00",
+          "programReturnCode": 1,
+          "programReturnReceipt": "2026-09-19T09:32:23.9385076+00:00"
+        }
+      ],
+      "initializedStates": [],
+      "protocol": "Production CurrentUserOnly pipe, authenticated Ready, final result acknowledgement and retained parent process handle",
+      "osExitAndOwnedProcessCleanupVerifiedByTest": true,
+      "note": "Program return receipt is not an OS exit timestamp. crash/kill can have no parent return receipt; tests assert no successor. Tokens, raw arguments and paths are omitted."
+    },
+    {
+      "test": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"cancel\", error: False)",
+      "outcome": "Passed",
+      "dataRootTestId": "104b85c97efc42e1819551418412df32",
+      "mode": "cancel",
+      "processes": [
+        {
+          "role": "helper",
+          "stage": 1,
+          "pid": 19608,
+          "startTicksUtc": 639254071519711185,
+          "startedAtUtc": "2026-09-19T09:32:32.0429658+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:32.4237247+00:00"
+        },
+        {
+          "role": "host",
+          "stage": 0,
+          "pid": 33684,
+          "startTicksUtc": 639254071486523391,
+          "startedAtUtc": "2026-09-19T09:32:28.8371257+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:32.4743139+00:00"
+        }
+      ],
+      "initializedStates": [],
+      "protocol": "Production CurrentUserOnly pipe, authenticated Ready, final result acknowledgement and retained parent process handle",
+      "osExitAndOwnedProcessCleanupVerifiedByTest": true,
+      "note": "Program return receipt is not an OS exit timestamp. crash/kill can have no parent return receipt; tests assert no successor. Tokens, raw arguments and paths are omitted."
+    },
+    {
+      "test": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"kill\", error: False)",
+      "outcome": "Passed",
+      "dataRootTestId": "24f6f48aaec8402e87d5ed03f7ca929a",
+      "mode": "kill",
+      "processes": [
+        {
+          "role": "helper",
+          "stage": 1,
+          "pid": 35752,
+          "startTicksUtc": 639254071353144973,
+          "startedAtUtc": "2026-09-19T09:32:15.3849552+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:15.7881561+00:00"
+        },
+        {
+          "role": "host",
+          "stage": 0,
+          "pid": 5636,
+          "startTicksUtc": 639254071319704128,
+          "startedAtUtc": "2026-09-19T09:32:12.1572050+00:00",
+          "programReturnCode": null,
+          "programReturnReceipt": null
+        }
+      ],
+      "initializedStates": [],
+      "protocol": "Production CurrentUserOnly pipe, authenticated Ready, final result acknowledgement and retained parent process handle",
+      "osExitAndOwnedProcessCleanupVerifiedByTest": true,
+      "note": "Program return receipt is not an OS exit timestamp. crash/kill can have no parent return receipt; tests assert no successor. Tokens, raw arguments and paths are omitted."
+    },
+    {
+      "test": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"ordinary\", error: False)",
+      "outcome": "Passed",
+      "dataRootTestId": "3af3889ddf0e41b483a9eab03467a0fd",
+      "mode": "ordinary",
+      "processes": [
+        {
+          "role": "host",
+          "stage": 0,
+          "pid": 35216,
+          "startTicksUtc": 639254071362722397,
+          "startedAtUtc": "2026-09-19T09:32:16.4559287+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:19.5484183+00:00"
+        }
+      ],
+      "initializedStates": [],
+      "protocol": "Production CurrentUserOnly pipe, authenticated Ready, final result acknowledgement and retained parent process handle",
+      "osExitAndOwnedProcessCleanupVerifiedByTest": true,
+      "note": "Program return receipt is not an OS exit timestamp. crash/kill can have no parent return receipt; tests assert no successor. Tokens, raw arguments and paths are omitted."
+    },
+    {
+      "test": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式(dotnet: True)",
+      "outcome": "Passed",
+      "dataRootTestId": "5d50dc3843244f5aba5744600665fe21",
+      "mode": "roundtrip",
+      "processes": [
+        {
+          "role": "helper",
+          "stage": 2,
+          "pid": 28232,
+          "startTicksUtc": 639254071719150816,
+          "startedAtUtc": "2026-09-19T09:32:51.9853840+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:52.1611547+00:00"
+        },
+        {
+          "role": "helper",
+          "stage": 1,
+          "pid": 33320,
+          "startTicksUtc": 639254071700119555,
+          "startedAtUtc": "2026-09-19T09:32:50.0815824+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:50.1925458+00:00"
+        },
+        {
+          "role": "host",
+          "stage": 0,
+          "pid": 10964,
+          "startTicksUtc": 639254071679368236,
+          "startedAtUtc": "2026-09-19T09:32:48.0036492+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:50.1634150+00:00"
+        },
+        {
+          "role": "host",
+          "stage": 1,
+          "pid": 28920,
+          "startTicksUtc": 639254071701867761,
+          "startedAtUtc": "2026-09-19T09:32:50.2568216+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:52.1361529+00:00"
+        },
+        {
+          "role": "host",
+          "stage": 2,
+          "pid": 18540,
+          "startTicksUtc": 639254071721555601,
+          "startedAtUtc": "2026-09-19T09:32:52.2240441+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:53.8846400+00:00"
+        }
+      ],
+      "initializedStates": [
+        {
+          "pid": 10964,
+          "disabled": false,
+          "locked": true,
+          "initialDocuments": 1,
+          "documentsBeforeClose": 2
+        },
+        {
+          "pid": 28920,
+          "disabled": true,
+          "locked": true,
+          "initialDocuments": 1,
+          "documentsBeforeClose": 1
+        },
+        {
+          "pid": 18540,
+          "disabled": false,
+          "locked": true,
+          "initialDocuments": 1,
+          "documentsBeforeClose": 1
+        }
+      ],
+      "protocol": "Production CurrentUserOnly pipe, authenticated Ready, final result acknowledgement and retained parent process handle",
+      "osExitAndOwnedProcessCleanupVerifiedByTest": true,
+      "note": "Program return receipt is not an OS exit timestamp. crash/kill can have no parent return receipt; tests assert no successor. Tokens, raw arguments and paths are omitted."
+    },
+    {
+      "test": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.最终许可已确认但旧进程仍存活时不能提前拉起",
+      "outcome": "Passed",
+      "dataRootTestId": "a67c0c8be3af470caaf986a5407f0e10",
+      "mode": "delayed-exit",
+      "processes": [
+        {
+          "role": "helper",
+          "stage": 1,
+          "pid": 25892,
+          "startTicksUtc": 639254071563215512,
+          "startedAtUtc": "2026-09-19T09:32:36.3957136+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:36.8566005+00:00"
+        },
+        {
+          "role": "host",
+          "stage": 0,
+          "pid": 35664,
+          "startTicksUtc": 639254071529885212,
+          "startedAtUtc": "2026-09-19T09:32:33.1745240+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:36.8247291+00:00"
+        },
+        {
+          "role": "host",
+          "stage": 1,
+          "pid": 33480,
+          "startTicksUtc": 639254071568502206,
+          "startedAtUtc": "2026-09-19T09:32:36.9229058+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:38.0863799+00:00"
+        }
+      ],
+      "initializedStates": [],
+      "protocol": "Production CurrentUserOnly pipe, authenticated Ready, final result acknowledgement and retained parent process handle",
+      "osExitAndOwnedProcessCleanupVerifiedByTest": true,
+      "note": "Program return receipt is not an OS exit timestamp. crash/kill can have no parent return receipt; tests assert no successor. Tokens, raw arguments and paths are omitted."
+    },
+    {
+      "test": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式(dotnet: False)",
+      "outcome": "Passed",
+      "dataRootTestId": "ad82c0e77b56492b9e6d63de32dbbf45",
+      "mode": "roundtrip",
+      "processes": [
+        {
+          "role": "helper",
+          "stage": 2,
+          "pid": 24164,
+          "startTicksUtc": 639254071653522375,
+          "startedAtUtc": "2026-09-19T09:32:45.4243805+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:45.6331691+00:00"
+        },
+        {
+          "role": "helper",
+          "stage": 1,
+          "pid": 32384,
+          "startTicksUtc": 639254071632839919,
+          "startedAtUtc": "2026-09-19T09:32:43.3579140+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:43.5186337+00:00"
+        },
+        {
+          "role": "host",
+          "stage": 0,
+          "pid": 33648,
+          "startTicksUtc": 639254071585910771,
+          "startedAtUtc": "2026-09-19T09:32:38.7824781+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:43.4905774+00:00"
+        },
+        {
+          "role": "host",
+          "stage": 1,
+          "pid": 9340,
+          "startTicksUtc": 639254071635125268,
+          "startedAtUtc": "2026-09-19T09:32:43.5841356+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:45.6021689+00:00"
+        },
+        {
+          "role": "host",
+          "stage": 2,
+          "pid": 24832,
+          "startTicksUtc": 639254071656271373,
+          "startedAtUtc": "2026-09-19T09:32:45.7006760+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:47.4531624+00:00"
+        }
+      ],
+      "initializedStates": [
+        {
+          "pid": 33648,
+          "disabled": false,
+          "locked": true,
+          "initialDocuments": 1,
+          "documentsBeforeClose": 2
+        },
+        {
+          "pid": 9340,
+          "disabled": true,
+          "locked": true,
+          "initialDocuments": 1,
+          "documentsBeforeClose": 1
+        },
+        {
+          "pid": 24832,
+          "disabled": false,
+          "locked": true,
+          "initialDocuments": 1,
+          "documentsBeforeClose": 1
+        }
+      ],
+      "protocol": "Production CurrentUserOnly pipe, authenticated Ready, final result acknowledgement and retained parent process handle",
+      "osExitAndOwnedProcessCleanupVerifiedByTest": true,
+      "note": "Program return receipt is not an OS exit timestamp. crash/kill can have no parent return receipt; tests assert no successor. Tokens, raw arguments and paths are omitted."
+    },
+    {
+      "test": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"crash\", error: False)",
+      "outcome": "Passed",
+      "dataRootTestId": "eb5061908435406fb08a6e3c3a7e39f4",
+      "mode": "crash",
+      "processes": [
+        {
+          "role": "helper",
+          "stage": 1,
+          "pid": 32244,
+          "startTicksUtc": 639254071477372660,
+          "startedAtUtc": "2026-09-19T09:32:27.8086410+00:00",
+          "programReturnCode": 0,
+          "programReturnReceipt": "2026-09-19T09:32:28.1827977+00:00"
+        },
+        {
+          "role": "host",
+          "stage": 0,
+          "pid": 35580,
+          "startTicksUtc": 639254071444363468,
+          "startedAtUtc": "2026-09-19T09:32:24.6205032+00:00",
+          "programReturnCode": null,
+          "programReturnReceipt": null
+        }
+      ],
+      "initializedStates": [],
+      "protocol": "Production CurrentUserOnly pipe, authenticated Ready, final result acknowledgement and retained parent process handle",
+      "osExitAndOwnedProcessCleanupVerifiedByTest": true,
+      "note": "Program return receipt is not an OS exit timestamp. crash/kill can have no parent return receipt; tests assert no successor. Tokens, raw arguments and paths are omitted."
+    }
+  ],
+  "earlierSpecializedReports": [
+    {
+      "report": {
+        "path": "artifacts/host-v14/plugin-full/v14-plugin.trx",
+        "sha256": "cb87ae0ceb05a75bb100c804eefcd5c2c1f7714a78f513c0001b5ed30d5fef18"
+      },
+      "passed": 274,
+      "failed": 1,
+      "skipped": 0
+    },
+    {
+      "report": {
+        "path": "artifacts/host-v14/process-documents/v14-process.trx",
+        "sha256": "0db82f4f1b5371e62b24475cf641a2c08174ebd777ee6812b15db1677ed67966"
+      },
+      "passed": 4,
+      "failed": 2,
+      "skipped": 0
+    },
+    {
+      "report": {
+        "path": "artifacts/host-v14/process-documents-final/v14-process.trx",
+        "sha256": "df9e1d7f9762339dbb9107f24cf708a8bed93eb95fdb7dc66946bc9a738ecf7c"
+      },
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "report": {
+        "path": "artifacts/host-v14/process-initial/v14-process.trx",
+        "sha256": "83b6c054fd5aa3432c1dbab5d18fab14d6a9e764850e58ec1b3e786e4547f586"
+      },
+      "passed": 4,
+      "failed": 2,
+      "skipped": 0
+    },
+    {
+      "report": {
+        "path": "artifacts/host-v14/restart-final/v14-restart.trx",
+        "sha256": "a3ee7f876309bde7285c8ba95712f513ba6ddbbe116ffd6bce0697f46cb2c459"
+      },
+      "passed": 9,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "report": {
+        "path": "artifacts/host-v14/ui-documents/v14-ui.trx",
+        "sha256": "72ac7cea829ce08a9845775589901eba1e368ec5f8f77f09cf9a9e06118c31f6"
+      },
+      "passed": 3,
+      "failed": 1,
+      "skipped": 0
+    },
+    {
+      "report": {
+        "path": "artifacts/host-v14/ui-documents-final/v14-ui.trx",
+        "sha256": "d29056e5e5c304e90d0bbeccfe3dca6cc4e6bc61b9cce27d4289fb0b1c55fea3"
+      },
+      "passed": 4,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "report": {
+        "path": "artifacts/host-v14/ui-full/v14-ui.trx",
+        "sha256": "3ea47dec1dfb548858366f622c0243067c0bd5c852a19ecd7325bb05730a925f"
+      },
+      "passed": 226,
+      "failed": 1,
+      "skipped": 0
+    },
+    {
+      "report": {
+        "path": "artifacts/host-v14/ui-initial/v14-ui.trx",
+        "sha256": "1c6e2ec3f6779a038a23e5d4267fddd368bb47c0c0efac6b9b852d429192c30e"
+      },
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "report": {
+        "path": "artifacts/host-v14/ui-restart-final/v14-ui.trx",
+        "sha256": "c72f0be8fd0cc16e0ca0630371a6da758297d8279a64496f39587c746dc1a10f"
+      },
+      "passed": 22,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "report": {
+        "path": "artifacts/host-v14/unit-2/v14-unit.trx",
+        "sha256": "df01e935f6b106225ef743a479b3d28190e99f3f686a9f3a1ad9a0d78e05149c"
+      },
+      "passed": 30,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "report": {
+        "path": "artifacts/host-v14/unit-final/v14-unit.trx",
+        "sha256": "2c7a3843b5fb67f8f310994bbc335abcfc7dce494f91043925f245d3fa7cc4a6"
+      },
+      "passed": 575,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "report": {
+        "path": "artifacts/host-v14/unit-full/v14-unit.trx",
+        "sha256": "64a6a2213841f551492b45b8fdc2449942f5b9d7babb6ac81eaec3d0203947ec"
+      },
+      "passed": 573,
+      "failed": 2,
+      "skipped": 0
+    },
+    {
+      "report": {
+        "path": "artifacts/host-v14/unit-initial/v14-unit.trx",
+        "sha256": "c3c396479baf8cc7a8b6f09804b1ef834f9b6a1957b1e41ed8e02efa52e28755"
+      },
+      "passed": 20,
+      "failed": 1,
+      "skipped": 0
+    }
+  ],
+  "earlierFullRuns": [
+    {
+      "path": "artifacts/gate/20260919-090658-3cff108523ad/summary.json",
+      "sha256": "9e8d49ae552a1a12e6cb33b06a0a8a0f15612b48599a9236913d93b144c6f088"
+    },
+    {
+      "path": "artifacts/gate/20260919-092849-3cff108523ad/summary.json",
+      "sha256": "efe7c3cea5e94f4df71976f2a1765ee787b77b59fabbb9e2f9706b873c4d7e97"
+    }
+  ],
+  "matrix": {
+    "mapping": "docs/maintenance/host-v14-automatic-restart-verification.md#10-实际测试映射与观察边界",
+    "C": [
+      "HostRestartTests",
+      "HostRestartUiTests",
+      "DocumentCloseTests",
+      "PluginEnablementServiceTests",
+      "DockLayoutV3UiTests"
+    ],
+    "LH": [
+      "HostRestartTests",
+      "HostRestartHandoffTests",
+      "HostRestartProcessTests"
+    ],
+    "R": [
+      "HostRestartLifecycleTests",
+      "HostLifecycleOwnershipTests",
+      "PluginLifecycleCoordinatorTests",
+      "HostDiagnosticsTests"
+    ],
+    "U": [
+      "HostRestartUiTests",
+      "PluginEnablementUiTests",
+      "WorkbenchCommandProjectionTests",
+      "WorkbenchCommandPresentationUiTests",
+      "DockLayoutV3UiTests"
+    ],
+    "X": [
+      "HostRestartProcessTests",
+      "PluginEnablementLoadingTests",
+      "PluginEnablementRetentionTests"
+    ],
+    "limits": [
+      "OS PID reuse not artificially forced; mismatch/self rejection and retained handle verified.",
+      "Timeout is tested with explicit cancellation, not a 90-second wait.",
+      "New process creation failure uses a system-side-effect test delegate.",
+      "Diagnostic Dispose failure protection code-reviewed; no real disk-failure injection."
+    ]
+  },
+  "postVerificationNonBehavioralChanges": {
+    "path": "Host/MyAvaloniaManagement.PluginTests/TestAssets/RestartHarness/packages.lock.json",
+    "change": "CRLF to LF only; package graph unchanged",
+    "originalSha256": "4076250f2520f50a927274bfe83d714c81a65f7259aae90ecbd86b5f7ccde352",
+    "normalizedSha256": "cd41f8ce71e6c5a93e285d1f6b15c56aad64dd60a4ab7b92b44736793197c5a6",
+    "semanticJsonEqual": true,
+    "lockedRestoreCommand": "dotnet restore MyAvaloniaManagement.sln --locked-mode --nologo",
+    "lockedRestoreExitCode": 0,
+    "note": "After final verify, only this non-embedded JSON newline normalization and final evidence JSON were changed. Production code and embedded Markdown match the verified implementation commit."
+  },
+  "documentChecks": {
+    "markdownFiles": 16,
+    "localLinksExamined": 389,
+    "missingInRepositoryTargets": 0,
+    "existingExternalRepositoryLinksUnavailable": 4,
+    "gitDiffCheck": "passed after lock newline normalization"
+  },
+  "separateStatuses": {
+    "nativeDesktopM01ToM07": "not executed",
+    "singleFileSelfContainedX09": "not executed",
+    "externalBusinessPlugins": "not executed",
+    "installationDeployment": "not performed",
+    "publicRelease": "not performed"
+  },
+  "prohibitedWorkflows": {
+    "aiflow": "not used",
+    "windowsCI": "not used",
+    "seal": "not run",
+    "releaseSmoke": "not run",
+    "releaseCoverage": "not run",
+    "releaseRepeatability": "not run"
+  },
+  "releaseEligible": false
+}
