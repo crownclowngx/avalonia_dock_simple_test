@@ -596,3 +596,11 @@ V9 的 DockTabPointerCaptureGuard 处理 Direct 捕获丢失与手势结束；�
 当前 Workflow 支持同插件兼任 Provider/Consumer，拒绝自调用及 Handler 异步链嵌套调用。详细预算、Schema 和 Run 边界见[Workflow 契约](../../../../docs/reference/workflow-actions.md)；Command 与 Workflow 不共享另一套执行器，用户入口规则见[Command 契约](../../../../docs/reference/workbench-commands.md)。
 
 SDK 的稳定身份、Document 修订保存及 Layout schema 3 的细节分别由[API](../../../../docs/reference/plugin-sdk-api-compatibility.md)、[持久化](../../../../docs/reference/document-persistence.md)和[布局](../../../../docs/reference/dock-layout-snapshot-v3.md)说明。本页不重复维护历史测试数量或发布哈希。
+
+## V13 插件启动选择
+
+HostRuntime 通过 HostDataRootPolicy 定位开关文件，读取冻结设置后传给 AssemblyLoaderHelper。发现先确认全部清单身份，再在 ALC、DLL 与模块创建前过滤。PluginDiscoverySnapshot 保留未加载候选和首份启动策略，缓存按插件根与数据根隔离，不按设置修订重新加载。
+
+PluginEnablementSettingsStore 只管理原子文件提交；PluginEnablementService 通过窄读写端口拥有已保存的下次意图。PluginStatusQuery 组合注册、可用性、诊断、候选和意图；窗口只调用操作端口，不接触 Loader。保存成功后才发布状态，关闭窗口不取消已接受提交，迟到回调不访问已释放窗口。工作区退出时禁用新操作。
+
+未加载产物由 PluginDashboardEvidence 只读磁盘/PE，不冒充已核对运行实例。布局与收藏沿用缺失插件保留规则；SDK、Provider/Scope 与生命周期协议不变。详细契约见[插件启用与禁用](../../../../docs/reference/plugin-enablement.md)。

@@ -1,5 +1,7 @@
 # 待办与验收
 
+V13 插件开关的实现与专项已完成，原生桌面检查待验收。入口：[计划与阶段](host-v13-plugin-enablement-plan.md)、[专用开发验证](../maintenance/host-v13-plugin-enablement-verification.md)、[开发记录与最终证据](../archive/records/host-v13/development-acceptance.md)。本轮只运行本地开发 verify，不使用 AIFLOW、Windows CI 或发布门禁。
+
 > 用途：集中保留尚未完成的工作。状态：按下表分别跟踪；核对日期：2026-09-17。依据为现有源码与历史验收记录；本页不把未来候选视为已授权实施任务。
 
 | 工作名称 | 状态 / 所属范围 | 事实依据 | 完成条件 |

@@ -1,5 +1,7 @@
 # 插件兼容开发验证
 
+V13 新增未加载候选磁盘检查：专项会枚举 ALC 确认不加载程序集，并检查“本次未加载”文案；历史报告不替代当前状态。测试和证据见[插件开关专用验证](host-v13-plugin-enablement-verification.md)。
+
 > 用途：维护者验证具体产物，生成可由插件看板读取的证据。本页属于开发流程，不是发布流程。
 > 规则和报告含义见[兼容契约](../reference/plugin-compatibility.md)，界面见[插件看板](../quick-start/plugin-status.md)。
 

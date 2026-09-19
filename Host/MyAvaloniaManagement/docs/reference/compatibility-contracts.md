@@ -345,3 +345,7 @@ V11-P2 的工具浮窗关闭保持以下行为：最后一个 Tool 获准隐藏�
 - 导入报告校验格式与身份后原子保存至 Host 数据根；来源标签不构成签名认证。复制及导出不传播报告任意正文。
 - `plugin.build.json` 是可选旁路信息，缺失表示编译依赖未知，不扩大 manifest schema 2。
 - 唯一规则源、指纹与矩阵的详细语义见[插件兼容证据契约](../../../../docs/reference/plugin-compatibility.md)。
+
+## 12. 插件启用意图
+
+V13 开关属于 Host internal，保存到独立 schema 1 文件，完整重启后生效；不改变 SDK public API、manifest、Document 或 Layout 格式。清单身份检查先于禁用过滤，禁用项不加载 DLL、构造 Provider 或注册贡献。当前状态、下次意图和待重启差异分别展示；错误不能转成默认全启用。原有运行失败隔离、关闭取消、缺失工具偏好和诊断脱敏保持原协议。详见[插件开关契约](../../../../docs/reference/plugin-enablement.md)。

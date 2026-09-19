@@ -1,5 +1,7 @@
 # 项目文档导航
 
+V13 插件开关已实现：在[插件看板](quick-start/plugin-status.md)保存下次启动设置，重启生效。见[行为契约](reference/plugin-enablement.md)、[实施计划](roadmap/host-v13-plugin-enablement-plan.md)、[专用验证](maintenance/host-v13-plugin-enablement-verification.md)及[开发记录](archive/records/host-v13/development-acceptance.md)；最终 verify 结果以记录内 JSON 为准，原生桌面待验收。
+
 > 用途：主项目唯一总导航。状态：当前；核对日期：2026-09-17。技术基线见[版本与交付边界](reference/platform-baseline.md)。
 
 ## 使用工作台

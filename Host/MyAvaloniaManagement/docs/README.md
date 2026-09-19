@@ -1,5 +1,7 @@
 # Host 内部文档
 
+V13 插件开关已接入：在看板保存下次启动设置，在 DLL 加载前过滤。见[行为契约](../../../docs/reference/plugin-enablement.md)、[实施计划](../../../docs/roadmap/host-v13-plugin-enablement-plan.md)、[专用验证](../../../docs/maintenance/host-v13-plugin-enablement-verification.md)及[开发记录](../../../docs/archive/records/host-v13/development-acceptance.md)。
+
 > 用途：维护 Host 实现及外部可观察行为。状态：当前；核对日期：2026-09-17。总导航在[项目文档](../../../docs/README.md)。
 
 按修改目的阅读：

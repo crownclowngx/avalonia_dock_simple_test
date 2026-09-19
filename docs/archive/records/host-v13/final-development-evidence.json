@@ -1,0 +1,2409 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "date": "2026-09-19",
+  "scope": "V13 Host plugin enablement; changes apply only after full process restart",
+  "branch": "master",
+  "implementationCommits": [
+    "41edc80",
+    "ef2bc30"
+  ],
+  "baseline": {
+    "summary": {
+      "path": "artifacts/gate/20260919-072501-58d7bee8957f/summary.json",
+      "sha256": "08cafb2e1757d3b7355e6fa85c5a7e4c924037484d287888005dfcfda14e2988"
+    },
+    "passed": true,
+    "totalPassed": 1106,
+    "preservedDiff": {
+      "path": "artifacts/host-v13/baseline/working-tree.patch",
+      "sha256": "bace588b92421c844cc9a4dd25d7bac724311e5287c44afcbe6d547f1381cb46"
+    },
+    "changedFiles": {
+      "path": "artifacts/host-v13/baseline/existing-changes.json",
+      "sha256": "1ed72edd88d7962fb41a9c00c498ea141aa74cf865cd9f19fc493b37193dcad1"
+    }
+  },
+  "finalGate": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "exitCode": 0,
+    "summary": {
+      "path": "artifacts/gate/20260919-080207-ef2bc30987f1/summary.json",
+      "sha256": "570226af14b3f79724e74f15da76291bb05dd7417a8eb18e6f1c5064553fdffb"
+    },
+    "runId": "20260919-080207-ef2bc30987f1",
+    "sources": {
+      "main": {
+        "revision": "ef2bc30987f133a6dd94b4ac8532fbb4cfedb56a",
+        "tree": "623fa26e1a2861ad1bc462cad59fb67cef999be6",
+        "clean": false,
+        "files": 972,
+        "sha256": "BAFE76E7F3157951B090B0697EFC2A0BBE7A9EA52EAA4EB065F6C7C369666D1F"
+      }
+    },
+    "stages": [
+      {
+        "id": "avalonia-layout-patch",
+        "status": "passed",
+        "durationMilliseconds": 596,
+        "evidencePath": "D:\\code\\bishe\\common\\avalonia_dock_simple_test\\artifacts\\gate\\20260919-080207-ef2bc30987f1\\pass-1"
+      },
+      {
+        "id": "dock-patch",
+        "status": "passed",
+        "durationMilliseconds": 598,
+        "evidencePath": "D:\\code\\bishe\\common\\avalonia_dock_simple_test\\artifacts\\gate\\20260919-080207-ef2bc30987f1\\pass-1"
+      },
+      {
+        "id": "restore",
+        "status": "passed",
+        "durationMilliseconds": 1558,
+        "evidencePath": "D:\\code\\bishe\\common\\avalonia_dock_simple_test\\artifacts\\gate\\20260919-080207-ef2bc30987f1\\pass-1"
+      },
+      {
+        "id": "build",
+        "status": "passed",
+        "durationMilliseconds": 9730,
+        "evidencePath": "D:\\code\\bishe\\common\\avalonia_dock_simple_test\\artifacts\\gate\\20260919-080207-ef2bc30987f1\\pass-1"
+      },
+      {
+        "id": "tests",
+        "status": "passed",
+        "durationMilliseconds": 57017,
+        "evidencePath": "D:\\code\\bishe\\common\\avalonia_dock_simple_test\\artifacts\\gate\\20260919-080207-ef2bc30987f1\\pass-1"
+      },
+      {
+        "id": "contracts",
+        "status": "passed",
+        "durationMilliseconds": 3541,
+        "evidencePath": "D:\\code\\bishe\\common\\avalonia_dock_simple_test\\artifacts\\gate\\20260919-080207-ef2bc30987f1\\pass-1"
+      },
+      {
+        "id": "packages",
+        "status": "passed",
+        "durationMilliseconds": 26,
+        "evidencePath": "D:\\code\\bishe\\common\\avalonia_dock_simple_test\\artifacts\\gate\\20260919-080207-ef2bc30987f1\\pass-1"
+      },
+      {
+        "id": "package-acceptance",
+        "status": "passed",
+        "durationMilliseconds": 1329,
+        "evidencePath": "D:\\code\\bishe\\common\\avalonia_dock_simple_test\\artifacts\\gate\\20260919-080207-ef2bc30987f1\\pass-1"
+      }
+    ],
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "totalPassed": 1143.0,
+    "failed": 0,
+    "skipped": 0,
+    "tests": [
+      {
+        "path": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "38cb0a989e1fdef048c2b1fb522a6c297ec47567e9f7d525fb93fd7ea660ff1d",
+        "counts": {
+          "total": 266,
+          "passed": 266,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "path": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "0bae9ac663971c4b8dafea12beb4a834360939d3969325ec8f3ab886b6ff8624",
+        "counts": {
+          "total": 224,
+          "passed": 224,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "path": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "4a9c94b41360582fdcb3971bc5b70cb275a349d9c59d8e858236b7a8d6cdefe9",
+        "counts": {
+          "total": 550,
+          "passed": 550,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "path": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/my-plug-test/my-plug-test.trx",
+        "sha256": "537fab2806e96c965788b2ca9adc1c51cad89d91ad8efad764192c6ea73bedc8",
+        "counts": {
+          "total": 11,
+          "passed": 11,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "path": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+        "sha256": "0a4f889910dbda47b81955d955bfebbf6462bb205bbaf056161e1d38d609c764",
+        "counts": {
+          "total": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0
+        }
+      },
+      {
+        "path": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx",
+        "sha256": "5a81488cdc638c2c95e23c7761b7a7e34f79706e32d0d690984996c6ca3afad2",
+        "counts": {
+          "total": 91,
+          "passed": 91,
+          "failed": 0,
+          "skipped": 0
+        }
+      }
+    ]
+  },
+  "phaseRuns": [
+    {
+      "path": "artifacts/host-v13/unit/v13-unit.trx",
+      "sha256": "a1ac0fec7d7560df3757e78c0eced86fae55ca0e810d84aeb2408b73698fd014",
+      "counts": {
+        "passed": 100,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "path": "artifacts/host-v13/plugin/v13-plugin.trx",
+      "sha256": "0b941d9893ad0c431d490b679956dda48184e1cd92beb1f88c22b366e3b5537e",
+      "counts": {
+        "passed": 77,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "path": "artifacts/host-v13/ui/v13-ui-final.trx",
+      "sha256": "d1258d80beb5a98d217b17b66ce74e891ecab6e51fabb474388c3578c8d44943",
+      "counts": {
+        "passed": 37,
+        "failed": 0,
+        "skipped": 0
+      }
+    }
+  ],
+  "newCases": [
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用判断在文件布局与SDK预检之前(change: \"incompatible-sdk\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用判断在文件布局与SDK预检之前(change: \"PluginIsolation.PluginV1.deps.json\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用判断在文件布局与SDK预检之前(change: \"PluginIsolation.PluginV1.dll\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用项保留身份且没有加载上下文与模块目录",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用项检查磁盘产物不加载程序集且保留启动事实",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.配置错误暂停加载而坏清单仍有独立诊断",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.同次启动保留启用插件且目录改名不改变禁用身份",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.相同配置根缓存启动策略但不同数据根可独立发现",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.重复身份即使被禁用仍在任何加载之前拒绝",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.独立进程验收入口",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.三次新进程证明禁用与重新启用且所有贡献随重启变化",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.目录诊断与候选合并并保留失败插件的操作身份",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.配置未知不冒充禁用且查询不创建文件",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementRetentionTests.禁用期间保存布局仍保留位置显示意图和收藏且重新启用后可投影",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementServiceTests.保存失败不提交且显式重读解决外部冲突",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementServiceTests.连续保存与改回只更新已保存意图并拒绝未知身份",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.两个实例不能用旧快照覆盖最新意图且锁竞争不改变文件",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.设置集合不可被调用方反向修改且稳定按身份保存",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.首次默认启用且不同数据根独立并保留未安装身份",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.损坏主文件恢复有效备份但未知未来格式不能回退",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.文件大小限制和读取错误不伪装首次使用",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{}\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":\\\"1\\\",\\\"disabledPluginIds\\\":[]}\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":[],}\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":[],\\\"ty\"···)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":[\\\"inva\"···)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":null}\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"schemaVersion\\\":1,\\\"disable\"···)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.原子提交前失败保留旧文件与快照且清理临时文件",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.保存期间禁用重复操作且关窗不撤销已接受提交",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.看板开关保存并改回取消待重启且重开保留选择",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.配置错误时管理窗口可打开且开关只读",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.外部写冲突恢复开关且重新读取后可操作并验证窄窗口主题",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    }
+  ],
+  "matrix": [
+    {
+      "id": "S01",
+      "executedTests": [
+        "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.未配置覆盖时默认进入独立V2目录(configuredDataDirectory: \"   \")",
+        "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.未配置覆盖时默认进入独立V2目录(configuredDataDirectory: \"\")",
+        "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.未配置覆盖时默认进入独立V2目录(configuredDataDirectory: null)",
+        "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.显式覆盖表示完整根目录且不再追加V2",
+        "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.V2存储不读取改写迁移或删除V1目录",
+        "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.V3可以读取既有V2文档与布局且不会改写源文件",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.首次默认启用且不同数据根独立并保留未安装身份"
+      ]
+    },
+    {
+      "id": "S02",
+      "executedTests": [
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.设置集合不可被调用方反向修改且稳定按身份保存",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.文件大小限制和读取错误不伪装首次使用",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{}\")",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":\\\"1\\\",\\\"disabledPluginIds\\\":[]}\")",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":[],}\")",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":[],\\\"ty\"···)",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":[\\\"inva\"···)",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":null}\")",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"schemaVersion\\\":1,\\\"disable\"···)"
+      ]
+    },
+    {
+      "id": "S03",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.同次启动保留启用插件且目录改名不改变禁用身份",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.首次默认启用且不同数据根独立并保留未安装身份"
+      ]
+    },
+    {
+      "id": "S04",
+      "executedTests": [
+        "MyAvaloniaManagement.Tests.PluginEnablementServiceTests.保存失败不提交且显式重读解决外部冲突",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.原子提交前失败保留旧文件与快照且清理临时文件",
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.外部写冲突恢复开关且重新读取后可操作并验证窄窗口主题"
+      ]
+    },
+    {
+      "id": "S05",
+      "executedTests": [
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.损坏主文件恢复有效备份但未知未来格式不能回退"
+      ]
+    },
+    {
+      "id": "S06",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.配置错误暂停加载而坏清单仍有独立诊断",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.损坏主文件恢复有效备份但未知未来格式不能回退",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.文件大小限制和读取错误不伪装首次使用",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{}\")",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":\\\"1\\\",\\\"disabledPluginIds\\\":[]}\")",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":[],}\")",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":[],\\\"ty\"···)",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":[\\\"inva\"···)",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":null}\")",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"schemaVersion\\\":1,\\\"disable\"···)"
+      ]
+    },
+    {
+      "id": "S07",
+      "executedTests": [
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: False)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: True)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: False)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: True)",
+        "MyAvaloniaManagement.Tests.PluginEnablementServiceTests.连续保存与改回只更新已保存意图并拒绝未知身份",
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.保存期间禁用重复操作且关窗不撤销已接受提交"
+      ]
+    },
+    {
+      "id": "S08",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.相同配置根缓存启动策略但不同数据根可独立发现",
+        "MyAvaloniaManagement.Tests.PluginEnablementServiceTests.保存失败不提交且显式重读解决外部冲突",
+        "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.两个实例不能用旧快照覆盖最新意图且锁竞争不改变文件"
+      ]
+    },
+    {
+      "id": "S09",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用项保留身份且没有加载上下文与模块目录",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.配置未知不冒充禁用且查询不创建文件",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.查询展示声明而不创建插件并读取真实可用性门控"
+      ]
+    },
+    {
+      "id": "L01",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用项保留身份且没有加载上下文与模块目录",
+        "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.同次启动保留启用插件且目录改名不改变禁用身份",
+        "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.三次新进程证明禁用与重新启用且所有贡献随重启变化"
+      ]
+    },
+    {
+      "id": "L02",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"PluginIsolation.Plugin.AbstractPluginModule\")",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"PluginIsolation.Plugin.GenericPluginModule`1\")",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"PluginIsolation.Plugin.InternalPluginModule\")",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"pluginisolation.plugin.IsolationPluginModule\")",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"PluginIsolation.Plugin.MissingPluginModule\")",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"PluginIsolation.Plugin.PrivateConstructorPluginMod\"···)",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"PluginIsolation.Plugin.WrongContractEntry\")",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.模块缺少public无参构造时返回稳定结构诊断",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.内置业务插件进入最终V3入口",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.清单入口未实现V2模块时在激活前被隔离",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.缺少清单时不加载入口程序集",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.缺少deps时隔离当前目录且不加载入口程序集",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.入口程序集缺失时在模块构造前隔离目录",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.未声明的第二模块不会改变精确入口验证结果",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.有效deps与精确入口形成可配置Catalog",
+        "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.deps声明的同名不同版本私有依赖仍按插件隔离",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.保留端口和贡献根违规记录专用脱敏诊断且不构建Provider",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件从空集合开始且清理私有描述符不影响宿主对象图",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件声明Host命名空间时在Provider构建前隔离且Registry只保留真实插件",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件私有服务不能由宿主或另一个插件解析",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件Provider按规范PluginId建立并在宿主之前逆序释放",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.开放泛型Keyed服务和多实现保留MicrosoftDI原生语义",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.每插件DocumentScope使用本插件服务并可独立关闭",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.模块公共构造失败发生在HostProvider建立后且只隔离自身",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.模块配置和Provider构建失败分别隔离且成功插件仍发布",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.使用已发布SDK33编译的旧插件可在新Host完成真实组合",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.四个最终Sdk测试插件分别构建私有Provider并形成可用Registry",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.图标与模块异常Provider失败和重复声明一起原子隔离",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.越权Document与Tool在局部Seal隔离且无冲突插件继续发布",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.Host与插件Provider只解析各自拥有的消息器"
+      ]
+    },
+    {
+      "id": "L03",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用判断在文件布局与SDK预检之前(change: \"incompatible-sdk\")",
+        "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用判断在文件布局与SDK预检之前(change: \"PluginIsolation.PluginV1.deps.json\")",
+        "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用判断在文件布局与SDK预检之前(change: \"PluginIsolation.PluginV1.dll\")"
+      ]
+    },
+    {
+      "id": "L04",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.重复身份即使被禁用仍在任何加载之前拒绝"
+      ]
+    },
+    {
+      "id": "L05",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.配置错误暂停加载而坏清单仍有独立诊断",
+        "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.插件版本与程序集版本必须精确一致",
+        "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.超过大小限制的清单在JSON解析前被拒绝",
+        "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.超过JSON深度限制的清单被拒绝且不产生部分模型",
+        "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.非法身份版本区间和入口路径均被拒绝",
+        "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.模块上下文身份只来自已经验证的清单",
+        "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.缺失空白损坏未知字段重复字段与未知Schema均被稳定拒绝",
+        "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.有效清单可解析为规范化四段版本",
+        "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.重复PluginId在任何入口程序集加载前形成致命歧义",
+        "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.SDK版本区间遵循左闭右开边界并返回单一稳定错误码",
+        "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.V2插件在执行入口前被拒绝且不阻断V3插件"
+      ]
+    },
+    {
+      "id": "L06",
+      "executedTests": [
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.目录诊断与候选合并并保留失败插件的操作身份",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.尚未提交注册表的插件仍可从后期启动失败诊断找到(phaseName: \"HostContainerBuild\", code: \"PLUGIN_CONTAINER_BUILD_FAILED\")",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.尚未提交注册表的插件仍可从后期启动失败诊断找到(phaseName: \"PluginModuleDiscovery\", code: \"PLUGIN_MODULE_ACTIVATION_FAILED\")",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.尚未提交注册表的插件仍可从后期启动失败诊断找到(phaseName: \"PluginServiceRegistration\", code: \"PLUGIN_SERVICE_REGISTRATION_FAILED\")",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"HostCancelled\", available: False, problem: True)",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"InitializationFailed\", available: False, problem: True)",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"InitializationTimedOut\", available: False, problem: True)",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"Initializing\", available: False, problem: False)",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"NotStarted\", available: False, problem: False)",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"Ready\", available: True, problem: False)",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"ShutdownFailed\", available: False, problem: True)",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"ShutdownTimedOut\", available: False, problem: True)",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"Stopped\", available: False, problem: False)",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"Stopping\", available: False, problem: False)"
+      ]
+    },
+    {
+      "id": "L07",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.相同配置根缓存启动策略但不同数据根可独立发现"
+      ]
+    },
+    {
+      "id": "L08",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.三次新进程证明禁用与重新启用且所有贡献随重启变化",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.空结果有明确说明且可用筛选支持有警告的插件",
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.配置错误时管理窗口可打开且开关只读",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.菜单和命令面板打开同一非模态窗口且不产生工具或文档",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.大目录使用虚拟化且重激活读取最新数据并尊重命令取消",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.搜索筛选刷新和复制通过真实控件工作并验证深浅主题与窄窗口",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.重开取消Owner关闭和Runtime释放均遵循窗口所有权且各Runtime隔离"
+      ]
+    },
+    {
+      "id": "L09",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.插件组合间接创建Workflow管理器_回滚使用已登记实例而不创建Workspace",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.迟到取消异常在出口关闭后只被观察_不再写入日志",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.初始化部分成功后解析下一项失败_回滚只关闭已成功项",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.初始化迟到成功在关闭位置纳入_仍按声明逆序且不可用",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.调用方取消Shutdown等待_当前项使用剩余宽限而后续项不再调度",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.冻结参与者后拒绝新交付_重复冻结不创建服务",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.关闭诊断出口等待正在报告的调用_关闭后不访问已结束会话",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.回滚Shutdown及诊断再次失败_不得覆盖启动异常或释放容器",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.宽限截止时间不会因重复请求重新计算",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.启动后半程失败_真实Runtime回滚调用已启动项并保留原始异常",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.容器释放异常不阻止另一个容器释放_并汇总结果",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.入口关闭异常仍尝试其他入口_不能放行Provider",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.生命周期开始前启动失败_不误调Shutdown且完整释放",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.委托保持调用线程_自身TimeoutException应归为失败",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.业务调用未排空时不关闭生命周期也不释放Provider(command: False)",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.业务调用未排空时不关闭生命周期也不释放Provider(command: True)",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.已越过关闭位置的初始化随后成功_最终检查不能误放行",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.原任务已结束但取消通知仍阻塞_不能释放取消资源或Provider(hostCancellation: False)",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.原任务已结束但取消通知仍阻塞_不能释放取消资源或Provider(hostCancellation: True)",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.正常关闭先停生命周期再释放两个真实容器_并发请求共用结果",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Scope清理失败仍尝试Shutdown_但保留对象图",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Shutdown超时宽限内成功_真实任务仍访问服务时不释放",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Shutdown持续挂起_宽限后保留且迟到成功不自动释放",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Shutdown已失败或取消_保守政策保留但不能误报仍在运行(cancelled: False)",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Shutdown已失败或取消_保守政策保留但不能误报仍在运行(cancelled: True)",
+        "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.三次新进程证明禁用与重新启用且所有贡献随重启变化",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.菜单和命令面板打开同一非模态窗口且不产生工具或文档",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.大目录使用虚拟化且重激活读取最新数据并尊重命令取消",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.搜索筛选刷新和复制通过真实控件工作并验证深浅主题与窄窗口",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.重开取消Owner关闭和Runtime释放均遵循窗口所有权且各Runtime隔离"
+      ]
+    },
+    {
+      "id": "Q01",
+      "executedTests": [
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.目录诊断与候选合并并保留失败插件的操作身份",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: False)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: True)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: False)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: True)",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.无身份候选保留目录并按异常优先展示且注册插件诊断不重复计数"
+      ]
+    },
+    {
+      "id": "Q02",
+      "executedTests": [
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.配置未知不冒充禁用且查询不创建文件",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: False)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: True)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: False)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: True)"
+      ]
+    },
+    {
+      "id": "Q03",
+      "executedTests": [
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: False)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: True)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: False)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: True)",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.刷新搜索与选择保持且错误恢复不丢失旧快照",
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.看板开关保存并改回取消待重启且重开保留选择"
+      ]
+    },
+    {
+      "id": "Q04",
+      "executedTests": [
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.配置未知不冒充禁用且查询不创建文件",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: False)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: True)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: False)",
+        "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: True)",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.查询展示声明而不创建插件并读取真实可用性门控",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.同一候选早期目录和后期身份诊断合并且复制内容保持脱敏"
+      ]
+    },
+    {
+      "id": "U01",
+      "executedTests": [
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.看板开关保存并改回取消待重启且重开保留选择"
+      ]
+    },
+    {
+      "id": "U02",
+      "executedTests": [
+        "MyAvaloniaManagement.Tests.PluginStatusTests.无身份候选保留目录并按异常优先展示且注册插件诊断不重复计数",
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.看板开关保存并改回取消待重启且重开保留选择",
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.配置错误时管理窗口可打开且开关只读",
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.外部写冲突恢复开关且重新读取后可操作并验证窄窗口主题"
+      ]
+    },
+    {
+      "id": "U03",
+      "executedTests": [
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.保存期间禁用重复操作且关窗不撤销已接受提交"
+      ]
+    },
+    {
+      "id": "U04",
+      "executedTests": [
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.保存期间禁用重复操作且关窗不撤销已接受提交",
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.看板开关保存并改回取消待重启且重开保留选择",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.菜单和命令面板打开同一非模态窗口且不产生工具或文档",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.大目录使用虚拟化且重激活读取最新数据并尊重命令取消",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.搜索筛选刷新和复制通过真实控件工作并验证深浅主题与窄窗口",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.重开取消Owner关闭和Runtime释放均遵循窗口所有权且各Runtime隔离"
+      ]
+    },
+    {
+      "id": "U05",
+      "executedTests": [
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.看板开关保存并改回取消待重启且重开保留选择",
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.外部写冲突恢复开关且重新读取后可操作并验证窄窗口主题"
+      ]
+    },
+    {
+      "id": "U06",
+      "executedTests": [
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.看板开关保存并改回取消待重启且重开保留选择",
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.配置错误时管理窗口可打开且开关只读",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.菜单和命令面板打开同一非模态窗口且不产生工具或文档",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.大目录使用虚拟化且重激活读取最新数据并尊重命令取消",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.搜索筛选刷新和复制通过真实控件工作并验证深浅主题与窄窗口",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.重开取消Owner关闭和Runtime释放均遵循窗口所有权且各Runtime隔离"
+      ]
+    },
+    {
+      "id": "X01",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.三次新进程证明禁用与重新启用且所有贡献随重启变化"
+      ]
+    },
+    {
+      "id": "X02",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.三次新进程证明禁用与重新启用且所有贡献随重启变化",
+        "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.看板开关保存并改回取消待重启且重开保留选择"
+      ]
+    },
+    {
+      "id": "X03",
+      "executedTests": [
+        "MyAvaloniaManagement.Tests.DockLayoutTreeTests.过滤文档与空分割后只留下工具且继承原父比例",
+        "MyAvaloniaManagement.Tests.DockLayoutTreeTests.缺失插件分支在可见树收缩后保留比例和显示意图",
+        "MyAvaloniaManagement.Tests.DockLayoutTreeTests.同一标签组保留隐藏项相对次序而活动项以当前可见工具为准",
+        "MyAvaloniaManagement.Tests.DockLayoutTreeTests.同一父分割新增可见组时仍能合并仅剩一个隐藏分支",
+        "MyAvaloniaManagement.Tests.DockLayoutTreeTests.新隐藏工具的恢复组在连续捕获时保持稳定身份",
+        "MyAvaloniaManagement.Tests.DockLayoutTreeTests.隐藏整窗保留原位置而可见投影不凭空创建窗口",
+        "MyAvaloniaManagement.Tests.DockLayoutWorkspaceStateTests.纯文档浮窗和文档标题不进入布局而自动隐藏保留工具状态",
+        "MyAvaloniaManagement.Tests.DockLayoutWorkspaceStateTests.默认隐藏工具仍有完整布局位置且连续捕获身份稳定",
+        "MyAvaloniaManagement.Tests.DockLayoutWorkspaceStateTests.隐藏最后一个浮窗工具后仍保留正常位置和原组",
+        "MyAvaloniaManagement.Tests.PluginEnablementRetentionTests.禁用期间保存布局仍保留位置显示意图和收藏且重新启用后可投影",
+        "MyAvaloniaManagement.Tests.ToolCenterTests.收藏排序分类和最近记录跨存储实例恢复且不改变布局",
+        "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.工具浮窗恢复复用原模型和View且关闭后按原组只显示目标工具",
+        "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.内容全屏阻止迁移且重置保留文档实例并关闭浮窗",
+        "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.全隐藏或插件缺失的浮窗不创建空窗口但保留恢复记录",
+        "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: False, options: False)",
+        "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: False, options: True)",
+        "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: True, options: False)",
+        "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: True, options: True)",
+        "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.应用工具布局不重开文档且把已有浮动文档原实例安全回停",
+        "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.重置被原生窗口拒绝时回滚已关闭的其他窗口并保留全部原实例",
+        "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.主窗等待干净文档命令后被原生取消会恢复命令与创建入口",
+        "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.主窗口退出先保存可见浮窗再拆除且重启不恢复文档",
+        "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.最终布局写入失败保留窗口与命令且重试成功后可以退出"
+      ]
+    },
+    {
+      "id": "X04",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.独立进程验收入口",
+        "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.三次新进程证明禁用与重新启用且所有贡献随重启变化",
+        "MyAvaloniaManagement.Tests.WorkflowActionKernelTests.未找到取消Handler异常和授权异常均映射稳定失败码"
+      ]
+    },
+    {
+      "id": "X05",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用项检查磁盘产物不加载程序集且保留启动事实",
+        "MyAvaloniaManagement.Tests.PluginCompatibilityEvidenceTests.报告往返保留分项并拒绝不合法输入",
+        "MyAvaloniaManagement.Tests.PluginCompatibilityEvidenceTests.导入去重保留冲突与坏文件且取消不产生新报告",
+        "MyAvaloniaManagement.Tests.PluginDashboardTests.迟到结果不能覆盖新检查且关闭取消窗口任务",
+        "MyAvaloniaManagement.Tests.PluginDashboardTests.导入失败保留快照且任意报告正文不进入复制摘要",
+        "MyAvaloniaManagement.Tests.PluginDashboardTests.矩阵按二进制及环境拆分并保留失败和未执行",
+        "MyAvaloniaManagement.Tests.PluginDashboardTests.文件查询不执行模块且文件变化不会替换会话身份"
+      ]
+    },
+    {
+      "id": "X06",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.插件组合间接创建Workflow管理器_回滚使用已登记实例而不创建Workspace",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.迟到取消异常在出口关闭后只被观察_不再写入日志",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.初始化部分成功后解析下一项失败_回滚只关闭已成功项",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.初始化迟到成功在关闭位置纳入_仍按声明逆序且不可用",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.调用方取消Shutdown等待_当前项使用剩余宽限而后续项不再调度",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.冻结参与者后拒绝新交付_重复冻结不创建服务",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.关闭诊断出口等待正在报告的调用_关闭后不访问已结束会话",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.回滚Shutdown及诊断再次失败_不得覆盖启动异常或释放容器",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.宽限截止时间不会因重复请求重新计算",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.启动后半程失败_真实Runtime回滚调用已启动项并保留原始异常",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.容器释放异常不阻止另一个容器释放_并汇总结果",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.入口关闭异常仍尝试其他入口_不能放行Provider",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.生命周期开始前启动失败_不误调Shutdown且完整释放",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.委托保持调用线程_自身TimeoutException应归为失败",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.业务调用未排空时不关闭生命周期也不释放Provider(command: False)",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.业务调用未排空时不关闭生命周期也不释放Provider(command: True)",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.已越过关闭位置的初始化随后成功_最终检查不能误放行",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.原任务已结束但取消通知仍阻塞_不能释放取消资源或Provider(hostCancellation: False)",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.原任务已结束但取消通知仍阻塞_不能释放取消资源或Provider(hostCancellation: True)",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.正常关闭先停生命周期再释放两个真实容器_并发请求共用结果",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Scope清理失败仍尝试Shutdown_但保留对象图",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Shutdown超时宽限内成功_真实任务仍访问服务时不释放",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Shutdown持续挂起_宽限后保留且迟到成功不自动释放",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Shutdown已失败或取消_保守政策保留但不能误报仍在运行(cancelled: False)",
+        "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Shutdown已失败或取消_保守政策保留但不能误报仍在运行(cancelled: True)",
+        "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.三次新进程证明禁用与重新启用且所有贡献随重启变化",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.菜单和命令面板打开同一非模态窗口且不产生工具或文档",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.大目录使用虚拟化且重激活读取最新数据并尊重命令取消",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.搜索筛选刷新和复制通过真实控件工作并验证深浅主题与窄窗口",
+        "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.重开取消Owner关闭和Runtime释放均遵循窗口所有权且各Runtime隔离"
+      ]
+    },
+    {
+      "id": "X07",
+      "executedTests": [
+        "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.保存快照保留修订值并拒绝Null内容",
+        "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.互斥Activation验证必需输入并允许由插件决定空标题",
+        "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.Activation层次只开放两个密封具体类型",
+        "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.Descriptor可选字段具有稳定默认值",
+        "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.DocumentContent拒绝非法Schema和Undefined",
+        "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.DocumentContent克隆JsonElement且不依赖原始Document生命周期",
+        "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.DocumentDescriptor防御复制创建意图集合",
+        "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.DocumentDescriptor拒绝重复意图与空白显示字段",
+        "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.ToolDescriptor拒绝非法枚举并保存明确关闭语义",
+        "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.公共资源保持稳定键只读集合且程序集不依赖SDK或UI",
+        "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: -1, height: 24)",
+        "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: ∞, height: 24)",
+        "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: 0, height: 24)",
+        "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: 24, height: -∞)",
+        "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: 24, height: 0)",
+        "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: 24, height: NaN)",
+        "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: NaN, height: 24)",
+        "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.旧接口无需增加成员且缺少可选能力时错误清楚",
+        "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.字段校验与几何解析分阶段且值不可修改",
+        "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.窗口交互端口只暴露路径选择和剪贴板结果",
+        "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.可持久化Document只暴露修订快照与有参确认",
+        "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.全屏端口只负责内容所有权迁移和恢复",
+        "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.生命周期接口只有启动和停止且不再暴露顺序",
+        "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.注册泛型约束固定模型生命周期和AvaloniaView边界",
+        "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Core程序集只引用框架程序集且不存在旧公共面",
+        "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Legacy项目已删除且活动项目没有旧引用",
+        "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Ui程序集不引用Dock和Newtonsoft且注册接口没有独立AddView",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.创建意图拒绝点号和非规范字符(value: \"bad_intent\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.创建意图拒绝点号和非规范字符(value: \"Default\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.创建意图拒绝点号和非规范字符(value: \"document.default\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.创建意图验证边界长度且四类TryParse对Null返回失败",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.创建意图只接受单段KebabCase(value: \"default\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.创建意图只接受单段KebabCase(value: \"personal-source-2\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份接受小写点分KebabCase(value: \"a.b-c.d4\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份接受小写点分KebabCase(value: \"document-2\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份接受小写点分KebabCase(value: \"myavalonia.plugin.sample\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份接受最大长度并拒绝超长输入",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"-leading\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \".leading\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"a_b\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"double..segment\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"trailing-\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"trailing.\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"UPPER\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"white space\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.值对象按类型和值比较且输出原始稳定字符串",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.旧Host仅在调用新扩展时给出稳定错误",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.可选注册扩展向兼容Host原样转发",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.扩展方法在能力检查前拒绝null参数",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.描述符冻结纯数据和四个共享位置",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.描述符拒绝空文本null非法枚举和非法Gesture",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份共享严格词法规约但保持独立类型",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \" \")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"-leading\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"empty..segment\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"trailing-\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"Upper.case\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"with:colon\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"with/slash\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: null)",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.身份构造拒绝null和超过长度上限",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.Target接口保持冻结的单命令事件和可等待执行形状",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowActionContractTests.ActionId遵循稳定身份规则",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowActionContractTests.Descriptor请求和结果均克隆Json与集合",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowActionContractTests.Progress和Context拒绝非法边界",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.保守值域覆盖Enum子集字符串数值数组和Required关系",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.保守值域允许Integer到Number并拒绝范围Enum与对象扩张",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.合法Descriptor与敏感JsonPointer通过共享校验",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.静态与运行路径共享数组Segment且静态要求必需性和MinItems",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.实例校验覆盖RequiredAdditionalEnum数组范围字符串与Int64",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.实例资源和重复属性语料返回稳定代码",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Catalog改名只改变Presentation而语义变化改变Contract",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Catalog哈希包含敏感指针和嵌套数组说明",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Catalog哈希忽略Action属性Required和Enum的声明顺序",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Descriptor校验覆盖敏感指针风险确认和展示预算",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"[]\", code: \"schema.node\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{}\", code: \"schema.type\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"array\\\",\\\"items\\\":{\\\"type\\\":\\\"string\\\"\"···, code: \"schema.array\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"boolean\\\",\\\"enum\\\":[]}\", code: \"schema.enum\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"integer\\\",\\\"enum\\\":[1,1]}\", code: \"schema.enum\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"number\\\",\\\"minimum\\\":2,\\\"maximum\\\":1}\", code: \"schema.number.bounds\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{},\\\"required\\\"···, code: \"schema.keyword\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{},\\\"required\\\"···, code: \"schema.required\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"string\\\",\\\"minLength\\\":-1}\", code: \"schema.bounds\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"unknown\\\"}\", code: \"schema.type\")",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema校验覆盖对象数组Enum边界描述与根类型错误",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema注册拒绝Decimal外边界和未知关键字",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema资源预算覆盖总字节属性数和递归深度",
+        "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Unicode长度按Rune且超出Decimal范围被拒绝",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.保留端口和贡献根违规记录专用脱敏诊断且不构建Provider",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件从空集合开始且清理私有描述符不影响宿主对象图",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件声明Host命名空间时在Provider构建前隔离且Registry只保留真实插件",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件私有服务不能由宿主或另一个插件解析",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件Provider按规范PluginId建立并在宿主之前逆序释放",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.开放泛型Keyed服务和多实现保留MicrosoftDI原生语义",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.每插件DocumentScope使用本插件服务并可独立关闭",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.模块公共构造失败发生在HostProvider建立后且只隔离自身",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.模块配置和Provider构建失败分别隔离且成功插件仍发布",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.使用已发布SDK33编译的旧插件可在新Host完成真实组合",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.四个最终Sdk测试插件分别构建私有Provider并形成可用Registry",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.图标与模块异常Provider失败和重复声明一起原子隔离",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.越权Document与Tool在局部Seal隔离且无冲突插件继续发布",
+        "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.Host与插件Provider只解析各自拥有的消息器",
+        "MyAvaloniaManagement.Tests.PluginStatusTests.查询展示声明而不创建插件并读取真实可用性门控"
+      ]
+    }
+  ],
+  "referencedTestResults": [
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.保存快照保留修订值并拒绝Null内容",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.互斥Activation验证必需输入并允许由插件决定空标题",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.Activation层次只开放两个密封具体类型",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.Descriptor可选字段具有稳定默认值",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.DocumentContent拒绝非法Schema和Undefined",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.DocumentContent克隆JsonElement且不依赖原始Document生命周期",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.DocumentDescriptor防御复制创建意图集合",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.DocumentDescriptor拒绝重复意图与空白显示字段",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.ToolDescriptor拒绝非法枚举并保存明确关闭语义",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.公共资源保持稳定键只读集合且程序集不依赖SDK或UI",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: -1, height: 24)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: ∞, height: 24)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: 0, height: 24)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: 24, height: -∞)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: 24, height: 0)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: 24, height: NaN)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.画布只接受有限正数(width: NaN, height: 24)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.旧接口无需增加成员且缺少可选能力时错误清楚",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.字段校验与几何解析分阶段且值不可修改",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.窗口交互端口只暴露路径选择和剪贴板结果",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.可持久化Document只暴露修订快照与有参确认",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.全屏端口只负责内容所有权迁移和恢复",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.生命周期接口只有启动和停止且不再暴露顺序",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.注册泛型约束固定模型生命周期和AvaloniaView边界",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Core程序集只引用框架程序集且不存在旧公共面",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Legacy项目已删除且活动项目没有旧引用",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Ui程序集不引用Dock和Newtonsoft且注册接口没有独立AddView",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.创建意图拒绝点号和非规范字符(value: \"bad_intent\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.创建意图拒绝点号和非规范字符(value: \"Default\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.创建意图拒绝点号和非规范字符(value: \"document.default\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.创建意图验证边界长度且四类TryParse对Null返回失败",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.创建意图只接受单段KebabCase(value: \"default\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.创建意图只接受单段KebabCase(value: \"personal-source-2\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份接受小写点分KebabCase(value: \"a.b-c.d4\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份接受小写点分KebabCase(value: \"document-2\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份接受小写点分KebabCase(value: \"myavalonia.plugin.sample\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份接受最大长度并拒绝超长输入",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"-leading\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \".leading\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"a_b\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"double..segment\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"trailing-\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"trailing.\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"UPPER\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.全局身份拒绝非规范输入(value: \"white space\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.StableIdentifierTests.值对象按类型和值比较且输出原始稳定字符串",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.旧Host仅在调用新扩展时给出稳定错误",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.可选注册扩展向兼容Host原样转发",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.扩展方法在能力检查前拒绝null参数",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.描述符冻结纯数据和四个共享位置",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.描述符拒绝空文本null非法枚举和非法Gesture",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份共享严格词法规约但保持独立类型",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \" \")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"-leading\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"empty..segment\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"trailing-\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"Upper.case\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"with:colon\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: \"with/slash\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.三类身份TryParse对非法输入稳定返回False(value: null)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.身份构造拒绝null和超过长度上限",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.Target接口保持冻结的单命令事件和可等待执行形状",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowActionContractTests.ActionId遵循稳定身份规则",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowActionContractTests.Descriptor请求和结果均克隆Json与集合",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowActionContractTests.Progress和Context拒绝非法边界",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.保守值域覆盖Enum子集字符串数值数组和Required关系",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.保守值域允许Integer到Number并拒绝范围Enum与对象扩张",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.合法Descriptor与敏感JsonPointer通过共享校验",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.静态与运行路径共享数组Segment且静态要求必需性和MinItems",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.实例校验覆盖RequiredAdditionalEnum数组范围字符串与Int64",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.实例资源和重复属性语料返回稳定代码",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Catalog改名只改变Presentation而语义变化改变Contract",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Catalog哈希包含敏感指针和嵌套数组说明",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Catalog哈希忽略Action属性Required和Enum的声明顺序",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Descriptor校验覆盖敏感指针风险确认和展示预算",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"[]\", code: \"schema.node\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{}\", code: \"schema.type\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"array\\\",\\\"items\\\":{\\\"type\\\":\\\"string\\\"\"···, code: \"schema.array\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"boolean\\\",\\\"enum\\\":[]}\", code: \"schema.enum\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"integer\\\",\\\"enum\\\":[1,1]}\", code: \"schema.enum\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"number\\\",\\\"minimum\\\":2,\\\"maximum\\\":1}\", code: \"schema.number.bounds\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{},\\\"required\\\"···, code: \"schema.keyword\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"object\\\",\\\"properties\\\":{},\\\"required\\\"···, code: \"schema.required\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"string\\\",\\\"minLength\\\":-1}\", code: \"schema.bounds\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema畸形语料返回稳定代码(json: \"{\\\"type\\\":\\\"unknown\\\"}\", code: \"schema.type\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema校验覆盖对象数组Enum边界描述与根类型错误",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema注册拒绝Decimal外边界和未知关键字",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Schema资源预算覆盖总字节属性数和递归深度",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Unicode长度按Rune且超出Decimal范围被拒绝",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/sdk/sdk.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.插件组合间接创建Workflow管理器_回滚使用已登记实例而不创建Workspace",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.迟到取消异常在出口关闭后只被观察_不再写入日志",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.初始化部分成功后解析下一项失败_回滚只关闭已成功项",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.初始化迟到成功在关闭位置纳入_仍按声明逆序且不可用",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.调用方取消Shutdown等待_当前项使用剩余宽限而后续项不再调度",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.冻结参与者后拒绝新交付_重复冻结不创建服务",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.关闭诊断出口等待正在报告的调用_关闭后不访问已结束会话",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.回滚Shutdown及诊断再次失败_不得覆盖启动异常或释放容器",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.宽限截止时间不会因重复请求重新计算",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.启动后半程失败_真实Runtime回滚调用已启动项并保留原始异常",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.容器释放异常不阻止另一个容器释放_并汇总结果",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.入口关闭异常仍尝试其他入口_不能放行Provider",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.生命周期开始前启动失败_不误调Shutdown且完整释放",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.委托保持调用线程_自身TimeoutException应归为失败",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.业务调用未排空时不关闭生命周期也不释放Provider(command: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.业务调用未排空时不关闭生命周期也不释放Provider(command: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.已越过关闭位置的初始化随后成功_最终检查不能误放行",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.原任务已结束但取消通知仍阻塞_不能释放取消资源或Provider(hostCancellation: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.原任务已结束但取消通知仍阻塞_不能释放取消资源或Provider(hostCancellation: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.正常关闭先停生命周期再释放两个真实容器_并发请求共用结果",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Scope清理失败仍尝试Shutdown_但保留对象图",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Shutdown超时宽限内成功_真实任务仍访问服务时不释放",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Shutdown持续挂起_宽限后保留且迟到成功不自动释放",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Shutdown已失败或取消_保守政策保留但不能误报仍在运行(cancelled: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.HostLifecycleOwnershipTests.Shutdown已失败或取消_保守政策保留但不能误报仍在运行(cancelled: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"PluginIsolation.Plugin.AbstractPluginModule\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"PluginIsolation.Plugin.GenericPluginModule`1\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"PluginIsolation.Plugin.InternalPluginModule\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"pluginisolation.plugin.IsolationPluginModule\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"PluginIsolation.Plugin.MissingPluginModule\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"PluginIsolation.Plugin.PrivateConstructorPluginMod\"···)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.精确类型解析与结构负例在构造和Configure前返回统一诊断(entryType: \"PluginIsolation.Plugin.WrongContractEntry\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.模块缺少public无参构造时返回稳定结构诊断",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.内置业务插件进入最终V3入口",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.清单入口未实现V2模块时在激活前被隔离",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.缺少清单时不加载入口程序集",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.缺少deps时隔离当前目录且不加载入口程序集",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.入口程序集缺失时在模块构造前隔离目录",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.未声明的第二模块不会改变精确入口验证结果",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.有效deps与精确入口形成可配置Catalog",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.ManagedOnlyPluginLoadingTests.deps声明的同名不同版本私有依赖仍按插件隔离",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.保留端口和贡献根违规记录专用脱敏诊断且不构建Provider",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件从空集合开始且清理私有描述符不影响宿主对象图",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件声明Host命名空间时在Provider构建前隔离且Registry只保留真实插件",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件私有服务不能由宿主或另一个插件解析",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.插件Provider按规范PluginId建立并在宿主之前逆序释放",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.开放泛型Keyed服务和多实现保留MicrosoftDI原生语义",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.每插件DocumentScope使用本插件服务并可独立关闭",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.模块公共构造失败发生在HostProvider建立后且只隔离自身",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.模块配置和Provider构建失败分别隔离且成功插件仍发布",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.使用已发布SDK33编译的旧插件可在新Host完成真实组合",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.四个最终Sdk测试插件分别构建私有Provider并形成可用Registry",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.图标与模块异常Provider失败和重复声明一起原子隔离",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.越权Document与Tool在局部Seal隔离且无冲突插件继续发布",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginContainerIsolationTests.Host与插件Provider只解析各自拥有的消息器",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用判断在文件布局与SDK预检之前(change: \"incompatible-sdk\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用判断在文件布局与SDK预检之前(change: \"PluginIsolation.PluginV1.deps.json\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用判断在文件布局与SDK预检之前(change: \"PluginIsolation.PluginV1.dll\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用项保留身份且没有加载上下文与模块目录",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.禁用项检查磁盘产物不加载程序集且保留启动事实",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.配置错误暂停加载而坏清单仍有独立诊断",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.同次启动保留启用插件且目录改名不改变禁用身份",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.相同配置根缓存启动策略但不同数据根可独立发现",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementLoadingTests.重复身份即使被禁用仍在任何加载之前拒绝",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.独立进程验收入口",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.三次新进程证明禁用与重新启用且所有贡献随重启变化",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.插件版本与程序集版本必须精确一致",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.超过大小限制的清单在JSON解析前被拒绝",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.超过JSON深度限制的清单被拒绝且不产生部分模型",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.非法身份版本区间和入口路径均被拒绝",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.模块上下文身份只来自已经验证的清单",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.缺失空白损坏未知字段重复字段与未知Schema均被稳定拒绝",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.有效清单可解析为规范化四段版本",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.重复PluginId在任何入口程序集加载前形成致命歧义",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.SDK版本区间遵循左闭右开边界并返回单一稳定错误码",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginManifestCompatibilityTests.V2插件在执行入口前被拒绝且不阻断V3插件",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-plugin/host-plugin.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.DockLayoutTreeTests.过滤文档与空分割后只留下工具且继承原父比例",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.DockLayoutTreeTests.缺失插件分支在可见树收缩后保留比例和显示意图",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.DockLayoutTreeTests.同一标签组保留隐藏项相对次序而活动项以当前可见工具为准",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.DockLayoutTreeTests.同一父分割新增可见组时仍能合并仅剩一个隐藏分支",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.DockLayoutTreeTests.新隐藏工具的恢复组在连续捕获时保持稳定身份",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.DockLayoutTreeTests.隐藏整窗保留原位置而可见投影不凭空创建窗口",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.DockLayoutWorkspaceStateTests.纯文档浮窗和文档标题不进入布局而自动隐藏保留工具状态",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.DockLayoutWorkspaceStateTests.默认隐藏工具仍有完整布局位置且连续捕获身份稳定",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.DockLayoutWorkspaceStateTests.隐藏最后一个浮窗工具后仍保留正常位置和原组",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.未配置覆盖时默认进入独立V2目录(configuredDataDirectory: \"   \")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.未配置覆盖时默认进入独立V2目录(configuredDataDirectory: \"\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.未配置覆盖时默认进入独立V2目录(configuredDataDirectory: null)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.显式覆盖表示完整根目录且不再追加V2",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.V2存储不读取改写迁移或删除V1目录",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.V3可以读取既有V2文档与布局且不会改写源文件",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginCompatibilityEvidenceTests.报告往返保留分项并拒绝不合法输入",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginCompatibilityEvidenceTests.导入去重保留冲突与坏文件且取消不产生新报告",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginDashboardTests.迟到结果不能覆盖新检查且关闭取消窗口任务",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginDashboardTests.导入失败保留快照且任意报告正文不进入复制摘要",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginDashboardTests.矩阵按二进制及环境拆分并保留失败和未执行",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginDashboardTests.文件查询不执行模块且文件变化不会替换会话身份",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.目录诊断与候选合并并保留失败插件的操作身份",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.配置未知不冒充禁用且查询不创建文件",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: False, nextEnabled: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementQueryTests.启动与下次四种组合正确显示且改回取消待重启(startupEnabled: True, nextEnabled: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementRetentionTests.禁用期间保存布局仍保留位置显示意图和收藏且重新启用后可投影",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementServiceTests.保存失败不提交且显式重读解决外部冲突",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementServiceTests.连续保存与改回只更新已保存意图并拒绝未知身份",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.两个实例不能用旧快照覆盖最新意图且锁竞争不改变文件",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.设置集合不可被调用方反向修改且稳定按身份保存",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.首次默认启用且不同数据根独立并保留未安装身份",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.损坏主文件恢复有效备份但未知未来格式不能回退",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.文件大小限制和读取错误不伪装首次使用",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{}\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":\\\"1\\\",\\\"disabledPluginIds\\\":[]}\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":[],}\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":[],\\\"ty\"···)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":[\\\"inva\"···)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"disabledPluginIds\\\":null}\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.无可靠配置时保留原件且不得回退全启用(json: \"{\\\"schemaVersion\\\":1,\\\"schemaVersion\\\":1,\\\"disable\"···)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginEnablementSettingsTests.原子提交前失败保留旧文件与快照且清理临时文件",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.查询展示声明而不创建插件并读取真实可用性门控",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.空结果有明确说明且可用筛选支持有警告的插件",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.尚未提交注册表的插件仍可从后期启动失败诊断找到(phaseName: \"HostContainerBuild\", code: \"PLUGIN_CONTAINER_BUILD_FAILED\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.尚未提交注册表的插件仍可从后期启动失败诊断找到(phaseName: \"PluginModuleDiscovery\", code: \"PLUGIN_MODULE_ACTIVATION_FAILED\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.尚未提交注册表的插件仍可从后期启动失败诊断找到(phaseName: \"PluginServiceRegistration\", code: \"PLUGIN_SERVICE_REGISTRATION_FAILED\")",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.刷新搜索与选择保持且错误恢复不丢失旧快照",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"HostCancelled\", available: False, problem: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"InitializationFailed\", available: False, problem: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"InitializationTimedOut\", available: False, problem: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"Initializing\", available: False, problem: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"NotStarted\", available: False, problem: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"Ready\", available: True, problem: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"ShutdownFailed\", available: False, problem: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"ShutdownTimedOut\", available: False, problem: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"Stopped\", available: False, problem: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.所有生命周期阶段产生正确的筛选事实(statusName: \"Stopping\", available: False, problem: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.同一候选早期目录和后期身份诊断合并且复制内容保持脱敏",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginStatusTests.无身份候选保留目录并按异常优先展示且注册插件诊断不重复计数",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.ToolCenterTests.收藏排序分类和最近记录跨存储实例恢复且不改变布局",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.WorkflowActionKernelTests.未找到取消Handler异常和授权异常均映射稳定失败码",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-unit/host-unit.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.工具浮窗恢复复用原模型和View且关闭后按原组只显示目标工具",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.内容全屏阻止迁移且重置保留文档实例并关闭浮窗",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.全隐藏或插件缺失的浮窗不创建空窗口但保留恢复记录",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: False, options: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: False, options: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: True, options: False)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: True, options: True)",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.应用工具布局不重开文档且把已有浮动文档原实例安全回停",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.重置被原生窗口拒绝时回滚已关闭的其他窗口并保留全部原实例",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.主窗等待干净文档命令后被原生取消会恢复命令与创建入口",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.主窗口退出先保存可见浮窗再拆除且重启不恢复文档",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.最终布局写入失败保留窗口与命令且重试成功后可以退出",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.保存期间禁用重复操作且关窗不撤销已接受提交",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.看板开关保存并改回取消待重启且重开保留选择",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.配置错误时管理窗口可打开且开关只读",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.外部写冲突恢复开关且重新读取后可操作并验证窄窗口主题",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.菜单和命令面板打开同一非模态窗口且不产生工具或文档",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.大目录使用虚拟化且重激活读取最新数据并尊重命令取消",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.搜索筛选刷新和复制通过真实控件工作并验证深浅主题与窄窗口",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.重开取消Owner关闭和Runtime释放均遵循窗口所有权且各Runtime隔离",
+      "outcome": "Passed",
+      "trx": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/tests/host-ui/host-ui.trx"
+    }
+  ],
+  "restart": [
+    {
+      "file": {
+        "path": "artifacts/host-v13/final/phase-0.json",
+        "sha256": "68fe7c102ed9dd5802c607a60e0f807826082ab11e2939b77f6cec215b89e049"
+      },
+      "result": {
+        "pid": 31088,
+        "loaded": true,
+        "trace": [
+          "module",
+          "configure",
+          "lifecycle-constructor",
+          "initialize",
+          "shutdown",
+          "dispose"
+        ],
+        "contributionsPerKind": 1
+      },
+      "exitCode": 0,
+      "exitCodeVerifiedBy": "三次新进程证明禁用与重新启用且所有贡献随重启变化"
+    },
+    {
+      "file": {
+        "path": "artifacts/host-v13/final/phase-1.json",
+        "sha256": "ecbfb6a3fa94c3f8f109631ea119838a6d5b3d76889ec6496268904c7282843c"
+      },
+      "result": {
+        "pid": 31992,
+        "loaded": false,
+        "trace": [],
+        "contributionsPerKind": 0
+      },
+      "exitCode": 0,
+      "exitCodeVerifiedBy": "三次新进程证明禁用与重新启用且所有贡献随重启变化"
+    },
+    {
+      "file": {
+        "path": "artifacts/host-v13/final/phase-2.json",
+        "sha256": "f4a4d03d45de11e8ab5014cdf7cd1b2094777541de9bdb710ea7e8449e6f8d8a"
+      },
+      "result": {
+        "pid": 34704,
+        "loaded": true,
+        "trace": [
+          "module",
+          "configure",
+          "lifecycle-constructor",
+          "initialize",
+          "shutdown",
+          "dispose"
+        ],
+        "contributionsPerKind": 1
+      },
+      "exitCode": 0,
+      "exitCodeVerifiedBy": "三次新进程证明禁用与重新启用且所有贡献随重启变化"
+    }
+  ],
+  "headlessScreenshots": [
+    {
+      "path": "artifacts/host-v13/final/enablement-light.png",
+      "sha256": "793c4284af6173ffc8d9ce9feefb36305b6a6cc65eafbb2b5b5bc0d2bade3994"
+    },
+    {
+      "path": "artifacts/host-v13/final/enablement-dark.png",
+      "sha256": "23b38e756ce3ed0d4907858f884d8e1a777bdd7de69495212c6bafe38ad662af"
+    }
+  ],
+  "documents": {
+    "links": {
+      "files": 17,
+      "checkedLinks": 361,
+      "externalRepositoryLinks": [
+        "docs/README.md: ../../avalonia_dock_plug_test/myavalonia-workflow-studio/README.md",
+        "docs/README.md: ../../avalonia_dock_plug_test/myavalonia-bili-downloader/README.md",
+        "docs/README.md: ../../avalonia_dock_plug_test/myavalonia-video-security-player/README.md",
+        "docs/README.md: ../../avalonia_dock_plug_test/myavalonia-datang-work/README.md"
+      ],
+      "failures": []
+    },
+    "files": [
+      {
+        "path": "Host/MyAvaloniaManagement/docs/README.md",
+        "sha256": "ad308efde71c14a93d61ff349012a9760ca3f76e612793973cb80ee9ce1b405f"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/design/architecture.md",
+        "sha256": "00b609d3d7a8476e53b8952931b4759cc8fed01aea4f735c7ab7452fa97e3155"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+        "sha256": "9105d531dde2d3d715eced4699bd9f9bc442c1aa595f97ae0d7b3e4a46d02671"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md",
+        "sha256": "38ca2663f356db8b3140e4e2b5c3d40ae46ec5b07b4ba09fc9b1931637536697"
+      },
+      {
+        "path": "docs/README.md",
+        "sha256": "379aa3ea0a11d56f5cb46d1404c95de1ab93f38596455eb8509042563352dddb"
+      },
+      {
+        "path": "docs/archive/README.md",
+        "sha256": "8b5f9a9b9dd7592018cab4df61c72990d81f6db4f17fd7fcf8d74914c9f87f46"
+      },
+      {
+        "path": "docs/archive/records/host-v13/development-acceptance.md",
+        "sha256": "24dd2512a2f81542dc3615548dac4e1c7ae30daad77a21deb611efcc3bac68c9"
+      },
+      {
+        "path": "docs/maintenance/host-v13-plugin-enablement-verification.md",
+        "sha256": "5b44e7892256ca71e8190f2ee584440a0174727388fe258a4fd920a595c9c9a3"
+      },
+      {
+        "path": "docs/maintenance/plugin-compatibility-verification.md",
+        "sha256": "f835d6dea879d89ee73f6420b38ffa43f27c030815e1ebdbdeb73154105f1e38"
+      },
+      {
+        "path": "docs/maintenance/verification.md",
+        "sha256": "8746f1e0b7001d67989d0924636ff800e57105a3227b73bc4cc0bec0b8fc9fee"
+      },
+      {
+        "path": "docs/quick-start/floating-windows-and-layout.md",
+        "sha256": "add915f7ee4776b5bd5d28cc97dcf449a0a48a2502aa7d37d693452147019cb5"
+      },
+      {
+        "path": "docs/quick-start/plugin-status.md",
+        "sha256": "ff00ea738b4986d364588f8d1cedf7387dc425cca01af827407bd7fff5aa8582"
+      },
+      {
+        "path": "docs/quick-start/tool-center.md",
+        "sha256": "11b70610bb1adaff8a09a68773a8acc8b0a260ab6ec4c8a794a5606088a4b71c"
+      },
+      {
+        "path": "docs/reference/plugin-compatibility.md",
+        "sha256": "53b0e7c471640bcd44f230fc08f683bb8f83383ffc0800582e25418a7892ce31"
+      },
+      {
+        "path": "docs/reference/plugin-enablement.md",
+        "sha256": "fc570a954a7e7b08c78646d851f43adecc6a5dc230a694661d18027ece6dcbb4"
+      },
+      {
+        "path": "docs/roadmap/README.md",
+        "sha256": "c9d8df16f26522683e639c757d5807fb7eaa33990d59eb3c2cfb8999be206872"
+      },
+      {
+        "path": "docs/roadmap/host-v13-plugin-enablement-plan.md",
+        "sha256": "d5fe57c4df3bfa1248f05a5ab855fc5d90cfeb5d5528659382cb6e1f0176d8ac"
+      }
+    ],
+    "embeddedMarkdownFinalizedBeforeVerify": true,
+    "postVerifyChange": "Only this non-embedded JSON acceptance record is filled after verification."
+  },
+  "review": {
+    "solid": "Storage, persisted intent, startup discovery, query and UI own separate responsibilities; narrow read/write ports; immutable startup facts; no SDK API expansion or generic framework.",
+    "chineseComments": "Reviewed commit boundary, backup/future schema behavior, concurrency, cache identity, early loading filter and disposed UI callbacks.",
+    "s04Cleanup": "Normal cleanup and precommit failure are automated. Cleanup-failure catch and absence of fallible I/O after commit are reviewed structurally; no broad filesystem abstraction added just for injection.",
+    "regressionBoundary": "Existing layout, lifecycle, Provider/Scope, API and ZIP tests are reused. The restart fixture composes real services but does not launch an interactive native Host window."
+  },
+  "preservedUserChanges": {
+    "unrelatedFileCount": 70,
+    "byteIdentical": true,
+    "mixedDocuments": [
+      "docs/README.md",
+      "docs/roadmap/README.md",
+      "docs/maintenance/verification.md",
+      "Host/MyAvaloniaManagement/docs/README.md",
+      "docs/archive/README.md",
+      "docs/quick-start/plugin-status.md",
+      "Host/MyAvaloniaManagement/docs/design/architecture.md",
+      "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+      "Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md",
+      "docs/reference/plugin-compatibility.md",
+      "docs/maintenance/plugin-compatibility-verification.md",
+      "docs/quick-start/floating-windows-and-layout.md",
+      "docs/quick-start/tool-center.md"
+    ],
+    "stagedBy": "Apply V13-only document transformations to HEAD for the index; retain full existing working-tree documents."
+  },
+  "manualDesktop": [
+    {
+      "id": "M01",
+      "status": "not_run",
+      "reason": "Native desktop control unavailable; Headless and process probes do not constitute manual native acceptance."
+    },
+    {
+      "id": "M02",
+      "status": "not_run",
+      "reason": "Native desktop control unavailable; Headless and process probes do not constitute manual native acceptance."
+    },
+    {
+      "id": "M03",
+      "status": "not_run",
+      "reason": "Native desktop control unavailable; Headless and process probes do not constitute manual native acceptance."
+    },
+    {
+      "id": "M04",
+      "status": "not_run",
+      "reason": "Native desktop control unavailable; Headless and process probes do not constitute manual native acceptance."
+    },
+    {
+      "id": "M05",
+      "status": "not_run",
+      "reason": "Native desktop control unavailable; Headless and process probes do not constitute manual native acceptance."
+    }
+  ],
+  "externalFrozenPlugins": "not_run; no new external binary or business execution; existing in-repository real DLL and ZIP compatibility checks retained",
+  "excluded": [
+    "AIFLOW",
+    "Windows CI",
+    "seal",
+    "release Windows Smoke",
+    "release coverage",
+    "release repeatability",
+    "installation deployment",
+    "package upload",
+    "public release"
+  ],
+  "releaseEligible": false,
+  "publishable": false,
+  "verifiedArtifacts": [
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.dll",
+      "sha256": "8318913e4c6958538cb985c5d9b06397cb34e0fc1b93d2c555f4e629deabd72e"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.PluginSdk.dll",
+      "sha256": "273bc5605c91e8a23d5df3ef2a17b2ad86334429557c02c259529696ba70e2b1"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.PluginSdk.UI.dll",
+      "sha256": "ccf9d3f27e41af2daf474d3133005a19ff6e2b2ca246adb58f4b4460ca0b2e63"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.PluginSdk.Workflow.dll",
+      "sha256": "82b614100356e2be9a259559636756f5b3b9c09295cee392945309a5b31b588b"
+    },
+    {
+      "path": "artifacts/gate/20260919-080207-ef2bc30987f1/pass-1/packages/my-plug-test/build-1/MyPlugTest-win-x64.zip",
+      "sha256": "84c4a1911ddc450e0228112554f8a86d162c6ea9b4570fbf2eb41449cb66dd62"
+    }
+  ]
+}
