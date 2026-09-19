@@ -1,11 +1,14 @@
 # 待办与验收
 
+V14 一键自动重启处于方案阶段，尚未实施。入口：[执行方案与阶段](host-v14-automatic-restart-plan.md)、[专用开发验证](../maintenance/host-v14-automatic-restart-verification.md)。文档交付不代表功能已经实现或验收通过，实际进度按下表与阶段记录更新。
+
 V13 插件开关的实现与专项已完成，原生桌面检查待验收。入口：[计划与阶段](host-v13-plugin-enablement-plan.md)、[专用开发验证](../maintenance/host-v13-plugin-enablement-verification.md)、[开发记录与最终证据](../archive/records/host-v13/development-acceptance.md)。本轮只运行本地开发 verify，不使用 AIFLOW、Windows CI 或发布门禁。
 
 > 用途：集中保留尚未完成的工作。状态：按下表分别跟踪；核对日期：2026-09-19。依据为现有源码与历史验收记录；本页不把未来候选视为已授权实施任务。
 
 | 工作名称 | 状态 / 所属范围 | 事实依据 | 完成条件 |
 | --- | --- | --- | --- |
+| V14 Host 一键自动重启 | 方案已编写，未实施 / Host 内部及进程交接 | [V14 执行方案](host-v14-automatic-restart-plan.md)、[专用开发验证](../maintenance/host-v14-automatic-restart-verification.md) | 菜单和插件看板共用重启用例；保存与关闭可取消；清理成功且旧进程退出后才启动新 Host；完成单元、生命周期、Headless、真实进程交接及完整本地 verify。SOLID、中文注释、文档和证据齐全；不使用 AIFLOW、Windows CI 或发布门禁 |
 | V12 Host 内部职责重构 | 源码与专项已完成，桌面未执行 / Host 内部 | [V12 方案](host-v12-internal-refactor-plan.md)、[开发记录](../archive/records/host-v12/development-acceptance.md)、[最终证据](../archive/records/host-v12/final-development-evidence.json)、[安装版影响范围](../maintenance/host-v12-local-deployment.md) | 三阶段实现、单元／插件集成／Headless 专项已完成；完整本地 verify 以最终证据为准。原生鼠标、焦点、多屏 DPI 与外部业务未执行，后续按需要独立验收；本轮不使用 AIFLOW、Windows CI 或发布门禁 |
 | Document 拖入已有浮窗崩溃 | 框架补丁与自动化已接入，桌面和部署待补 / Host 运行时 | [修复方案](host-document-cross-window-layout-crash-fix-plan.md)、[专项维护](../maintenance/dock-cross-window-layout-verification.md)、[本轮证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json) | 完整 verify 结果以本轮证据为准；补 M01–M03 真实桌面操作及原截图百度网盘场景，然后另行部署 |
 | Dock 区域默认居中停靠 | 旧版已部署，跨窗修复已接入但待桌面与新部署 / Host 拖放交互 | [实施计划](host-dock-area-fill-implementation-plan.md)、[专项记录](../archive/records/dock-area-fill/development-acceptance.md)、[最终开发证据](../archive/records/dock-area-fill/development-evidence.json) | 按上述修复专项补真实桌面与新部署；原通过证据不覆盖新增故障。原生遮挡、混合浮窗、标签排序及多屏 DPI 仍需按矩阵独立验收 |

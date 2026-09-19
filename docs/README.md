@@ -1,5 +1,7 @@
 # 项目文档导航
 
+V14 一键自动重启已形成[执行方案](roadmap/host-v14-automatic-restart-plan.md)和[专用开发验证](maintenance/host-v14-automatic-restart-verification.md)，尚未实施。计划复用正常关闭与资源清理，由助手等待旧进程退出后启动新 Host；只使用本地开发验证，不使用 AIFLOW、Windows CI 或发布门禁。
+
 V13 插件开关已实现：在[插件看板](quick-start/plugin-status.md)保存下次启动设置，重启生效。见[行为契约](reference/plugin-enablement.md)、[实施计划](roadmap/host-v13-plugin-enablement-plan.md)、[专用验证](maintenance/host-v13-plugin-enablement-verification.md)及[开发记录](archive/records/host-v13/development-acceptance.md)；最终 verify 结果以记录内 JSON 为准，原生桌面待验收。本机单文件、自包含交付见[桌面工作台部署](maintenance/host-v13-local-deployment.md)。
 
 > 用途：主项目唯一总导航。状态：当前；核对日期：2026-09-19。技术基线见[版本与交付边界](reference/platform-baseline.md)。
