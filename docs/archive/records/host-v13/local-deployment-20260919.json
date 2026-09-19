@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "status": "pending-build-and-deployment",
+  "target": "C:\\Users\\admin\\Desktop\\工作台",
+  "format": "Release win-x64 self-contained single EXE",
+  "deploymentCompleted": false
+}

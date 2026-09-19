@@ -2,7 +2,7 @@
 
 V13 插件开关已实现，矩阵与命令见[专用开发验证](host-v13-plugin-enablement-verification.md)，实际结果见[开发记录](../archive/records/host-v13/development-acceptance.md)。本轮只使用本地专项和 verify，不使用 AIFLOW、Windows CI 或下文正式发布门禁；发布命令不属于 V13 执行范围。
 
-> 用途：维护 Host、SDK 和 MyPlugTest。状态：当前；核对日期：2026-09-17。事实源：[Gate 参数](../../tools/MyAvaloniaManagement.Gate/GateOptions.cs)、[配置](../../tools/MyAvaloniaManagement.Gate/gate.config.json)与执行实现。
+> 用途：维护 Host、SDK 和 MyPlugTest。状态：当前；核对日期：2026-09-19。事实源：[Gate 参数](../../tools/MyAvaloniaManagement.Gate/GateOptions.cs)、[配置](../../tools/MyAvaloniaManagement.Gate/gate.config.json)与执行实现。
 
 ## 日常开发
 
