@@ -1,10 +1,343 @@
 {
   "schemaVersion": 1,
   "recordType": "host-v15-local-single-exe-deployment",
-  "status": "pending-build",
-  "deploymentCompleted": false,
+  "status": "completed",
+  "deploymentCompleted": true,
   "date": "2026-09-20",
   "target": "D:\\data\\avalonia",
-  "backupRequested": false,
-  "cleanupRequested": true
+  "executable": "D:\\data\\avalonia\\MyAvaloniaManagement.exe",
+  "sourceRevision": "b9b23347b6958e377bf0ecd2f7911e4712a6767e",
+  "sourceCommit": "b9b2334",
+  "branch": "master",
+  "sourceWorkingTreeCleanAtArchive": true,
+  "commitTitle": "feat(host): 增加 V15 羽毛启动引导与真实插件进度",
+  "commitDescription": {
+    "path": "artifacts/host-v15/deployment-20260920/implementation-commit-message.txt",
+    "sha256": "61ab520098d4686d2d7e9dafb7b832f36e41bf3e3b3589e5d2a44b588e50926d"
+  },
+  "format": "Release win-x64 self-contained single EXE; native libraries bundled; compression enabled; no trimming; Controls and HelpWeb external",
+  "buildConfiguration": {
+    "sdk": "10.0.302",
+    "configuration": "Release",
+    "runtimeIdentifier": "win-x64",
+    "selfContained": true,
+    "publishSingleFile": true,
+    "includeNativeLibrariesForSelfExtract": true,
+    "enableCompressionInSingleFile": true,
+    "publishTrimmed": false,
+    "skipPluginDeploy": true,
+    "debugType": "embedded",
+    "restoreArguments": [
+      "restore",
+      "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj",
+      "-r",
+      "win-x64",
+      "-p:SelfContained=true",
+      "-p:PublishSingleFile=true",
+      "-p:PublishTrimmed=false",
+      "-p:SkipPluginDeploy=true",
+      "--nologo"
+    ],
+    "publishArguments": [
+      "publish",
+      "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj",
+      "-c",
+      "Release",
+      "-r",
+      "win-x64",
+      "--self-contained",
+      "true",
+      "--no-restore",
+      "--nologo",
+      "-p:PublishSingleFile=true",
+      "-p:IncludeNativeLibrariesForSelfExtract=true",
+      "-p:EnableCompressionInSingleFile=true",
+      "-p:PublishTrimmed=false",
+      "-p:SkipPluginDeploy=true",
+      "-p:DebugType=embedded",
+      "-p:CopyOutputSymbolsToPublishDirectory=false",
+      "-p:SourceRevisionId=b9b23347b6958e377bf0ecd2f7911e4712a6767e",
+      "-warnaserror",
+      "-m:1",
+      "-o",
+      "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v15\\deployment-20260920\\publish"
+    ],
+    "restoreExitCode": 0,
+    "publishExitCode": 0,
+    "warningsAsErrors": true,
+    "warnings": 0,
+    "errors": 0,
+    "sourceSnapshot": "git archive of fixed clean commit; RID restore/publish isolated; main repository lock files unchanged"
+  },
+  "exeSha256": "ACCE19A98FB1D27089C6D74BD887A2880AC3BB9C8771969B7D1D2FB6884504D2",
+  "exeBytes": 53620864,
+  "exeProductVersion": "3.0.0+b9b23347b6958e377bf0ecd2f7911e4712a6767e",
+  "bundleVerification": {
+    "passed": true,
+    "version": "6.0",
+    "entryCount": 238,
+    "rootDllCount": 0,
+    "hostAndCoreLibBundled": true,
+    "nativeGraphicsLibrariesBundled": true,
+    "selfContained": true,
+    "runtimeConfig": {
+      "runtimeOptions": {
+        "tfm": "net10.0",
+        "includedFrameworks": [
+          {
+            "name": "Microsoft.NETCore.App",
+            "version": "10.0.10"
+          }
+        ],
+        "configProperties": {
+          "MVVMTOOLKIT_ENABLE_INOTIFYPROPERTYCHANGING_SUPPORT": true,
+          "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+          "System.Runtime.InteropServices.BuiltInComInterop.IsSupported": true,
+          "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+        }
+      }
+    },
+    "avaloniaSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+    "dockSha256": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1"
+  },
+  "avaloniaPatchReceipt": {
+    "identity": "avalonia-12.1.2-host-layout.1",
+    "fingerprint": "9DB8A580DD77C384C8969F2284FFB27240CCFF35424CA23E1DB38E44DE3BA46C",
+    "commit": "d3c867a9e2de379249b03dbeb3495bd7f076a81a",
+    "sdk": "10.0.302",
+    "publicSigned": true,
+    "assembly": "Avalonia.Base, Version=12.1.2.0, Culture=neutral, PublicKeyToken=c8d484a7012f9a8b",
+    "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+    "pdbSha256": "6AFB032E58490DFB8176C69FB9F6395655AD72CD59E18CE3E0A521C55B22DC67",
+    "buildRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\9DB8A580DD77C384-0493837b",
+    "isolatedRestore": false,
+    "passed": 7,
+    "failed": 0,
+    "skipped": 0,
+    "testTrx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\9DB8A580DD77C384-0493837b\\results\\layout-patch.trx",
+    "testSha256": "4000E0EC0E605EFAC455072F965857340B3CB8E4EE42C121DB3568510EB21809"
+  },
+  "dockPackageSha256": "F697CFF4F1411C6B437DB3803671B761B441AB75CD7BED11E6AC0787389B33C9",
+  "startupVerification": {
+    "passed": true,
+    "exitCode": 0,
+    "pid": 25908,
+    "startedAtUtc": "2026-09-20T00:29:58.4975981+00:00",
+    "finishedAtUtc": "2026-09-20T00:30:00.507567+00:00",
+    "method": "Actual self-contained bundled EXE, empty Controls, isolated data/cache, nonexistent DOTNET_ROOT, existing auto-close hook; not the formal Windows Smoke gate.",
+    "layoutSchema": 3,
+    "stderrEmpty": true,
+    "originalUserDataTouched": false,
+    "externalPluginsLoaded": false,
+    "firstFrameMs": 1000,
+    "readyMs": 1806,
+    "timingScope": "Single isolated empty-plugin native EXE run; diagnostic timing, not animation, business-plugin or performance acceptance."
+  },
+  "deployment": {
+    "passed": true,
+    "deploymentCompleted": true,
+    "target": "D:\\data\\avalonia",
+    "sourceRevision": "b9b23347b6958e377bf0ecd2f7911e4712a6767e",
+    "backupCreated": false,
+    "backupPolicy": "Explicit user request: no backup",
+    "replacedFiles": [
+      "MyAvaloniaManagement.exe"
+    ],
+    "filesBefore": 664,
+    "filesAfter": 664,
+    "deliveryFilesVerified": 139,
+    "retainedFilesUnchanged": 525,
+    "controlsFilesUnchanged": 525,
+    "controlsDirectories": 12,
+    "exeSha256": "ACCE19A98FB1D27089C6D74BD887A2880AC3BB9C8771969B7D1D2FB6884504D2",
+    "exeBytes": 53620864,
+    "rootDllCount": 0,
+    "completedAtUtc": "2026-09-20T00:32:58.7474078+00:00"
+  },
+  "backupCreated": false,
+  "backupPolicy": "Explicit user request: no backup",
+  "originalExe": {
+    "path": "MyAvaloniaManagement.exe",
+    "sha256": "30ED083AA3704E4B6124DC00CCAAC358AA10CB92971A70DB7B69053D685AFD3D",
+    "bytes": 53575787
+  },
+  "preservation": "All 525 files in 12 existing plugin directories matched before/after hashes. All 139 delivered files matched staging; only the EXE required replacement. No user-data reset.",
+  "cleanup": {
+    "passed": true,
+    "removed": [
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v15\\deployment-20260920\\source",
+        "directory": true,
+        "files": 1546,
+        "bytes": 304220833
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v15\\deployment-20260920\\publish",
+        "directory": true,
+        "files": 145,
+        "bytes": 181706071
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v15\\deployment-20260920\\startup-data",
+        "directory": true,
+        "files": 3,
+        "bytes": 1829
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v15\\deployment-20260920\\bundle-cache",
+        "directory": true,
+        "files": 3,
+        "bytes": 18839080
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v15\\deployment-20260920\\source.zip",
+        "directory": false,
+        "files": 1,
+        "bytes": 9288248
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v15\\deployment-20260920\\extracted-Avalonia.Base.dll",
+        "directory": false,
+        "files": 1,
+        "bytes": 2355200
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v15\\deployment-20260920\\extracted-Dock.Avalonia.dll",
+        "directory": false,
+        "files": 1,
+        "bytes": 322560
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v15\\deployment-20260920\\extracted-MyAvaloniaManagement.runtimeconfig.json",
+        "directory": false,
+        "files": 1,
+        "bytes": 518
+      }
+    ],
+    "filesRemoved": 1701.0,
+    "bytesRemoved": 516734339.0,
+    "completedAtUtc": "2026-09-20T00:35:00.7898514+00:00",
+    "retained": "Build logs, scripts, JSON manifests and verification receipts",
+    "scope": "Only this deployment task; installed EXE, Controls, user data and earlier task artifacts untouched",
+    "note": "Removal succeeded. The first receipt serialization failed on PowerShell dictionary aggregation; all target absences were rechecked before writing this receipt."
+  },
+  "cleanupScope": "Only this deployment task: isolated source including bin/obj, source.zip, publish staging, startup data, bundle cache and extracted audit binaries. Prior tasks, package caches, source workspace build outputs and installed files were not deleted.",
+  "retainedArtifacts": [
+    {
+      "path": "artifacts/host-v15/deployment-20260920/build-result.json",
+      "sha256": "8f5f36874f5850d30d1c989b64d968683849f8569913a5cc36c61f3f8ad33ed5"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/build.ps1",
+      "sha256": "0f9b903ea318bd2d3f5b48dce3f8a911fb906b9952c11ab30c52b8c23a74e4c6"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/bundle-verification.json",
+      "sha256": "ebb0b630e234dc7a269fff0b964bd2775361a5fa7fc8325b3b5dc20cd426a310"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/check-startup.ps1",
+      "sha256": "71b444b53282d6fc67c22f4f5eb44911f5c331f800d3cc5054d636b0395e1168"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/cleanup-plan.json",
+      "sha256": "5580ae3f79633d09dd915772b3305f111831535efd1fa8299dd1b1539fca5342"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/cleanup-result.json",
+      "sha256": "dca265a48c1d3ecf68c4da941163c6752234257c4fb4fc21894acb05cf12298a"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/cleanup.ps1",
+      "sha256": "bad4d8851abf47fb06472144464cf1ebc70012532d73898b9e50ce1bfb29d872"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/delivery-files.json",
+      "sha256": "fca4d07546882337be6d155f5ec63ec17baf6bc57a177df5ba9a0a4e65fbd972"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/deploy.ps1",
+      "sha256": "ea6490564142badd2303fc23489ee29310b6622ba5e2762be2b8694604752bdb"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/deployment-result.json",
+      "sha256": "066aac2954ab61082de91eea10577920ed95cc41a8c85292416ee51fe830c71e"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/excluded-development-files.json",
+      "sha256": "8abda0f31e64c55dacc5386d6b4278211afba12d28a057102553263624d391bc"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/implementation-commit-message.txt",
+      "sha256": "61ab520098d4686d2d7e9dafb7b832f36e41bf3e3b3589e5d2a44b588e50926d"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/installed-after.json",
+      "sha256": "5196db4e9fe4ef388d75028da34258d20624ef79da61cf1c2367b5dba18d4a6f"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/installed-before.json",
+      "sha256": "46842aa07c1c77ece5f3255abb817214005aa4206f4803418245f1dcdb16b38a"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/installed-bundle-verification.json",
+      "sha256": "30dd16dbb3cc85631bb197db2eb99aebcf169eab053df504e37e2b8f678f1cd7"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/publish.log",
+      "sha256": "722e90e15bc3860b3d5ac61f7b9ac9008bac3c81f364a750da56d6192aaf753a"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/restore.log",
+      "sha256": "f8f9b8ed20e28b02ba166f6b13572bac4e92b8b3a0da2de0d73c06250a03098c"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/startup-result.json",
+      "sha256": "fac9dd9a6f7b67466723d5efdfc282f1a06cd3f4ce86e701d0f6bc66fd00838c"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/startup.stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/startup.stdout.log",
+      "sha256": "db6c0108c42c2db32a611eaf2e630fa83ace750b97c207645f91562d99e4b82f"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/task.json",
+      "sha256": "0691dd8471e66d7309555cdfe7968b7cbbf0ea83f3a4107e242651ef658d7134"
+    },
+    {
+      "path": "artifacts/host-v15/deployment-20260920/verify-single-exe.ps1",
+      "sha256": "c01bce4ca49f11a0f3796b13613abfceae58c104ec2841afb5f2acd8ea632ccf"
+    }
+  ],
+  "sourceVerification": {
+    "developmentGateRun": "20260920-001841-640202e10b6a",
+    "passed": 1218,
+    "failed": 0,
+    "skipped": 0,
+    "gateToolSelfTestsPassed": 68,
+    "productionAndTestCodeMatchesDevelopmentEvidence": true,
+    "checkedSourceFiles": 27,
+    "note": "Post-verify edits are deployment documentation/navigation and non-embedded evidence. The EXE includes the committed Markdown; the final deployment record is JSON and is not embedded."
+  },
+  "manualAcceptance": {
+    "nativeFocusAnimationAndMixedDpi": "not-run",
+    "externalBusinessPlugins": "Preserved byte-for-byte, not loaded or business-tested",
+    "singleFileRestartRoundtrip": "not-run",
+    "singleFileFormatAndNormalStartupShutdown": "passed"
+  },
+  "executionNotes": [
+    "The first delivery preflight found native PDB and SDK XML outputs and stopped before replacing files. Final delivery uses an EXE/HelpWeb allowlist; those intermediate files were removed with staging.",
+    "Automatic approval rejected a combined cleanup-and-deploy command with reason blocked by policy. Deployment and cleanup completed using separate narrowly scoped steps, with explicit artifact verification and an inspected cleanup plan.",
+    "The initial cleanup receipt serialization failed after removal; target absences and the installed EXE were rechecked, then the receipt was finalized."
+  ],
+  "windowsCI": "not-run",
+  "formalReleaseGates": "not-run",
+  "AIFLOW": "not-used",
+  "publicPublication": "not-run",
+  "gitPush": "not-run",
+  "evidenceNote": "Only this non-embedded deployment JSON is finalized after publish. Source code and packaged Markdown remain at sourceRevision. Paths under cleaned intermediates are historical; retained log/JSON artifact hashes remain verifiable.",
+  "finalizedAtUtc": "2026-09-20T00:36:34.226654+00:00"
 }
