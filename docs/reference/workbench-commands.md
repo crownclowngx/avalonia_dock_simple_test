@@ -1,6 +1,6 @@
 # Workbench Command 当前契约
 
-> 用途：声明和维护菜单、快捷键、命令面板共用的用户操作。状态：当前；核对日期：2026-09-20。事实源：[Command 内核](../../Host/MyAvaloniaManagement/Business/Commands)、[Presentation](../../Host/MyAvaloniaManagement/Business/Presentation/Commands)及 UI SDK 声明。
+> 用途：声明和维护菜单、快捷键、命令面板共用的用户操作。状态：当前；核对日期：2026-09-21。事实源：[Command 内核](../../Host/MyAvaloniaManagement/Business/Commands)、[Presentation](../../Host/MyAvaloniaManagement/Business/Presentation/Commands)及 UI SDK 声明。
 
 ## 语义与注册
 
@@ -24,7 +24,9 @@ Host 拥有保留位置与核心快捷键。插件只贡献允许的共享末端
 
 ## 命令面板与 Workflow 的区别
 
-[V18 交互方案](../roadmap/host-v18-command-palette-interaction-plan.md)拟补充四类分组、当前实例提示及提交目标一致性验证，目前只完成设计文档；下文是现行契约。V18 不扩展 SDK public API，也不将 Workflow Action 或局部 ICommand 自动提升为 Palette 命令，验证范围见[专用开发验证](../maintenance/host-v18-command-palette-verification.md)。
+V18 使用四类连续分组、当前实例提示和提交目标校验，详见[归档方案](../archive/plans/host-v18-command-palette-interaction-plan.md)及[专用开发验证](../maintenance/host-v18-command-palette-verification.md)。不扩展 SDK public API，也不将 Workflow Action 或局部 ICommand 自动提升为 Palette 命令。
+
+投影从同一次路由捕获生成页面命令的可用性、目标说明及 Host internal `WorkbenchCommandTargetExpectation(PageId, ContextRevision)`。保存也携带该约束，全局入口不携带。约束随本次执行穿过既有 Presentation Command 进入共享 Executor；展示后切页或切回同页但代次改变时拒绝旧提交。约束不存入共享命令缓存，因此菜单与快捷键继续使用其原有当前实例语义。View 不持有 Document、插件模型或 Provider，也不主动切回旧页。
 
 当前面板还发现功能创建入口、已有页面和工具，见[工作区搜索](../quick-start/workbench-search.md)。新建成功才关闭相应搜索入口；失败保留查询及错误，普通 Command 沿用关闭面板后执行的时序。
 

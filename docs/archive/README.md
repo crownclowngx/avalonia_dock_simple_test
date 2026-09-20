@@ -1,6 +1,6 @@
 # 历史归档
 
-> 用途：查找过去的设计、验收与交付证据。核对日期：2026-09-20。正文中的“当前”、版本、命令及通过结果只对原始基线成立，不能作为当前操作指令。
+> 用途：查找过去的设计、验收与交付证据。核对日期：2026-09-21。正文中的“当前”、版本、命令及通过结果只对原始基线成立，不能作为当前操作指令。
 
 当前指南从[总导航](../README.md)进入，未完成事项由[待办](../roadmap/README.md)继续跟踪。历史失败、NO-GO、当时未执行和已清理产物状态保留。当前 Host 人工验收以[2026-09-20 所有者确认](records/host/manual-acceptance-20260920.md)为准；已完成本机部署统一由[部署索引](../maintenance/local-deployment.md)进入。
 
@@ -17,6 +17,7 @@
 - [V15：启动引导与插件加载进度方案](plans/host-v15-startup-splash-plan.md)
 - [V16：Document 浮窗关闭与新建位置方案](plans/host-v16-document-floating-close-and-creation-target-plan.md)
 - [V17：Host 面向人和 AI 的可读性重构计划](plans/host-v17-readability-refactor-plan.md)
+- [V18：命令面板分组与操作意图表达方案](plans/host-v18-command-palette-interaction-plan.md)
 
 - [基于 Plugin SDK V3 / Host V4 的工作流执行与可选 AI 规划方案](plans/ai-workflow-plugin-exploration.md)
 - [Avalonia / Dock 最新稳定版升级评估](plans/avalonia-dock-upgrade-assessment-20260916.md)
@@ -47,6 +48,11 @@
 - [2026-09-20 Host 人工验收确认](records/host/manual-acceptance-20260920.md)
 - [2026-09-20 文档整理、漂移修正及处置清单](records/documentation/reorganization-20260920.md)
 - [2026-09-16 文档重组与原始处置清单](records/documentation/reorganization-20260916.md)
+
+### host-v18
+
+- [命令面板交互开发记录](records/host-v18/development-acceptance.md)
+- [最终本地开发证据](records/host-v18/final-development-evidence.json)
 
 ### host-v17
 

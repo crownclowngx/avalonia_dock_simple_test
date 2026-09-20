@@ -1,8 +1,8 @@
 # 项目文档导航
 
-> 用途：主项目唯一总导航。状态：当前；核对日期：2026-09-20。版本事实见[集中基线](reference/platform-baseline.md)，分类与维护规则见[文档维护](maintenance/documentation.md)。
+> 用途：主项目唯一总导航。状态：当前；核对日期：2026-09-21。版本事实见[集中基线](reference/platform-baseline.md)，分类与维护规则见[文档维护](maintenance/documentation.md)。
 
-当前 Host 已完成至 V17 的实现，人工验收由项目所有者手工使用后[确认通过](archive/records/host/manual-acceptance-20260920.md)。最近记录的 V17 本机交付及历次部署见[本机部署](maintenance/local-deployment.md)；自动化、部署和公开发布各自保留证据。
+当前 Host 已实现 V18 命令面板交互，见[开发记录](archive/records/host-v18/development-acceptance.md)。此前 V17 的[人工验收确认](archive/records/host/manual-acceptance-20260920.md)不覆盖本轮新增交互。最近记录的本机交付及历次部署见[本机部署](maintenance/local-deployment.md)；自动化、实机体验、部署和公开发布各自保留证据。
 
 ## 使用工作台
 
@@ -46,9 +46,9 @@
 ## 当前结论、待办与历史
 
 - [Host 人工验收确认](archive/records/host/manual-acceptance-20260920.md)：项目所有者确认通过，专项矩阵保留供后续回归。
-- [V18 命令面板交互方案](roadmap/host-v18-command-palette-interaction-plan.md)：四类结果分组、明确动作和当前目标提示；方案已确认，尚未实施，配套[专用开发验证](maintenance/host-v18-command-palette-verification.md)。
+- [V18 命令面板交互方案](archive/plans/host-v18-command-palette-interaction-plan.md)：已实施四类分组、动作和目标校验；配套[专用开发验证](maintenance/host-v18-command-palette-verification.md)及[开发记录](archive/records/host-v18/development-acceptance.md)。
 - [待办与候选](roadmap/README.md)：保留当前开发计划、发布前事项、外部业务边界、实验和未来候选。
-- [历史归档](archive/README.md)：V1–V17 方案、阶段结果、原失败和各次部署/发布证据；历史命令不作为当前操作入口。
+- [历史归档](archive/README.md)：V1–V18 方案、阶段结果、原失败和各次部署/发布证据；历史命令不作为当前操作入口。
 - [本轮文档整理记录](archive/records/documentation/reorganization-20260920.md)：批量归档、漂移修正和验证结果。
 
 ## 理论与设计解释

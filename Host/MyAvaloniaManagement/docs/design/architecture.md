@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 内部架构
 
-> 用途：当前 Host 内部实现与资源所有权。状态：当前；核对日期：2026-09-20。事实源：[Business 实现](../../Business)、[Host 测试](../../../MyAvaloniaManagement.Tests)及 [Plugin 测试](../../../MyAvaloniaManagement.PluginTests)。
+> 用途：当前 Host 内部实现与资源所有权。状态：当前；核对日期：2026-09-21。事实源：[Business 实现](../../Business)、[Host 测试](../../../MyAvaloniaManagement.Tests)及 [Plugin 测试](../../../MyAvaloniaManagement.PluginTests)。
 
 版本和交付范围集中在[版本基线](../../../../docs/reference/platform-baseline.md)。本仓仅保留 Host 与 MyPlugTest；其他业务插件独立交付。历史封板不能代表当前工作树的发布资格，未完成事项见[待办](../../../../docs/roadmap/README.md)。
 
@@ -13,6 +13,8 @@
 诊断代码按已有职责分别放入 `Business/Diagnostics`：`HostDiagnosticContracts` 保存草稿、记录与端口，`HostDiagnosticCodes` 保存稳定错误码，`HostDiagnosticRedactionPolicy` 和 `HostDiagnosticFailurePolicy` 分别负责脱敏与分类，`HostDiagnosticSession` 继续独占记录、锁和写入器。敏感调试旁路与加载异常映射各有独立文件；文件拆分没有增加运行期协作者或改变输出政策。
 
 命令展示的文件与既有类型对应：`WorkbenchPresentationCommandStore` 复用适配器，`WorkbenchMenuProjection` 和 `WorkbenchKeyBindingProjection` 各自拥有查询/通知，`WorkbenchCommandPresentation` 组合并释放这些对象与 Palette。菜单和快捷键的小契约就近保留；`UiRefreshScheduler` 的时机、共享锁与各投影的异常政策保持原样。
+
+V18 的 `WorkbenchPalettePresentation` 保存纯值展示快照及分组排序规则。Palette 投影继续汇合四类已声明来源，不增加目录或业务执行器；View 只维护查询、选择、滚动和预编辑输入会话。页面命令的 `WorkbenchCommandTargetExpectation` 只保存 PageId 和上下文代次，随一次调用传给共享 Executor，并在最终调用前重查；不进入 Command Store，也不拥有模型、窗口或 Scope。组首标记只是行装饰，组标题不是可执行候选。详见[V18 专用验证](../../../../docs/maintenance/host-v18-command-palette-verification.md)。
 
 `ServiceCollectionExtensions.AddApplicationServices` 在入口确定共享 Builder、Provider 所有者、Scope 目录和退出参与者；同类私有方法分别登记布局、导航工具、看板、Host 交互、Workflow、文档用例、Registry、命令、插件生命周期、工作区激活和 Session。所有调用保持原始注册顺序，简单的 WorkspaceCatalog 合并工厂仍直接可见；每个工厂继续在原解析时机创建对象，成功交付前记录实际参与者。同实例接口映射与 Session.DockFactory 别名不产生第二份所有权。
 

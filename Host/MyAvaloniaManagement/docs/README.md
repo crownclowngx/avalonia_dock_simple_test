@@ -1,8 +1,8 @@
 # Host 内部文档
 
-> 用途：维护 Host 实现及外部可观察行为。状态：当前；核对日期：2026-09-20。事实源为本项目源码及测试；主仓入口见[总导航](../../../docs/README.md)。
+> 用途：维护 Host 实现及外部可观察行为。状态：当前；核对日期：2026-09-21。事实源为本项目源码及测试；主仓入口见[总导航](../../../docs/README.md)。
 
-当前实现包含插件开关、自动重启、启动窗口、Document 浮窗关闭与命令面板创建目标，以及 V17 的诊断、命令展示和服务注册整理。Host 人工验收已由项目所有者[确认通过](../../../docs/archive/records/host/manual-acceptance-20260920.md)。
+当前实现包含插件开关、自动重启、启动窗口、Document 浮窗关闭与命令面板创建目标、V17 可读性整理，以及 V18 连续分组、键盘会话和提交目标校验。此前[Host 人工验收](../../../docs/archive/records/host/manual-acceptance-20260920.md)不覆盖 V18 新交互；本轮状态见[开发记录](../../../docs/archive/records/host-v18/development-acceptance.md)。
 
 ## 按修改目的阅读
 
@@ -13,9 +13,9 @@
 | 修改 SDK 边界、身份、磁盘格式、窗口或关闭行为 | [兼容约束](reference/compatibility-contracts.md) |
 | 查阅版本、支持平台与包职责 | [集中基线](../../../docs/reference/platform-baseline.md) |
 | 运行自动化与定位专项回归 | [主仓验证与专项索引](../../../docs/maintenance/verification.md) |
-| 查阅已确认但尚未实施的命令面板改造 | [V18 交互方案](../../../docs/roadmap/host-v18-command-palette-interaction-plan.md)、[专用开发验证](../../../docs/maintenance/host-v18-command-palette-verification.md) |
+| 查阅命令面板分组与目标一致性设计 | [V18 交互方案](../../../docs/archive/plans/host-v18-command-palette-interaction-plan.md)、[专用开发验证](../../../docs/maintenance/host-v18-command-palette-verification.md) |
 | 构建和交付本机安装版 | [本机部署](../../../docs/maintenance/local-deployment.md) |
-| 查阅 V11–V17 方案、设计取舍和原始结果 | [历史归档](../../../docs/archive/README.md) |
+| 查阅 V11–V18 方案、设计取舍和原始结果 | [历史归档](../../../docs/archive/README.md) |
 
 Document、Layout、Workflow、Command、启动和重启的详细契约从[总导航](../../../docs/README.md)进入，本入口不重复维护。
 

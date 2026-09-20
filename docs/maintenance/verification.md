@@ -1,6 +1,6 @@
 # 主仓验证与封板
 
-> 用途：维护 Host、SDK 和 MyPlugTest。状态：当前；核对日期：2026-09-20。事实源：[Gate 参数](../../tools/MyAvaloniaManagement.Gate/GateOptions.cs)、[配置](../../tools/MyAvaloniaManagement.Gate/gate.config.json)与执行实现。
+> 用途：维护 Host、SDK 和 MyPlugTest。状态：当前；核对日期：2026-09-21。事实源：[Gate 参数](../../tools/MyAvaloniaManagement.Gate/GateOptions.cs)、[配置](../../tools/MyAvaloniaManagement.Gate/gate.config.json)与执行实现。
 
 ## 日常开发
 
@@ -48,7 +48,7 @@ Host 整体人工验收已由项目所有者[确认通过](../archive/records/ho
 | Document 浮窗关闭及命令面板创建目标 | [V16 文档窗口](host-v16-document-window-verification.md) |
 | 诊断、命令展示和服务注册 | [V17 可读性](host-v17-readability-verification.md) |
 
-已确认、尚未实施的 [V18 命令面板交互方案](../roadmap/host-v18-command-palette-interaction-plan.md)另有[专用开发验证规范](host-v18-command-palette-verification.md)。其矩阵和命令用于后续实施，不属于上表已完成阶段的结果；当前设计文档交付只检查文档及嵌入帮助，不运行 V18 完整实现门禁。
+V18 命令面板分组与目标校验已实施，见[专用开发验证及方法映射](host-v18-command-palette-verification.md)与[开发记录](../archive/records/host-v18/development-acceptance.md)。完整 `verify` 对应最终代码和嵌入 Markdown，结果单独保存；Headless 不代替原生输入法与多屏 DPI 验收。
 
 ## 正式 Host 封板
 

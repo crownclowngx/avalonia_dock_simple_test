@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "status": "pending-final-verify",
+  "scope": "V18 command palette interaction; local development only",
+  "finalGate": null,
+  "note": "最终嵌入 Markdown 定稿后提交验证输入；完整 verify 结束后仅更新此非嵌入 JSON。此初始记录不声明最终通过。",
+  "nativeDesktopChecks": "pending: Windows IME, native focus and multi-monitor DPI",
+  "excluded": ["AIFLOW", "Windows CI", "seal", "release smoke", "release coverage", "deployment", "publication"]
+}

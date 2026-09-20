@@ -1,10 +1,12 @@
 # V18：命令面板分组与操作意图表达方案
 
+> 实施后说明（2026-09-21）：P0 基线及 P1–P3 实现/专项已完成，当前指南已同步。实际交付与最终开发门禁见[开发记录](../../archive/records/host-v18/development-acceptance.md)；原生输入法和多屏 DPI 留在[待办](../../roadmap/README.md)。以下保留原设计阶段的目标与约束，“尚未实施”“仅文档”表示原方案形成时的状态，不作为当前行为结论。
+
 > 用途：明确命令面板下一轮交互改造、工程边界和实施步骤。
 > 状态：方案已由项目所有者确认；本文是设计交付，功能代码、专项补测和开发验收尚未实施。日期：2026-09-20。
 > 调研基线：`53ea76521bc5a2ad80fa4c37c28c69c8a788c45a`；实施前重新记录 HEAD 和工作树状态。
 > V18 是 Host 改造序号，不代表产品、程序集、SDK、NuGet 或持久化格式版本升级。
-> 配套：[V18 专用开发验证](../maintenance/host-v18-command-palette-verification.md)。当前实际行为仍以[工作区搜索指南](../quick-start/workbench-search.md)为准，不能将本文的目标行为视为已经交付。
+> 配套：[V18 专用开发验证](../../maintenance/host-v18-command-palette-verification.md)。当前实际行为仍以[工作区搜索指南](../../quick-start/workbench-search.md)为准，不能将本文的目标行为视为已经交付。
 
 ## 1. 目标与首要约束
 
@@ -24,7 +26,7 @@
 
 ## 2. 工程盘点与类型边界
 
-当前 [WorkbenchPaletteIdentity](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchPaletteIdentity.cs) 只有 Page、Function、Tool、Command 四种身份。[Palette 投影](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandPaletteProjection.cs) 汇合四类只读数据，以已声明菜单贡献作为普通命令的发现许可。[执行适配](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkspacePaletteActions.cs) 区分页面激活、创建入口和工具操作；普通命令沿用共享 Executor。
+当前 [WorkbenchPaletteIdentity](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchPaletteIdentity.cs) 只有 Page、Function、Tool、Command 四种身份。[Palette 投影](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandPaletteProjection.cs) 汇合四类只读数据，以已声明菜单贡献作为普通命令的发现许可。[执行适配](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkspacePaletteActions.cs) 区分页面激活、创建入口和工具操作；普通命令沿用共享 Executor。
 
 | 工程事实 | V18 展示和处理 | 不应做的合并或推断 |
 | --- | --- | --- |
@@ -80,7 +82,7 @@
 
 ### 3.3 工具面板
 
-工具的实际布局来自 [ToolWorkspaceReadModel](../../Host/MyAvaloniaManagement/Business/Workspace/ToolWorkspaceReadModel.cs)，操作继续走原 ToolCenterActions：
+工具的实际布局来自 [ToolWorkspaceReadModel](../../../Host/MyAvaloniaManagement/Business/Workspace/ToolWorkspaceReadModel.cs)，操作继续走原 ToolCenterActions：
 
 | 当前状态 | 标题动作 | Enter 效果 |
 | --- | --- | --- |
@@ -187,7 +189,7 @@
 | V18-P3 | 命令目标一致性、工具状态、创建与失败链回归 | 当前实例、跨窗、异步和关闭场景通过，原 Executor/Workspace 责任保持 |
 | V18-P4 | 同步当前文档，完成 SOLID/中文注释审查、本地完整 verify 和有针对性的桌面验证 | 专项矩阵逐项有证据；实现、自动测试、人工体验、部署及发布分别标记 |
 
-详细测试、命令和证据格式只在[V18 专用开发验证](../maintenance/host-v18-command-palette-verification.md)维护。本次文档提交不运行 P0–P4 的完整开发门禁，也不预填实现或测试通过结论。
+详细测试、命令和证据格式只在[V18 专用开发验证](../../maintenance/host-v18-command-palette-verification.md)维护。本次文档提交不运行 P0–P4 的完整开发门禁，也不预填实现或测试通过结论。
 
 ## 8. 文档同步与验收
 
@@ -205,12 +207,12 @@
 
 ## 9. 调研依据
 
-主仓事实源：[搜索指南](../quick-start/workbench-search.md)、[命令契约](../reference/workbench-commands.md)、[Workflow Action 契约](../reference/workflow-actions.md)、[当前页面快照](../../Host/MyAvaloniaManagement/Business/Workspace/OpenWorkspacePage.cs)、[创建目录](../../Host/MyAvaloniaManagement/Business/Workspace/DocumentCreationDirectory.cs)、[命令状态查询](../../Host/MyAvaloniaManagement/Business/Commands/State/WorkbenchCommandStateQuery.cs)、[Command 描述契约](../../Host/MyAvaloniaManagement.PluginSdk.UI/WorkbenchCommandDescriptors.cs)、[Document/Tool 描述契约](../../Host/MyAvaloniaManagement.PluginSdk.UI/ContributionDescriptors.cs)。
+主仓事实源：[搜索指南](../../quick-start/workbench-search.md)、[命令契约](../../reference/workbench-commands.md)、[Workflow Action 契约](../../reference/workflow-actions.md)、[当前页面快照](../../../Host/MyAvaloniaManagement/Business/Workspace/OpenWorkspacePage.cs)、[创建目录](../../../Host/MyAvaloniaManagement/Business/Workspace/DocumentCreationDirectory.cs)、[命令状态查询](../../../Host/MyAvaloniaManagement/Business/Commands/State/WorkbenchCommandStateQuery.cs)、[Command 描述契约](../../../Host/MyAvaloniaManagement.PluginSdk.UI/WorkbenchCommandDescriptors.cs)、[Document/Tool 描述契约](../../../Host/MyAvaloniaManagement.PluginSdk.UI/ContributionDescriptors.cs)。
 
 下列为可选相邻仓库的调研依据，只在相应项目检出时可打开；主仓测试必须使用本仓夹具，不将这些文件变为构建或门禁依赖：
 
-- [BiliDownloader 创建入口](../../../avalonia_dock_plug_test/myavalonia-bili-downloader/src/BiliDownloaderPlugin.Plugin/Plugin/BiliDownloaderPluginModule.cs)：一个文档类型具有多个创建 Intent。
-- [Workflow Studio 注册](../../../avalonia_dock_plug_test/myavalonia-workflow-studio/src/WorkflowStudio.Plugin/Plugin/WorkflowStudioModule.cs)：验证、运行、取消当前工作流。
-- [经典游戏注册](../../../avalonia_dock_plug_test/myavalonia-classic-game/src/ClassicGamePlugin.Plugin/Plugin/ClassicGamePluginModule.cs)：当前实例的重新开始和撤销，不伪造不支持的动作。
-- [小说命令定义](../../../avalonia_dock_plug_test/myavalonia-novel-generate/src/NovelGeneratePlugin.Plugin/Plugin/NovelCommands.cs)、[执行适配](../../../avalonia_dock_plug_test/myavalonia-novel-generate/src/NovelGeneratePlugin.Plugin/Features/Main/MainDocument.Workbench.cs)：打开项目、持续创作、延后暂停、取消和导出预览的语义不同。
-- [归档 Workflow Action](../../../avalonia_dock_plug_test/myavalonia-layer-unpack/src/LayerUnpackPlugin.Plugin/Workflow/ArchiveWorkflowActions.cs)：带参数的独立工作流能力不等同于用户命令。
+- [BiliDownloader 创建入口](../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/src/BiliDownloaderPlugin.Plugin/Plugin/BiliDownloaderPluginModule.cs)：一个文档类型具有多个创建 Intent。
+- [Workflow Studio 注册](../../../../avalonia_dock_plug_test/myavalonia-workflow-studio/src/WorkflowStudio.Plugin/Plugin/WorkflowStudioModule.cs)：验证、运行、取消当前工作流。
+- [经典游戏注册](../../../../avalonia_dock_plug_test/myavalonia-classic-game/src/ClassicGamePlugin.Plugin/Plugin/ClassicGamePluginModule.cs)：当前实例的重新开始和撤销，不伪造不支持的动作。
+- [小说命令定义](../../../../avalonia_dock_plug_test/myavalonia-novel-generate/src/NovelGeneratePlugin.Plugin/Plugin/NovelCommands.cs)、[执行适配](../../../../avalonia_dock_plug_test/myavalonia-novel-generate/src/NovelGeneratePlugin.Plugin/Features/Main/MainDocument.Workbench.cs)：打开项目、持续创作、延后暂停、取消和导出预览的语义不同。
+- [归档 Workflow Action](../../../../avalonia_dock_plug_test/myavalonia-layer-unpack/src/LayerUnpackPlugin.Plugin/Workflow/ArchiveWorkflowActions.cs)：带参数的独立工作流能力不等同于用户命令。
