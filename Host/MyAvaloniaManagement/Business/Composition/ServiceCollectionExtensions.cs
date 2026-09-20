@@ -44,13 +44,19 @@ namespace MyAvaloniaManagement.Business.Composition;
 internal static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// 注册应用程序核心服务
+    /// 按既有顺序登记应用组合根，以共享所有者和明确的服务分组构成唯一 Host 容器。
     /// </summary>
     /// <param name="services">服务集合</param>
+    /// <param name="registryBuilder">本次插件声明的收集者；缺省时仅在入口创建一次。</param>
+    /// <param name="pluginProviders">插件私有 Provider 的所有者，所有注册段借用同一实例。</param>
+    /// <param name="documentScopes">记录 Host 与插件 Document Scope 管理器的共享目录。</param>
+    /// <param name="shutdownParticipants">记录工厂实际交付对象的退出目录，不能由注册辅助方法另行创建。</param>
     /// <returns>服务集合</returns>
     /// <remarks>
     /// 状态协调器采用单例，保证全应用共享同一 Dock 和布局状态；
     /// 存储服务也作为无状态单例注册，便于 ViewModel 通过接口替换测试实现。
+    /// 各分组只追加服务描述符，保留登记顺序与工厂内容；服务何时解析、在哪个线程创建，
+    /// 继续由启动与工作台调用链决定。拆分方法不会把依赖解析提前到注册阶段。
     /// </remarks>
     public static IServiceCollection AddApplicationServices(
         this IServiceCollection services,
@@ -72,7 +78,34 @@ internal static class ServiceCollectionExtensions
         // 每个由托管插件创建的 Document 都拥有独立 Scope。插件只依赖公共创建接口，
         // Dock 关闭时则由宿主使用具体管理器释放对应 Scope。
         services.AddDocumentScopeManagement(documentScopes);
+        RegisterLayoutServices(services);
+        RegisterNavigationAndTools(services);
+        RegisterPluginStatus(services);
+        RegisterHostInteraction(services);
+        RegisterWorkflowActions(services, shutdownParticipants);
+        RegisterDocumentOperations(services, shutdownParticipants);
+        RegisterHostWorkspace(services);
+        RegisterPluginRegistry(services, registryBuilder, pluginProviders, shutdownParticipants);
+        RegisterWorkbenchCommands(services, shutdownParticipants);
+        services.AddSingleton(provider => new WorkspaceCatalog(
+            provider.GetRequiredService<HostWorkspaceCatalog>(),
+            provider.GetRequiredService<PluginRegistry>(),
+            provider.GetRequiredService<PluginAvailabilityReadModel>()));
+        RegisterPluginLifecycle(services, shutdownParticipants);
+        RegisterWorkspaceActivation(services, pluginProviders);
+        RegisterWorkspaceSession(services, shutdownParticipants);
 
+        return services;
+    }
+
+    /// <summary>登记布局存储与布局生命周期，实际创建仍由首次解析触发。</summary>
+    /// <remarks>
+    /// 布局生命周期创建成功后才交给退出参与者记录；存储诊断继续通过可选端口报告。
+    /// 本方法不读取布局、不创建生命周期实例，也不改变 Runtime 的最终保存与释放顺序。
+    /// </remarks>
+    private static void RegisterLayoutServices(
+        IServiceCollection services)
+    {
         services.AddSingleton(provider => new DockLayoutV3Store(HostDataRootPolicy.ResolveDefault(),
             (code, exception) => provider.GetService<IHostDiagnosticSink>()?.Report(
                 new HostDiagnosticDraft(code, HostDiagnosticPhase.Layout) { Exception = exception })));
@@ -82,6 +115,16 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<HostShutdownParticipants>().Record(layout);
             return layout;
         });
+    }
+
+    /// <summary>登记外观设置、功能导航和工具中心的查询、动作及窗口入口。</summary>
+    /// <remarks>
+    /// 这些 Runtime 级服务保留单例寿命；窗口服务仍按需创建窗口模型。
+    /// Document 创建入口与工具显隐动作继续使用既有用例，不在注册时创建业务 View。
+    /// </remarks>
+    private static void RegisterNavigationAndTools(
+        IServiceCollection services)
+    {
         services.AddSingleton<AppearanceSettingsStore>();
         services.AddSingleton<PluginNavigationSettingsStore>();
         services.AddSingleton<FunctionCenterWindowService>();
@@ -93,6 +136,16 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<ToolCenterActions>();
         services.AddSingleton<ToolCenterWindowService>();
         services.AddSingleton<HostOpenToolCenterCommandHandler>();
+    }
+
+    /// <summary>登记插件看板的只读查询、兼容证据与窗口命令。</summary>
+    /// <remarks>
+    /// 查询优先使用具体诊断会话，再回退到诊断端口中的会话；两个来源都不存在时仍允许解析。
+    /// 兼容报告目录与证据读取方式保持原样，组合根不在登记描述符时扫描插件或打开窗口。
+    /// </remarks>
+    private static void RegisterPluginStatus(
+        IServiceCollection services)
+    {
         // 查询为 Runtime 级只读服务，窗口模型由窗口服务按需创建，不再登记为 Dock Tool。
         services.AddSingleton<IPluginStatusQuery>(provider => new PluginStatusQuery(
             provider.GetRequiredService<PluginRegistry>(),
@@ -106,6 +159,16 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<TimeProvider>(), System.IO.Path.Combine(AppContext.BaseDirectory, "CompatibilityReports"),
             provider.GetService<PluginDiscoverySnapshot>()));
         services.AddSingleton<HostOpenPluginStatusCommandHandler>();
+    }
+
+    /// <summary>登记主题、帮助以及文件和窗口交互端口。</summary>
+    /// <remarks>
+    /// 主题与窗口服务维持 Host 单例，帮助阅读器仍通过工厂按需新建。
+    /// 插件只能解析既有窄交互接口，具体 Window、存储选择器和剪贴板仍由 Host 适配器拥有。
+    /// </remarks>
+    private static void RegisterHostInteraction(
+        IServiceCollection services)
+    {
         services.AddSingleton<ApplicationThemeService>();
         services.AddSingleton<HelpContentCatalog>();
         services.AddSingleton<HelpReadingStateStore>();
@@ -115,6 +178,17 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<IHostStorageService, AvaloniaHostStorageService>();
         // 插件只能取得窄窗口交互端口；具体 Window、StorageProvider 与 Clipboard 始终留在 Host。
         services.AddSingleton<IPluginWindowInteraction, AvaloniaPluginWindowInteraction>();
+    }
+
+    /// <summary>登记 Workflow 目录、授权、运行管理器与关闭端口。</summary>
+    /// <remarks>
+    /// 运行管理器可能在插件组合期间间接创建，因此工厂成功交付前必须登记真实实例。
+    /// 关闭接口通过解析同一管理器建立别名，不能创建第二个运行计数或取消所有者。
+    /// </remarks>
+    private static void RegisterWorkflowActions(
+        IServiceCollection services,
+        HostShutdownParticipants shutdownParticipants)
+    {
         services.AddSingleton(TimeProvider.System);
         services.AddSingleton<WorkflowActionCatalogStore>();
         services.AddSingleton(WorkflowActionExecutionLimits.Default);
@@ -135,6 +209,17 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<IWorkflowActionShutdownParticipant>(provider =>
             provider.GetRequiredService<WorkflowActionRunManager>());
         services.AddSingleton<WorkflowActionShutdownGate>();
+    }
+
+    /// <summary>登记文档持久化、关闭、反馈以及依赖这些用例的重启和 Host 命令。</summary>
+    /// <remarks>
+    /// 保持这段原有登记顺序；命令目录所需的服务在实际解析时才取得，不在此处初始化工作台。
+    /// Document 操作门创建成功后才登记，关闭协调器、回收器和生命周期仍共享原单例。
+    /// </remarks>
+    private static void RegisterDocumentOperations(
+        IServiceCollection services,
+        HostShutdownParticipants shutdownParticipants)
+    {
         services.AddSingleton<DocumentEnvelopeSerializer>();
         services.AddSingleton(_ =>
         {
@@ -176,7 +261,19 @@ internal static class ServiceCollectionExtensions
         // Lifetime 不通过 Application.Current 或 IServiceProvider 反向定位依赖。
         services.AddSingleton<DocumentControlRecycling>();
         services.AddSingleton<DockDocumentLifetime>();
-        RegisterHostWorkspace(services);
+    }
+
+    /// <summary>登记冻结贡献目录、生命周期状态及只读可用性投影。</summary>
+    /// <remarks>
+    /// 复用入口选定的 Builder 和插件 Provider 所有者，辅助方法不创建替代实例。
+    /// Build 仍在 Registry 首次解析时执行；状态实例创建成功后登记，注册过程不提交插件目录。
+    /// </remarks>
+    private static void RegisterPluginRegistry(
+        IServiceCollection services,
+        PluginRegistryBuilder registryBuilder,
+        PluginProviderOwner pluginProviders,
+        HostShutdownParticipants shutdownParticipants)
+    {
         services.AddSingleton(provider => registryBuilder.Build(
             provider.GetService<PluginModuleCatalog>(),
             provider.GetService<IHostDiagnosticSink>(),
@@ -193,6 +290,17 @@ internal static class ServiceCollectionExtensions
         });
         services.AddSingleton(provider => new PluginAvailabilityReadModel(
             provider.GetRequiredService<PluginLifecycleStateStore>()));
+    }
+
+    /// <summary>登记命令目录、上下文、状态、执行与根级展示对象。</summary>
+    /// <remarks>
+    /// 这些工厂会间接解析 Workspace，调用线程与解析时机继续由启动协调器控制。
+    /// 执行器在交付前登记且与关闭接口共用实例；展示接口也引用唯一组合对象，不另建缓存。
+    /// </remarks>
+    private static void RegisterWorkbenchCommands(
+        IServiceCollection services,
+        HostShutdownParticipants shutdownParticipants)
+    {
         services.AddSingleton(provider => new WorkbenchCommandCatalog(
             provider.GetRequiredService<HostWorkbenchCommandCatalog>(),
             provider.GetRequiredService<PluginRegistry>()));
@@ -234,10 +342,17 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<HostIconRenderer>()));
         services.AddSingleton<IWorkbenchCommandPresentationBindings>(provider =>
             provider.GetRequiredService<WorkbenchCommandPresentation>());
-        services.AddSingleton(provider => new WorkspaceCatalog(
-            provider.GetRequiredService<HostWorkspaceCatalog>(),
-            provider.GetRequiredService<PluginRegistry>(),
-            provider.GetRequiredService<PluginAvailabilityReadModel>()));
+    }
+
+    /// <summary>登记插件生命周期协调器，并在首次创建成功时记录退出参与者。</summary>
+    /// <remarks>
+    /// 协调器消费已经冻结的 Registry 和既有解析端口；登记本身不会调用插件初始化。
+    /// 实际实例登记仍位于工厂返回前，启动失败回滚据此判断已创建对象，不额外解析服务。
+    /// </remarks>
+    private static void RegisterPluginLifecycle(
+        IServiceCollection services,
+        HostShutdownParticipants shutdownParticipants)
+    {
         services.AddSingleton(provider =>
         {
             var instance = new PluginLifecycleCoordinator(
@@ -249,6 +364,17 @@ internal static class ServiceCollectionExtensions
             shutdownParticipants.Record(instance);
             return instance;
         });
+    }
+
+    /// <summary>登记图标、精确模型与 View 激活器，以及工作台窗口上下文。</summary>
+    /// <remarks>
+    /// 插件激活器借用入口持有的 Provider 所有者，可用性仍来自既有只读模型。
+    /// 保持默认 Dock 适配器与窗口上下文单例，不增加第二个实例目录或服务定位入口。
+    /// </remarks>
+    private static void RegisterWorkspaceActivation(
+        IServiceCollection services,
+        PluginProviderOwner pluginProviders)
+    {
         services.AddSingleton<HostIconCatalog>();
         services.AddSingleton<HostIconRenderer>();
         services.AddSingleton<ViewLocator>();
@@ -259,7 +385,17 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<PluginAvailabilityReadModel>()));
         services.AddSingleton<IHostDockableFactory, HostDockAdapterFactory>();
         services.AddSingleton<WorkbenchWindowContext>();
+    }
 
+    /// <summary>登记唯一工作区 Session、其 Dock 工厂别名及只读查询。</summary>
+    /// <remarks>
+    /// 工厂先创建，随后创建 Session、挂接回调、登记 Session，成功后才向容器交付。
+    /// Dock 工厂别名必须返回 Session 已拥有的对象；查询服务不拥有模型、View 或 Document Scope。
+    /// </remarks>
+    private static void RegisterWorkspaceSession(
+        IServiceCollection services,
+        HostShutdownParticipants shutdownParticipants)
+    {
         // Session 是工作区状态的唯一所有者；Factory 只作为 Session 内部创建并一次性绑定的
         // Dock Framework Adapter 注册。显式工厂避免构造期循环，也没有使用 IServiceProvider 定位器。
         services.AddSingleton(provider =>
@@ -282,8 +418,6 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<WorkspaceSession>().DockFactory);
         services.AddSingleton<ToolWorkspaceReadModel>();
         services.AddSingleton<DocumentCreationMenuQuery>();
-
-        return services;
     }
 
     /// <summary>
