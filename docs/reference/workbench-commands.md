@@ -1,6 +1,6 @@
 # Workbench Command 当前契约
 
-> 用途：声明和维护菜单、快捷键、命令面板共用的用户操作。状态：当前；核对日期：2026-09-16。事实源：[Command 内核](../../Host/MyAvaloniaManagement/Business/Commands)、[Presentation](../../Host/MyAvaloniaManagement/Business/Presentation/Commands)及 UI SDK 声明。
+> 用途：声明和维护菜单、快捷键、命令面板共用的用户操作。状态：当前；核对日期：2026-09-20。事实源：[Command 内核](../../Host/MyAvaloniaManagement/Business/Commands)、[Presentation](../../Host/MyAvaloniaManagement/Business/Presentation/Commands)及 UI SDK 声明。
 
 ## 语义与注册
 
@@ -25,6 +25,8 @@ Host 拥有保留位置与核心快捷键。插件只贡献允许的共享末端
 ## 命令面板与 Workflow 的区别
 
 当前面板还发现功能创建入口、已有页面和工具，见[工作区搜索](../quick-start/workbench-search.md)。新建成功才关闭相应搜索入口；失败保留查询及错误，普通 Command 沿用关闭面板后执行的时序。
+
+V16 的功能新建通过 Host internal `DocumentCreationTarget` 显式携带面板来源根与文档组，串行排队和初始化不重取活动窗口；发布前验证来源归属及关闭状态。结果携带本次页面身份供焦点恢复重验，目标不存入共享展示命令。普通 Command 的 Context/Target 和 SDK 声明不变，保存对话框 Owner 仍由原窗口上下文负责。Dock 的标签选择与文档组焦点通知共同更新活动文档事实，因此点击另一组已选中的页也能正确路由。
 
 Workflow Action 提供受控跨插件调用；Workbench Command 提供用户入口。需要编排时，Document 的 Command 可进入既有 Runner/Gateway，不复制另一套 Action Runtime。
 

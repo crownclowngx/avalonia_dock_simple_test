@@ -99,3 +99,9 @@ Registry 以防御性声明快照隔离可变收集与纯校验；局部 Validat
 启动协调器拥有任务与终态，工作线程隔离同步插件操作，进度缓冲只保存事实，桌面适配器管理首帧与窗口交接，Runtime 继续独占资源释放。遵守 SOLID，使用窄进度端口、不可变记录及普通委托；没有通用状态机、事件总线或第二套服务定位器。
 
 命令目录会间接解析 Workspace，必须随工作台移到 UI 线程；不能仅把整个 Create 包进 Task.Run。初始 Windows 工作线程保留 STA，但不承诺异步延续线程、COM 消息泵或强制中断同步代码。取消后即使工厂迟到交付 Runtime，也仍归进程入口收尾。窗口关闭和动画完成不作为资源释放证明。详细取舍、源码与测试映射见[V15 开发记录](../../../../docs/archive/records/host-v15/development-acceptance.md)。
+
+## V16：文档窗口归属与关闭顺序
+
+V16 文档窗口修复仍以 SOLID 为首要约束：Factory 只接续框架关闭；Coordinator 只准备确认与许可；WindowInteraction 管来源和焦点；目标解析器只接受布局数据；Session 唯一拥有发布与释放。使用普通不可变记录、具体解析器和现有回调，避免为每个浮窗建立 Runtime、服务容器或窗口管理框架。来源与组必须同时按引用验证，原组迁走不能改变请求所属窗口；弱最近组记录不延长旧组寿命。
+
+只给命令面板新建传入显式目标，其他入口继续默认主组，这是控制行为变更范围的产品取舍。纯工具浮窗回退主窗，避免自动改造工具布局。关闭先确认再拆除；同步回调首次拒绝只是等待，不能当作已经关闭。中文注释解释这些时序和所有权，不用背景颜色或定时清扫掩盖空壳。详见 [V16 方案](../../../../docs/roadmap/host-v16-document-floating-close-and-creation-target-plan.md)及[验证](../../../../docs/maintenance/host-v16-document-window-verification.md)。

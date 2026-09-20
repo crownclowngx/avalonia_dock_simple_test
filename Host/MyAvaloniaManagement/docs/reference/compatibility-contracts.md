@@ -1,10 +1,12 @@
 # 主项目兼容约束
 
-> 用途：内部重构必须保护的外部可观察行为。状态：当前；核对日期：2026-09-16。事实源：当前 SDK public 类型、Host Loader/Registry/Workspace、文档与布局实现及对应测试。
+> 用途：内部重构必须保护的外部可观察行为。状态：当前；核对日期：2026-09-20。事实源：当前 SDK public 类型、Host Loader/Registry/Workspace、文档与布局实现及对应测试。
 
 本文是行为约束，不是阶段验收签字。版本见[集中基线](../../../../docs/reference/platform-baseline.md)，历史结果见[归档](../../../../docs/archive/README.md)。本仓验证只覆盖 Host 与 MyPlugTest；外部业务插件需独立验收。
 
 ## 1. public API
+
+V16 仅扩展 Host 内部文档插入目标与关闭接续，不改变 SDK public API、程序集/包版本、manifest、Document envelope 或 Layout V3。文档仍由单一 Session 拥有，纯文档浮窗不跨启动恢复；混合浮窗关闭释放 Document、保留隐藏 Tool 原实例。命令面板按来源窗口新建，其他创建/打开入口及普通命令维持原策略。验证范围见 [V16 专用开发验证](../../../../docs/maintenance/host-v16-document-window-verification.md)。
 
 V14 自动重启属于 Host internal 能力，不新增插件 SDK API，不修改程序集/包版本或持久化 schema。未保存确认、修订校验、命令排空、资源保留及工具布局恢复继续遵守原约束；Document 不增加跨启动重开能力，默认欢迎页仍创建。普通退出与启动失败不得消费历史重启请求，完整行为见[自动重启契约](../../../../docs/reference/host-restart.md)。
 

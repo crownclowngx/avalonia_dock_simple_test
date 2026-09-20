@@ -1,6 +1,6 @@
 # 主仓验证与封板
 
-V16 Document 浮窗关闭与新建位置目前只有[实施方案](../roadmap/host-v16-document-floating-close-and-creation-target-plan.md)和[专用开发验证计划](host-v16-document-window-verification.md)，尚未实现或执行测试。后续使用本地专项、Gate 自测和完整 verify；不使用 AIFLOW、Windows CI 或本页正式发布门禁。
+V16 Document 浮窗关闭与新建位置已实现，专项与测试映射见[专用开发验证](host-v16-document-window-verification.md)，实际命令和最终证据见[开发记录](../archive/records/host-v16/development-acceptance.md)。本轮使用本地专项、Gate 自测和完整 verify；不使用 AIFLOW、Windows CI 或本页正式发布门禁。原生桌面 M01–M08 待验收。
 
 V15 羽毛启动窗口与插件进度已接入，见[专用开发验证](host-v15-startup-verification.md)和[开发记录](../archive/records/host-v15/development-acceptance.md)。本轮仅使用本地专项、工具自测及完整 verify，不使用 AIFLOW、Windows CI 或发布门禁。
 

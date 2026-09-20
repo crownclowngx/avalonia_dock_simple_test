@@ -1,6 +1,6 @@
 # 待办与验收
 
-V16 Document 浮窗关闭与新建位置处于方案阶段，见[实施方案](host-v16-document-floating-close-and-creation-target-plan.md)和[专用开发验证计划](../maintenance/host-v16-document-window-verification.md)。本次只写文档，代码与验收均未执行。
+V16 Document 浮窗关闭与新建位置已实现，见[实施方案](host-v16-document-floating-close-and-creation-target-plan.md)、[专用开发验证](../maintenance/host-v16-document-window-verification.md)及[开发记录](../archive/records/host-v16/development-acceptance.md)。原生桌面 M01–M08 仍待验收。
 
 V15 启动引导与插件加载进度已接入；见[实施方案](host-v15-startup-splash-plan.md)、[专用验证](../maintenance/host-v15-startup-verification.md)及[开发记录与最终证据](../archive/records/host-v15/development-acceptance.md)。
 
@@ -12,7 +12,7 @@ V13 插件开关的实现与专项已完成，原生桌面检查待验收。入�
 
 | 工作名称 | 状态 / 所属范围 | 事实依据 | 完成条件 |
 | --- | --- | --- | --- |
-| V16 Document 浮窗关闭与新建位置 | 方案待实施、未验证 / Host 工作区交互 | [方案](host-v16-document-floating-close-and-creation-target-plan.md)、[专用验证计划](../maintenance/host-v16-document-window-verification.md) | 最后文档关闭无空壳、取消保留内容；新建进入发起窗口活动组；C/N 专项、本地 verify 与 M01–M08 分别记录。不使用 AIFLOW、Windows CI 或发布门禁 |
+| V16 Document 浮窗关闭与新建位置 | 已实现、原生桌面待验收 / Host 工作区交互 | [方案](host-v16-document-floating-close-and-creation-target-plan.md)、[专用验证](../maintenance/host-v16-document-window-verification.md)、[记录](../archive/records/host-v16/development-acceptance.md) | C/N 专项及最终本地 verify 证据单列；M01–M08 未执行。原生黑框、DPI、多屏、对话框和输入焦点继续验收；本轮不使用 Windows CI 或发布门禁 |
 | V15 启动引导与插件加载进度 | 实现与专项已接入，原生桌面待验收 / Host 启动 | [方案](host-v15-startup-splash-plan.md)、[专用验证](../maintenance/host-v15-startup-verification.md)、[开发证据](../archive/records/host-v15/final-development-evidence.json) | 最终本地 verify 见 JSON；原生 M01–M07、外部业务、单文件与部署分别记录，不以 Headless 代替 |
 | V14 Host 一键自动重启 | 实现与自动化已接入，原生重启/桌面体验待验收 | [执行方案](host-v14-automatic-restart-plan.md)、[专用验证](../maintenance/host-v14-automatic-restart-verification.md)、[开发证据](../archive/records/host-v14/final-development-evidence.json)、[本机交付](../maintenance/host-v14-local-deployment.md) | 本机单文件产物和启动检查按部署 JSON 记录，不能替代 M01–M07 原生交互及单文件菜单/看板重启往返。不使用 AIFLOW、Windows CI 或本轮正式发布门禁 |
 | V12 Host 内部职责重构 | 源码与专项已完成，桌面未执行 / Host 内部 | [V12 方案](host-v12-internal-refactor-plan.md)、[开发记录](../archive/records/host-v12/development-acceptance.md)、[最终证据](../archive/records/host-v12/final-development-evidence.json)、[安装版影响范围](../maintenance/host-v12-local-deployment.md) | 三阶段实现、单元／插件集成／Headless 专项已完成；完整本地 verify 以最终证据为准。原生鼠标、焦点、多屏 DPI 与外部业务未执行，后续按需要独立验收；本轮不使用 AIFLOW、Windows CI 或发布门禁 |

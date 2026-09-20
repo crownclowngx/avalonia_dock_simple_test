@@ -1,6 +1,6 @@
 # Host 内部文档
 
-V16 Document 浮窗关闭与新建位置目前处于方案阶段，见[实施方案](../../../docs/roadmap/host-v16-document-floating-close-and-creation-target-plan.md)和[专用开发验证计划](../../../docs/maintenance/host-v16-document-window-verification.md)。SOLID 为首要约束；本次仅文档，未修改代码或执行验证。
+V16 Document 浮窗关闭与新建位置已实现，见[实施方案](../../../docs/roadmap/host-v16-document-floating-close-and-creation-target-plan.md)、[专用开发验证](../../../docs/maintenance/host-v16-document-window-verification.md)和[开发记录](../../../docs/archive/records/host-v16/development-acceptance.md)。SOLID 为首要约束；自动化与原生桌面验收分别记载。
 
 V15 通过唯一 App 提前显示矢量羽毛启动窗口，后台插件组合报告真实进度，UI 线程完成工作台交接；见[现行契约](../../../docs/reference/host-startup.md)、[专用验证](../../../docs/maintenance/host-v15-startup-verification.md)及[开发记录](../../../docs/archive/records/host-v15/development-acceptance.md)。
 

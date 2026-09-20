@@ -1,10 +1,10 @@
 # V16：Document 浮窗关闭与新建位置方案
 
 > 用途：规定最后一个 Document 关闭后的浮窗回收，以及命令面板中新建文档的窗口与分组归属。
-> 状态：方案待实施；本次仅编写文档与更新导航，没有修改生产代码、测试或门禁，没有执行自动化或原生桌面验收。日期：2026-09-20。
-> 调研基线：`61ff50cf077b39b6f41debd25a4ec255e60bb7d4`；编写前工作树干净，实施前重新核对源码及已有差异。
+> 状态：P0–P2 实现和专项已完成；P3/P4 的最终本地门禁证据见[开发记录](../archive/records/host-v16/development-acceptance.md)。原生桌面 M01–M08 未执行。日期：2026-09-20。
+> 调研基线：`61ff50cf077b39b6f41debd25a4ec255e60bb7d4`；本页第 2 节保留修复前事实用于追溯，实际实现见第 8 节及开发记录。
 > V16 是 Host 改造序号，不代表产品、程序集、SDK、NuGet 或持久化格式版本升级。
-> 专用测试矩阵、开发命令与证据要求见 [V16 专用开发验证](../maintenance/host-v16-document-window-verification.md)。本文描述目标行为，不作为已实现能力的声明。
+> 专用测试矩阵、实际测试映射、开发命令与证据要求见 [V16 专用开发验证](../maintenance/host-v16-document-window-verification.md)。自动化通过不能替代原生黑框和焦点体验验收。
 
 ## 1. 问题与目标
 
@@ -26,9 +26,9 @@
 - 实施时同步现行文档和本专项文档，结果与证据分别记载，不把计划改写成未经验证的完成记录。
 - **不使用 AIFLOW**，不读取或维护其上下文、任务记录和候选更新。
 - **不使用 Windows CI 或发布门禁。** V16 开发阶段不执行 `seal`、发布 Smoke、发布覆盖率或重复性门禁；发布阶段再按当次发布要求执行，不删除、绕过或降低既有条件。
-- 本次文档任务不运行构建、测试或 verify；后文命令只供后续实施。安装目录部署、包发布、版本升级和 CI 配置修改均不属于本方案交付。
+- 安装目录部署、包发布、版本升级和 CI 配置修改均不属于本方案交付；实施阶段只运行本地开发验证。
 
-## 2. 已核对的源码事实
+## 2. 修复前已核对的源码事实
 
 | 位置 | 当前事实 | 设计影响 |
 | --- | --- | --- |
@@ -43,7 +43,7 @@
 
 按 [Dock 固定基线](../../patches/dock-area-fill/baseline.json) 对应源码，普通文档关闭会经过 `RemoveDockable`、空组折叠及 `RemoveWindow`。`RemoveWindow` 在调用 `window.Exit()` 后继续解除模型引用；底层 HostAdapter 也会解除 Host 引用，无法表达宿主异步确认产生的“原生关闭暂时被取消”。宿主收到窗口移除通知又会撤销待重试许可。这条静态调用链可以解释内容已拆除、原生窗口仍存活的空壳现象。
 
-上述是源码诊断，尚未通过本轮真实按钮操作复现。P0 必须确认标签按钮、关闭命令和原生标题栏的具体顺序，不能把可能存在的按钮联动当成已经观察到的事实。参考 [V11-P2 Tool 浮窗修复](host-v11-p2-tool-window-close-fix-plan.md)，但本次不得倒写该历史记录，也不能认为旧 Tool 测试已经覆盖 Document。
+P0 已通过真实标签按钮和命令面板输入建立两个失败的 Headless 行为断言，记录在 `docs/archive/records/host-v16/p0-red-evidence.json`。Document 标签模板只执行一次关闭命令，没有 ToolChrome 的 Click/Command 联动，故未添加 Document 按钮拦截。原生黑框仍未实测。参考 [V11-P2 Tool 浮窗修复](host-v11-p2-tool-window-close-fix-plan.md)，本次不倒写该历史记录。
 
 ## 3. 目标交互规则
 
@@ -88,7 +88,7 @@
 | I：接口隔离 | 只暴露捕获目标、校验目标、提交发布所需的窄能力；普通记录或方法足够时不强制一类一接口，不暴露整个窗口注册表或服务容器 |
 | D：依赖倒置 | 用例接收内部目标数据及必要的窄协作者，不查全局活动 Window、不在领域/SDK 中依赖 Avalonia 控件；调度与原生事件留在展示/适配边界 |
 
-建议的职责分配如下，新增名称仅为设计候选，不要求机械建立同名文件：
+实际职责分配如下；目标解析由具体 `DocumentCreationTargetResolver` 实现，不额外建立单实现接口：
 
 | 对象或边界 | 负责 | 不负责 |
 | --- | --- | --- |
@@ -121,7 +121,7 @@
 
 ### 6.1 捕获时机与调用链
 
-面板打开前记录来源工作台窗口及当时活动文档组，避免搜索框获取焦点后丢失上下文；用户执行功能创建动作时，依据该来源重新校验并冻结一次目标，再进入串行门和插件初始化。
+面板显示前记录来源工作台窗口及当时活动文档组，避免布局或搜索框焦点通知覆盖来源；用户执行功能创建动作时把该不可变目标复制给本次调用，再进入串行门和插件初始化，发布前统一重验。标签选择和组内焦点事件共同更新最近组，因此点击另一组已选中的页面也被正确记录。
 
 目标沿 `CommandPaletteView / WorkbenchWindowInteraction → WorkspacePaletteActions → DocumentPersistenceCoordinator → WorkspaceSession` 显式传递。不要将目标放入共享 Command 实例的可变字段，否则主窗与浮窗共用投影时可能相互覆盖。已有 `UseOwner` 继续解决保存/确认对话框归属，不能单独替代文档目标参数。
 
@@ -179,7 +179,7 @@
 
 ## 8. 实施阶段与完成条件
 
-以下阶段仅定义后续实施，不代表本次文档任务已执行。
+P0 已记录 2 项预期失败；P1 已提交关闭修复；P2 已提交目标传递和焦点修复。P3/P4 包括 79 项组合 UI 专项、608 项 Host Unit 全量、68 项 Gate 工具自测，以及文档冻结后的最终完整 verify；最终运行状态、数量和输入身份以非嵌入 JSON 证据为准，M01–M08 仍为待验收。
 
 | 阶段 | 内容 | 退出条件 |
 | --- | --- | --- |
@@ -193,9 +193,9 @@ P1 与 P2 应各自形成可审查、可独立验证的变更，之后做组合�
 
 ## 9. 文档同步与最终交付
 
-本次新增本实施方案和 [专用开发验证](../maintenance/host-v16-document-window-verification.md)，同步总导航、待办导航、Host 文档入口及开发验证入口；保留当前产品行为说明，不宣称 V16 已实现。
+本次已同步本方案、[专用开发验证](../maintenance/host-v16-document-window-verification.md)、总导航、待办导航、Host 文档入口、开发验证入口及受影响的现行契约。原生桌面状态与已实现行为分开记录。
 
-后续实施收口时按实际影响更新：
+文档收口范围如下：
 
 | 文档 | 更新内容 |
 | --- | --- |
@@ -207,6 +207,6 @@ P1 与 P2 应各自形成可审查、可独立验证的变更，之后做组合�
 | [Host 架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)、[兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md) | 目标传递、关闭顺序、所有权、SOLID 和中文注释要求 |
 | 本方案、专用验证及各导航 | 按真实阶段更新状态、实际测试类及命令，不将计划测试写成已通过 |
 
-实施完成后按惯例新增 `docs/archive/records/host-v16/development-acceptance.md` 和 `final-development-evidence.json`。它们目前尚未创建，不提供假结果或不存在的完成链接；实际记录需包含源码 HEAD、未提交差异身份、命令、TRX、Gate 摘要、原生矩阵和未执行范围。最终 JSON 作为非嵌入证据，避免验收结果本身反复改变已验证的帮助资源输入。
+按惯例新增[开发验收记录](../archive/records/host-v16/development-acceptance.md)，最终运行后写入同目录 `final-development-evidence.json`，包含源码 HEAD、输入身份、命令、TRX、Gate 摘要、原生矩阵和未执行范围。最终 JSON 不参与帮助嵌入，避免验收结果本身反复改变已验证的资源输入。Layout V3 正文已核对，其工具布局及纯文档浮窗边界没有改变，无需修改格式说明。
 
 开发完成的最低条件是两个问题的回归、完整本地 verify 和文档同步均有证据。若原生桌面未验收，明确标记待验收；不得仅凭 Headless 通过宣布真实黑框及焦点体验已经全部解决。部署和发布须另行执行及记录。

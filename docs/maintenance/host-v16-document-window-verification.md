@@ -1,8 +1,8 @@
 # V16 Document 浮窗关闭与新建位置：专用开发验证
 
 > 用途：定义 V16 的本地自动化矩阵、原生桌面验收、门禁和证据要求。日期：2026-09-20。
-> 状态：验证计划，尚未实现或执行；本次只写文档。目标规则见 [V16 实施方案](../roadmap/host-v16-document-floating-close-and-creation-target-plan.md)。
-> 不使用 AIFLOW、Windows CI、`seal`、发布 Smoke、发布覆盖率或重复性门禁；不部署安装目录、不发布包。下文是后续实施命令，不是本次执行记录。
+> 状态：实现与专项已落地；实际结果见[开发记录](../archive/records/host-v16/development-acceptance.md)，最终完整门禁见同目录非嵌入 JSON。原生桌面 M01–M08 未执行。目标规则见 [V16 实施方案](../roadmap/host-v16-document-floating-close-and-creation-target-plan.md)。
+> 不使用 AIFLOW、Windows CI、`seal`、发布 Smoke、发布覆盖率或重复性门禁；不部署安装目录、不发布包。下文命令可复现本地验证，不授予发布资格。
 
 ## 1. 验证层次与通过规则
 
@@ -67,7 +67,31 @@ N01 必须先通过浮窗命令面板的真实路径证明现有版本落入主�
 
 ## 3. 测试落点与现有回归
 
-新专项建议落在原测试项目，新增类名在实施时确定，最终须补充“矩阵编号 → 实际测试名”的映射。本文件目前不把候选测试类写成已经存在。
+新增专项位于原测试项目，`DocumentWindowTestContext` 使用真实插件注册、Scope、模型与 View，只替换保存选择、可控初始化等待和存储边界。`DocumentWindowV16UiTests` 的源文件按 Close/Creation 分开，测试方法保留 C/N 编号便于检索。
+
+| 矩阵 | 实际测试类与方法前缀（参数组合均须执行） |
+| --- | --- |
+| C01 | UI `DocumentWindowV16UiTests.C01最后文档标签按钮关闭后回收浮窗和文档资源` |
+| C02 | UI `C02关闭入口回收同一原生浮窗`：关闭命令、实际标签菜单绑定、Window.Close |
+| C03、C04 | UI `C03C04保存决策只在成功后拆除文档`：保存、放弃、取消、保存取消/失败/新增修订；Unit `DocumentCloseTests` |
+| C05、C06 | UI `C05单页和整窗关闭均遵守能力及可取消事件`、`C06原生首次或重试取消后仍可重新关闭` |
+| C07、C08 | UI `C07其他文档组或工具仍在时仅回收空组`、`C08主窗最后文档关闭后可重新新建` |
+| C09 | UI 两个 `C09` 方法（命令排空及单页转整窗）；Unit `DocumentCloseTests` 两个 `V16` 方法（精确接续、禁止扩大范围/退出） |
+| C10 | UI `C10确认期间新增页面使旧关闭请求失效`；Unit `DockWindowCloseTests` 的内容变化、移除后迟到确认、重试失败/释放 |
+| C11 | UI `C11整窗关闭混合内容后工具原实例可恢复而文档只释放一次`；`DockToolWindowCloseUiTests` 全类 |
+| C12 | 既有 UI `DockAreaFillUiTests` 的内容合并/源空窗、`DockCrossWindowLayoutUiTests`、`DockLayoutV3UiTests` 的回停/重置/拒绝回滚；Unit 退出及重启相关测试 |
+| N01 | UI 两个 `N01` 方法：主窗/双浮窗独立新建，以及同窗新建后逐页关闭完整链 |
+| N02、N03 | UI `N02N03多分组与工具焦点使用同窗最近活动文档组`、`N02点击另一组已选中页面仍更新新建落点`；Unit `DocumentCreationTargetTests.N02N03最近文档组按窗口隔离且工具激活不覆盖记录` |
+| N04 | UI `N04纯工具浮窗新建回到主窗活动组且不改造工具窗口`；Unit `N04N06来源失效只回退主窗有效组而不选其他浮窗` |
+| N05 | UI `N05初始化或串行门等待期间切窗不改变落点`：初始化等待、串行门排队，均断言归属与不抢焦点 |
+| N06 | UI `N06创建提交前原组移走或来源关闭按规则回退`；Unit `N06原组失效或迁往别窗时优先同来源其他组` 及 `N04N06` |
+| N07、N08 | Unit `N07没有安全目标时拒绝且相同标识不能替代来源身份`、`N07N08初始化失败或等待期间退出均不发布并仅释放一次`、`N08目标插入后失败撤销部分写入且重复发布不移动原页面`；UI `N08浮窗初始化失败不新增标签且原查询可重试` |
+| N09 | UI `N09同一共享动作的并发请求分别保留目标`（同创建用例并发）、`N09跨窗切换面板会话不会沿用上次来源`；`CognitiveUxV8UiTests` 的 Busy/重复 Enter/关闭保护 |
+| N10 | UI `N10迟到焦点恢复不能覆盖切页关页或新面板会话`、N05 切窗；`CognitiveUxV8UiTests` 成功后焦点回交 |
+| N11 | UI `N11辅助窗口不作为来源且跨窗已有页只定位原实例`；`CognitiveUxV8UiTests` 及 `WorkbenchCommandPresentationUiTests` 的工具/普通命令 |
+| N12 | Unit `DocumentCreationTargetTests.N12无显式目标的旧创建入口保持主默认组`；`DocumentPersistenceTests`、`CognitiveUxV8Tests` 及 UI 的功能中心/目录/欢迎入口；PluginTests 的初始化与 Scope 生命周期 |
+
+N06 窗口失效用例调用与面板相同的生产创建用例，以便在可控初始化等待时关闭来源窗口；真实面板 Busy 会禁止关闭自身，不能为测试绕过这一保护。N01/N05/N08/N09 的面板测试另外覆盖真实快捷键与会话链。C12 的既有测试通过最终完整 verify 一并执行，不将其描述为本轮新增测试。
 
 | 责任 | 既有落点或回归范围 |
 | --- | --- |
@@ -80,9 +104,14 @@ N01 必须先通过浮窗命令面板的真实路径证明现有版本落入主�
 
 不存在的类型、过时的过滤器或零发现必须在实际执行前修正。仅靠旧类的过滤器不能覆盖新增专项；实施后先列出新增测试并核对 C/N 编号，再运行完整项目及最终 verify。
 
-## 4. 后续本地开发命令
+## 4. 本地开发命令
 
-在仓库根目录按顺序运行。以下命令使用现有工程和测试类，作为相关基线；新增专项过滤器须在测试真正落地后补入本节并检查非零发现。`-m:1` 避免不同测试工程同时改写共享中间目录。
+在仓库根目录按顺序运行。新增专项入口如下，必须检查非零发现；关联基线命令随后列出。`-m:1` 避免不同测试工程同时改写共享中间目录。
+
+```powershell
+dotnet test Host/MyAvaloniaManagement.Tests -c Release -m:1 --filter 'FullyQualifiedName~DocumentCreationTargetTests|FullyQualifiedName~DocumentCloseTests|FullyQualifiedName~DockWindowCloseTests'
+dotnet test Host/MyAvaloniaManagement.UiTests -c Release -m:1 --filter 'FullyQualifiedName~DocumentWindowV16UiTests|FullyQualifiedName~CognitiveUxV8UiTests|FullyQualifiedName~DockToolWindowCloseUiTests'
+```
 
 ```powershell
 dotnet test Host/MyAvaloniaManagement.Tests -c Release -m:1 --filter 'FullyQualifiedName~DocumentCloseTests|FullyQualifiedName~DockWindowCloseTests|FullyQualifiedName~WorkspaceSessionAndDockFactoryTests|FullyQualifiedName~DocumentPersistenceTests|FullyQualifiedName~DocumentOperationShutdownTests|FullyQualifiedName~WorkbenchCommandShutdownGateTests|FullyQualifiedName~DockWorkspaceNavigationTests'
@@ -125,9 +154,9 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 
 ## 6. 文档检查与证据收口
 
-本次文档任务只核对新增/变更 Markdown 的相对链接、状态表述、命令与现有工程名称，以及 `git diff --check`；不为只写方案启动完整构建或测试。
+本轮核对新增/变更 Markdown 的相对链接、状态表述、命令与现有工程名称，以及 `git diff --check`。C/N 专项、Host Unit 全量与 Gate 自测已执行，最终完整 verify 在帮助文档冻结后执行；明细见开发记录与非嵌入证据。
 
-实施结束后新增 `docs/archive/records/host-v16/development-acceptance.md` 和非嵌入的 `final-development-evidence.json`，至少记载：
+`docs/archive/records/host-v16/development-acceptance.md` 与非嵌入的 `final-development-evidence.json` 按以下边界记录结果：
 
 - 源码 HEAD、工作树差异身份、固定补丁身份，确认测试对应实际修改后的输入。
 - 修改前缺陷证据与修改后 C/N 编号到实际测试的映射。

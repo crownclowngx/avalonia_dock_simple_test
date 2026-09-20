@@ -1,6 +1,6 @@
 # Document envelope v2、V3 修订保存、互斥激活与 Workspace 所有权设计
 
-> 用途：当前 Document 保存、恢复和关闭契约。状态：当前；核对日期：2026-09-16。事实源：[Documents](../../Host/MyAvaloniaManagement/Business/Documents)、[Workspace](../../Host/MyAvaloniaManagement/Business/Workspace)与 SDK Document 契约。
+> 用途：当前 Document 保存、恢复和关闭契约。状态：当前；核对日期：2026-09-20。事实源：[Documents](../../Host/MyAvaloniaManagement/Business/Documents)、[Workspace](../../Host/MyAvaloniaManagement/Business/Workspace)与 SDK Document 契约。
 
 ## 1. 设计结论
 
@@ -45,6 +45,8 @@ Host 不读取、迁移或写回 Document V1；旧设计仅供历史追溯。插
 4. `HostDockAdapterFactory` 以该令牌等待 `InitializeAsync`；
 5. 初始化成功后才构造 `ManagedDocumentDockable`，预构建并绑定唯一 View；
 6. Session 登记 Host 持久化状态，最后把完整 Adapter 原子发布到自己拥有的 Document Dock。
+
+V16 命令面板可显式传入本次来源窗口根和文档组；`DocumentCreationTargetResolver` 只选择落点，Session 在初始化完成后重验并直接插入最终组。原组失效时先同窗再主窗回退，正在关闭的浮窗不可接收；无显式目标的原入口仍用主默认组。重复发布在整个工作区检测，插入后异常撤回部分标签，再按既有所有权释放候选。该目标不进入 SDK、Document envelope 或 Layout V3。
 
 初始化、Presentation、Adapter、View、状态登记或发布任一步失败，待发布引用仍由调用者持有，并汇入
 同一个释放入口：断开 View 和 `DataContext`，发出 `ClosingToken`，释放模型与 scoped 依赖。失败不会
@@ -107,6 +109,8 @@ Tab 的权威标题；恢复副本的 `RequiresSave` 与插件 `IsDirty` 共同�
 确认、一次性重入许可”适配异步 UI，重复请求不会弹出第二个确认。Runtime 退出先拒绝新操作并排空在途工作，安全后释放 Adapter、View 与 Scope，再停止生命周期、逆序释放插件 Provider 和 Host Provider。超时或任务尚未安全结束时遵循资源保留政策，不能凭等待超时提前释放依赖。
 
 ## 7. 验证与边界
+
+V16 关闭浮窗最后一个 Document 时，在原对象图完整时接入窗口范围确认，能力和可取消事件在原生关闭前完成，成功后才由 Dock 清理。单页异步关闭途中变成最后一页时，只接续该页已有的一次性许可，不扩大范围、不重复确认。取消、保存失败或修订仍脏均保留原内容；具体时序和 C/N 测试映射见 [V16 专用验证](../maintenance/host-v16-document-window-verification.md)。
 
 主仓使用 `dotnet run --project tools/MyAvaloniaManagement.Gate -- verify`。当前保护包括 DocumentEnvelopeV2Tests、DocumentPersistenceTests、DocumentCloseTests、Scope 与 Workspace 相关测试；外部插件内容 Codec 由各自仓库验证。
 

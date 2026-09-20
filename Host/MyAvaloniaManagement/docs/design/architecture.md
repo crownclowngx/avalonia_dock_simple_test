@@ -600,6 +600,12 @@ V9 的 DockTabPointerCaptureGuard 处理 Direct 捕获丢失与手势结束；�
 
 SDK 的稳定身份、Document 修订保存及 Layout schema 3 的细节分别由[API](../../../../docs/reference/plugin-sdk-api-compatibility.md)、[持久化](../../../../docs/reference/document-persistence.md)和[布局](../../../../docs/reference/dock-layout-snapshot-v3.md)说明。本页不重复维护历史测试数量或发布哈希。
 
+### V16 文档窗口上下文
+
+`WorkbenchWindowInteraction` 在显示面板前借用已登记工作台窗口的布局根，投影经 Session 捕获 `DocumentCreationTarget`。目标按调用穿过 `WorkspacePaletteActions` 和 `DocumentPersistenceCoordinator`，不保存在共享 Command。`DocumentCreationTargetResolver` 维护按根隔离的弱最近组记录，只做局部选择与引用归属校验；Session 提供关闭状态并负责最终原子发布、回滚和资源所有权。选择与焦点通知共同更新最近组，Tool 焦点保留文档记录。
+
+最后 Document 经 `HostDockFactory` 转入既有窗口关闭协调，在原生关闭可取消时完成能力与事件检查。一次性许可接续单页和整窗阶段，Closed 后仍由框架清理和 Session 释放。窗口活动序号、面板会话号和创建结果页面身份共同约束延迟焦点回调。详见 [V16 开发记录](../../../../docs/archive/records/host-v16/development-acceptance.md)。
+
 ## V13 插件启动选择
 
 HostRuntime 通过 HostDataRootPolicy 定位开关文件，读取冻结设置后传给 AssemblyLoaderHelper。发现先确认全部清单身份，再在 ALC、DLL 与模块创建前过滤。PluginDiscoverySnapshot 保留未加载候选和首份启动策略，缓存按插件根与数据根隔离，不按设置修订重新加载。
