@@ -46,6 +46,7 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 - 开发独立插件：[Managed Plugin 快速开始](docs/quick-start/README.md)。
 - 维护 Host：[内部架构与兼容约束](Host/MyAvaloniaManagement/docs/README.md)。
 - 查看未完成工作：[待办与候选](docs/roadmap/README.md)。
+- 已确认的下一轮方案：[V18 命令面板交互](docs/roadmap/host-v18-command-palette-interaction-plan.md)及[专用开发验证](docs/maintenance/host-v18-command-palette-verification.md)，尚未实施。
 - 查找过去的决策、失败与发布证据：[历史归档](docs/archive/README.md)。
 
 ## 仓库结构

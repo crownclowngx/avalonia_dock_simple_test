@@ -13,6 +13,7 @@
 | 修改 SDK 边界、身份、磁盘格式、窗口或关闭行为 | [兼容约束](reference/compatibility-contracts.md) |
 | 查阅版本、支持平台与包职责 | [集中基线](../../../docs/reference/platform-baseline.md) |
 | 运行自动化与定位专项回归 | [主仓验证与专项索引](../../../docs/maintenance/verification.md) |
+| 查阅已确认但尚未实施的命令面板改造 | [V18 交互方案](../../../docs/roadmap/host-v18-command-palette-interaction-plan.md)、[专用开发验证](../../../docs/maintenance/host-v18-command-palette-verification.md) |
 | 构建和交付本机安装版 | [本机部署](../../../docs/maintenance/local-deployment.md) |
 | 查阅 V11–V17 方案、设计取舍和原始结果 | [历史归档](../../../docs/archive/README.md) |
 

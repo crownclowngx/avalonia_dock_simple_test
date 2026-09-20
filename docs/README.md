@@ -46,7 +46,8 @@
 ## 当前结论、待办与历史
 
 - [Host 人工验收确认](archive/records/host/manual-acceptance-20260920.md)：项目所有者确认通过，专项矩阵保留供后续回归。
-- [待办与候选](roadmap/README.md)：仅保留发布前事项、外部业务边界、实验和未来候选。
+- [V18 命令面板交互方案](roadmap/host-v18-command-palette-interaction-plan.md)：四类结果分组、明确动作和当前目标提示；方案已确认，尚未实施，配套[专用开发验证](maintenance/host-v18-command-palette-verification.md)。
+- [待办与候选](roadmap/README.md)：保留当前开发计划、发布前事项、外部业务边界、实验和未来候选。
 - [历史归档](archive/README.md)：V1–V17 方案、阶段结果、原失败和各次部署/发布证据；历史命令不作为当前操作入口。
 - [本轮文档整理记录](archive/records/documentation/reorganization-20260920.md)：批量归档、漂移修正和验证结果。
 

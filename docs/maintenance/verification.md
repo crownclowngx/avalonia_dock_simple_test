@@ -48,6 +48,8 @@ Host 整体人工验收已由项目所有者[确认通过](../archive/records/ho
 | Document 浮窗关闭及命令面板创建目标 | [V16 文档窗口](host-v16-document-window-verification.md) |
 | 诊断、命令展示和服务注册 | [V17 可读性](host-v17-readability-verification.md) |
 
+已确认、尚未实施的 [V18 命令面板交互方案](../roadmap/host-v18-command-palette-interaction-plan.md)另有[专用开发验证规范](host-v18-command-palette-verification.md)。其矩阵和命令用于后续实施，不属于上表已完成阶段的结果；当前设计文档交付只检查文档及嵌入帮助，不运行 V18 完整实现门禁。
+
 ## 正式 Host 封板
 
 仅在具备发布验收条件时使用：

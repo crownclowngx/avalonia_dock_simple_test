@@ -2,6 +2,8 @@
 
 > 用途：当前使用或开发指南；状态：当前。核对日期：2026-09-20。版本与支持范围见[集中基线](../reference/platform-baseline.md)，实现依据见本文对应源码或验收链接。
 
+> 后续计划：[V18 命令面板交互方案](../roadmap/host-v18-command-palette-interaction-plan.md)已确认，拟调整四类分组、动作提示及命令目标说明，尚未实施。下文仍描述当前实际界面和排序；V18 验证要求见[专用文档](../maintenance/host-v18-command-palette-verification.md)。
+
 欢迎页“开始使用”和“文件 → 功能中心…”打开同一个功能选择窗口。选择功能，点击“打开”，即可在新标签中开始工作。已有插件目录仍可从工具中心显示。
 
 按 `Ctrl+Shift+P` 打开命令面板，可以一次搜索四类结果：

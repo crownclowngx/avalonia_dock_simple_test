@@ -4,6 +4,14 @@
 
 当前 Host 的人工验收已由项目所有者实际手工使用后[确认通过](../archive/records/host/manual-acceptance-20260920.md)。原工具中心、搜索、看板、V11–V17 与 Dock 修复的重复 Host 桌面待办已收口，完成计划移入[历史归档](../archive/README.md)。历次本机部署见[部署索引](../maintenance/local-deployment.md)。
 
+## 已确认的开发计划
+
+| 事项 | 状态 / 范围 | 依据与完成条件 |
+| --- | --- | --- |
+| V18 命令面板分组与操作意图表达 | 方案已确认，尚未实施 / Host internal 展示与键盘会话 | [V18 方案](host-v18-command-palette-interaction-plan.md)、[专用开发验证](../maintenance/host-v18-command-palette-verification.md)：保留四类结果及单列表键盘路径，明确来源、实例、动作和命令目标；按 Q/K/E/A 矩阵补齐测试并执行本地开发 verify，不使用 AIFLOW、Windows CI 或发布门禁 |
+
+V18 当前只完成设计和验证规范文档，不代表功能、自动化或人工体验验收已完成。此前 Host 人工验收结论不覆盖尚未实施的 V18 行为。
+
 ## 发布与外部验证
 
 | 事项 | 状态 / 范围 | 依据与完成条件 |
