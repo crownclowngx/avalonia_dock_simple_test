@@ -1,0 +1,18 @@
+{
+  "phase": "V16-P0",
+  "date": "2026-09-20",
+  "sourceHead": "15777f3c831479b103c71bb71e413db17694925f",
+  "command": "dotnet test Host/MyAvaloniaManagement.UiTests -c Release -m:1 --filter FullyQualifiedName~DocumentWindowV16UiTests --logger 'trx;LogFileName=v16-p0-red.trx' --results-directory artifacts/v16/tests/red",
+  "total": 2,
+  "failed": 2,
+  "passed": 0,
+  "skipped": 0,
+  "failures": [
+    "C01: 真实标签按钮关闭后 window.IsVisible 仍为 true",
+    "N01: 浮窗 Ctrl+Shift+P 新建后 Document.Owner 不是来源分组"
+  ],
+  "trx": "artifacts/v16/tests/red/v16-p0-red.trx",
+  "trxSha256": "7fa7cfa334fd7ab1ae0a9ecfc186026295abc26a062acee88fee913ce0bc276f",
+  "nativeDesktop": "not-run",
+  "notes": "先修正测试夹具的隐藏按钮选择和搜索结果选择，再记录本次两个生产行为断言失败；未使用 AIFLOW、Windows CI 或发布门禁。"
+}
