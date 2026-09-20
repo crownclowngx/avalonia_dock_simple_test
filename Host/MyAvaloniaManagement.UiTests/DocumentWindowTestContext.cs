@@ -90,6 +90,19 @@ internal sealed class DocumentWindowTestContext : IAsyncDisposable
         await Flush();
     }
 
+    internal static async Task<DocumentTabStripItem> WaitForTab(Window window, ManagedDocumentDockable document)
+    {
+        for (var attempt = 0; attempt < 100; attempt++)
+        {
+            window.UpdateLayout();
+            var tab = window.GetVisualDescendants().OfType<DocumentTabStripItem>()
+                .SingleOrDefault(item => ReferenceEquals(item.DataContext, document));
+            if (tab is { Bounds.Width: > 0 }) return tab;
+            await Task.Delay(10);
+        }
+        throw new TimeoutException("V16 文档标签未完成布局。");
+    }
+
     public async ValueTask DisposeAsync()
     {
         State.Blocker?.TrySetResult();

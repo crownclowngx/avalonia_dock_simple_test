@@ -82,9 +82,9 @@ internal sealed class HostDockFactory : Factory, IDockDropGuard, IDockPreviewPro
 {
     private IWorkspaceDockCallbacks? _callbacks;
     private int _layoutChangeDepth;
-    // 只暂存当前原生关闭已通过的 Tool 事件许可，防止 Closed 清理再次触发可取消事件。
-    // 不拥有 Tool；许可在消费、取消、Closed 或窗口移除时撤销。
-    private readonly Dictionary<IDockWindow, HashSet<IDockable>> _approvedToolWindowCloses = new(ReferenceEqualityComparer.Instance);
+    // 只暂存当前原生关闭已通过的业务项事件许可，防止 Closed 清理再次触发可取消事件。
+    // 不拥有 Document/Tool；业务资源仍由 Session 管理，许可在消费、取消或窗口移除时撤销。
+    private readonly Dictionary<IDockWindow, HashSet<IDockable>> _approvedWindowCloses = new(ReferenceEqualityComparer.Instance);
     internal bool IsLayoutChangeInProgress => _layoutChangeDepth != 0;
 
     internal WorkbenchWindowContext WindowContext { get; }
@@ -181,35 +181,36 @@ internal sealed class HostDockFactory : Factory, IDockDropGuard, IDockPreviewPro
     /// <summary>最后一个工具隐藏前保留分组和窗口位置；窗口清理后 OriginalOwner 可能已经脱离工作区。</summary>
     public override void HideDockable(IDockable dockable)
     {
-        if (TryCloseLastToolWindow(dockable)) return;
+        if (dockable is ITool && TryCloseLastContentWindow(dockable)) return;
         using var change = BeginLayoutChange();
         base.HideDockable(dockable);
     }
 
     /// <summary>
-    /// 右键菜单与关闭命令没有 Chrome 的窗口 Click。最后一个 Tool 先关闭窗口，获准后的
-    /// CloseWindow 再回到基类隐藏和事件协议；不能先隐藏，再尝试关闭一个可被拒绝的空窗口。
+    /// 最后一个业务项必须先取得整窗关闭许可，再由框架清理内容。Document 若先移除，空组
+    /// 折叠会解除 DockWindow 引用，即使原生关闭被异步确认暂时取消也无法再正确回收窗口。
+    /// Tool 仍沿用隐藏语义，Document 最终释放；本入口不直接拥有或释放任何业务对象。
     /// </summary>
     public override void CloseDockable(IDockable? dockable)
     {
         // 关闭命令先保留基类能力约束；浮窗之外的显式隐藏仍由 HideDockable 沿用框架行为。
-        if (dockable is ITool && CanCloseTool(dockable) &&
-            TryCloseLastToolWindow(dockable)) return;
+        if (dockable is ITool or IDocument && CanCloseContent(dockable) &&
+            TryCloseLastContentWindow(dockable)) return;
         base.CloseDockable(dockable);
     }
 
-    private static bool CanCloseTool(IDockable tool) =>
-        !(tool.Owner is IDock { CanCloseLastDockable: false, VisibleDockables.Count: <= 1 }) &&
-        DockCapabilityResolver.IsEnabled(tool, DockCapability.Close, DockCapabilityResolver.ResolveOperationDock(tool));
+    private static bool CanCloseContent(IDockable item) =>
+        !(item.Owner is IDock { CanCloseLastDockable: false, VisibleDockables.Count: <= 1 }) &&
+        DockCapabilityResolver.IsEnabled(item, DockCapability.Close, DockCapabilityResolver.ResolveOperationDock(item));
 
     /// <summary>
-    /// 只识别当前工作区中仅剩目标 Tool 的浮窗，不影响主窗口和仍承载 Document/其他 Tool 的窗口。
+    /// 只识别当前工作区中仅剩目标业务项的浮窗，不影响主窗口和仍承载其他内容的窗口。
     /// Factory 借用现有窗口执行协议，不接管模型所有权。原生 Closing/Closed 的内容清理必须继续
     /// 进入基类，不能在回调内再次申请关闭；实际关闭失败或取消时，原对象图尚未被修改。
     /// </summary>
-    private bool TryCloseLastToolWindow(IDockable dockable)
+    private bool TryCloseLastContentWindow(IDockable dockable)
     {
-        if (dockable is not ITool || GetCallbacks().RootDock is not { } root ||
+        if (GetCallbacks().RootDock is not { } root ||
             DockTreeNavigator.FindWindow(root, dockable) is not { Layout: { } layout,
                 Host: HostFloatingWindow { IsVisible: true, IsInNativeCloseCallback: false } host }) return false;
         var contents = DockTreeNavigator.Enumerate(layout).Where(item => item is ITool or IDocument).Take(2).ToArray();
@@ -263,7 +264,7 @@ internal sealed class HostDockFactory : Factory, IDockDropGuard, IDockPreviewPro
     /// <summary>只有 Session 的关闭保护允许后，才继续执行 Dock 基类关闭协议。</summary>
     public override bool OnDockableClosing(IDockable? dockable)
     {
-        if (dockable is ITool && _approvedToolWindowCloses.Values.Any(items => items.Remove(dockable))) return true;
+        if (dockable is ITool or IDocument && _approvedWindowCloses.Values.Any(items => items.Remove(dockable))) return true;
         var callbacks = GetCallbacks();
         if (!callbacks.OnDockableClosing(dockable))
         {
@@ -309,16 +310,16 @@ internal sealed class HostDockFactory : Factory, IDockDropGuard, IDockPreviewPro
         var callbacks = GetCallbacks();
         if (window.Host is HostFloatingWindow { IsCloseCancelled: true })
         {
-            _approvedToolWindowCloses.Remove(window);
+            _approvedWindowCloses.Remove(window);
             callbacks.OnWindowCloseCompleted(window);
             return false;
         }
         // 布局转移的旧空壳、工具中心的最后 Tool 显隐已由外层批量范围捕获原位置，
-        // 沿用同步原生关闭；Tool 能力与框架取消仍须检查，不能因为批量操作跳过它们。
+        // 沿用同步原生关闭；业务项能力与框架取消仍须检查，不能因为批量操作跳过它们。
         if (!IsLayoutChangeInProgress && !callbacks.OnWindowClosing(window)) return false;
         try
         {
-            if (base.OnWindowClosing(window) && PrepareToolWindowClose(window))
+            if (base.OnWindowClosing(window) && PrepareWindowContentClose(window))
             {
                 if (!IsLayoutChangeInProgress) callbacks.OnLayoutChanging();
                 return true;
@@ -326,29 +327,33 @@ internal sealed class HostDockFactory : Factory, IDockDropGuard, IDockPreviewPro
         }
         catch
         {
-            _approvedToolWindowCloses.Remove(window);
+            _approvedWindowCloses.Remove(window);
             callbacks.OnWindowCloseCompleted(window);
             throw;
         }
-        _approvedToolWindowCloses.Remove(window);
+        _approvedWindowCloses.Remove(window);
         callbacks.OnWindowCloseCompleted(window);
         return false;
     }
 
     /// <summary>
-    /// CloseDockable 的能力与 DockableClosing 原本在隐藏前执行。将最后 Tool 转接到窗口后，
+    /// CloseDockable 的能力与 DockableClosing 原本在拆除前执行。将最后业务项转接到窗口后，
     /// 必须在原生窗口仍可取消时执行这些检查，不能等 Closed 才发现拒绝。全部通过才暂存许可，
     /// 框架随后仍负责实际隐藏与 DockableClosed；窗口内容范围保护继续由原协调器负责。
     /// </summary>
-    private bool PrepareToolWindowClose(IDockWindow window)
+    private bool PrepareWindowContentClose(IDockWindow window)
     {
-        var tools = window.Layout is { } root
-            ? DockTreeNavigator.Enumerate(root).Where(item => item is ITool).ToArray() : [];
-        // 整窗会取出组内全部成员，因此禁止关闭最后项的组即使现在有多个 Tool 也必须保留。
-        if (tools.Any(tool => !CanCloseTool(tool) || tool.Owner is IDock { CanCloseLastDockable: false })) return false;
-        foreach (var tool in tools)
-            if (!OnDockableClosing(tool)) return false;
-        if (tools.Length > 0) _approvedToolWindowCloses[window] = new(tools, ReferenceEqualityComparer.Instance);
+        var contents = window.Layout is { } root
+            ? DockTreeNavigator.Enumerate(root).Where(item => item is ITool or IDocument).ToArray() : [];
+        // 整窗会取出组内全部成员，因此禁止关闭最后项的组即使目前有多项也必须保留。
+        if (contents.Any(item => !CanCloseContent(item) || item.Owner is IDock { CanCloseLastDockable: false })) return false;
+        foreach (var item in contents)
+            if (!OnDockableClosing(item)) return false;
+        // 可取消事件属于外部回调；若它改变了范围，旧许可不能授权关闭刚加入的内容。
+        var current = window.Layout is { } layout
+            ? DockTreeNavigator.Enumerate(layout).Where(item => item is ITool or IDocument) : [];
+        if (!new HashSet<IDockable>(contents, ReferenceEqualityComparer.Instance).SetEquals(current)) return false;
+        if (contents.Length > 0) _approvedWindowCloses[window] = new(contents, ReferenceEqualityComparer.Instance);
         return true;
     }
 
@@ -360,7 +365,7 @@ internal sealed class HostDockFactory : Factory, IDockDropGuard, IDockPreviewPro
     {
         using var change = BeginLayoutChange(captureBefore: false);
         try { base.CloseWindow(window); }
-        finally { _approvedToolWindowCloses.Remove(window); }
+        finally { _approvedWindowCloses.Remove(window); }
     }
 
     /// <summary>框架已经完成关闭内容后撤销剩余许可，不能在 Closed 时才开始询问保存。</summary>
@@ -371,7 +376,7 @@ internal sealed class HostDockFactory : Factory, IDockDropGuard, IDockPreviewPro
         {
             if (window is not null)
             {
-                _approvedToolWindowCloses.Remove(window);
+                _approvedWindowCloses.Remove(window);
                 GetCallbacks().OnWindowCloseCompleted(window);
             }
         }
@@ -385,7 +390,7 @@ internal sealed class HostDockFactory : Factory, IDockDropGuard, IDockPreviewPro
         {
             if (window is not null)
             {
-                _approvedToolWindowCloses.Remove(window);
+                _approvedWindowCloses.Remove(window);
                 GetCallbacks().OnWindowCloseCompleted(window);
             }
         }

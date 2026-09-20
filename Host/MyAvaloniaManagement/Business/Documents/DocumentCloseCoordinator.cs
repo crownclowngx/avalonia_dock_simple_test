@@ -139,6 +139,15 @@ internal sealed class DocumentCloseCoordinator(
     {
         ArgumentNullException.ThrowIfNull(documents);
         var targets = documents.Distinct().ToArray();
+        // 单页最初还有相邻页面，因此先按单页协议确认；等待期间邻页可能被关闭/移走，重试时
+        // 它已成为浮窗最后一项。此时借用已取得的一次性许可交给整窗收尾，不能再次申请范围
+        // 确认而被自己的 pending/命令关闭状态拒绝。仅允许精确的一页接续，不扩大授权范围。
+        if (!isApplicationExit && !_windowRequestPending && !_rangeRequestPending &&
+            targets is [var approved] && _approvedOnce.Contains(approved))
+        {
+            _rangeRequestPending = true;
+            return new DocumentCloseApproval(() => ReleaseRange(targets));
+        }
         if (_windowRequestPending || _rangeRequestPending || targets.Any(IsClosing)) return null;
         _rangeRequestPending = true;
         foreach (var document in targets) _pending.Add(document);

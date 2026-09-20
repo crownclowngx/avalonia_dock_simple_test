@@ -11,6 +11,46 @@ namespace MyAvaloniaManagement.Tests;
 public sealed class DocumentCloseTests
 {
     [Fact]
+    public async Task V16单页已确认许可可接续精确的一页范围且取消会重新开放命令()
+    {
+        using var context = DocumentTestContext.Create();
+        _ = context.CreateMainWindowViewModel();
+        var page = await CreateDirtyDocumentAsync(context);
+        var coordinator = context.Provider.GetRequiredService<DocumentCloseCoordinator>();
+        context.Interactions.CloseChoices.Enqueue(DocumentCloseChoice.Discard);
+        Assert.False(coordinator.TryBeginDockClose(page, () => { }));
+        using (var approval = await coordinator.PrepareRangeCloseAsync([page]))
+        {
+            Assert.NotNull(approval);
+            Assert.Single(context.Interactions.CloseRequests);
+            Assert.True(coordinator.IsClosing(page));
+            Assert.Null(await coordinator.PrepareRangeCloseAsync([page]));
+        }
+        Assert.False(coordinator.IsClosing(page));
+        var leases = context.Provider.GetRequiredService<WorkbenchDocumentCommandLeaseStore>();
+        Assert.True(leases.TryAcquire(page, out var lease));
+        lease!.Dispose();
+    }
+
+    [Fact]
+    public async Task V16单页许可不能扩大为多页范围或应用退出()
+    {
+        using var context = DocumentTestContext.Create();
+        _ = context.CreateMainWindowViewModel();
+        var first = await CreateDirtyDocumentAsync(context);
+        var second = context.Workspace.GetDocuments().First(page => !ReferenceEquals(page, first));
+        var coordinator = context.Provider.GetRequiredService<DocumentCloseCoordinator>();
+        context.Interactions.CloseChoices.Enqueue(DocumentCloseChoice.Discard);
+        Assert.False(coordinator.TryBeginDockClose(first, () => { }));
+        Assert.Null(await coordinator.PrepareRangeCloseAsync([first, second]));
+        Assert.Null(await coordinator.PrepareRangeCloseAsync([first], isApplicationExit: true));
+        Assert.Single(context.Interactions.CloseRequests);
+        Assert.True(coordinator.TryBeginDockClose(first, () => throw new InvalidOperationException()));
+        coordinator.ReopenAfterDockRejection(first);
+        Assert.False(coordinator.IsClosing(first));
+    }
+
+    [Fact]
     public async Task 非持久化或干净Document无需确认且参数防御有效()
     {
         using var context = DocumentTestContext.Create();
