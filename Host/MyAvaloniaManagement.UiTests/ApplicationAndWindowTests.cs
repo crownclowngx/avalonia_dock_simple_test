@@ -98,9 +98,14 @@ public sealed class ApplicationAndWindowTests
             new KeyGesture(Key.S, KeyModifiers.Control),
             saveBinding.Gesture);
         Assert.NotNull(saveBinding.Command);
-        Assert.IsType<MainView>(window.Content is Grid grid
-            ? grid.Children[0]
-            : null);
+        // V15 在主视图上方增加可折叠的启动告警条。按控件职责定位，
+        // 并验证两者占用独立行，避免把子元素的声明顺序误当作窗口契约。
+        var grid = Assert.IsType<Grid>(window.Content);
+        var mainView = Assert.Single(grid.Children.OfType<MainView>());
+        Assert.Equal(1, Grid.GetRow(mainView));
+        var startupWarning = window.FindControl<Border>("StartupWarningBanner")!;
+        Assert.Equal(0, Grid.GetRow(startupWarning));
+        Assert.False(startupWarning.IsVisible);
         _ = new MenuView();
         _ = new FileSystemTreeView();
         _ = new PlugGroupMenuView();

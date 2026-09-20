@@ -1,5 +1,7 @@
 # 历史归档
 
+新增 [V15 启动引导开发记录](records/host-v15/development-acceptance.md)与[最终开发证据](records/host-v15/final-development-evidence.json)；后续单文件自包含本机交付见[部署说明](../maintenance/host-v15-local-deployment.md)及[部署证据](records/host-v15/local-deployment-20260920.json)，记录不备份与中间文件清理结果。
+
 新增 [V14 自动重启开发记录](records/host-v14/development-acceptance.md)与[最终开发证据](records/host-v14/final-development-evidence.json)：共享重启用例、正常关闭交接、真实进程和独立保留的原生桌面/单文件验收范围。
 
 后续 V14 桌面单文件、自包含交付见[部署说明](../maintenance/host-v14-local-deployment.md)及[部署证据](records/host-v14/local-deployment-20260919.json)，与开发基线和原生桌面验收分别记载。

@@ -20,9 +20,17 @@
     <Design.DataContext>
         <design:MainWindowDesignData />
     </Design.DataContext>
-    <Grid>
-        <views:MainView />
+    <Grid RowDefinitions="Auto,*">
+        <Border x:Name="StartupWarningBanner" IsVisible="False" Padding="12,6"
+                Background="{DynamicResource AppWarningPanelBrush}">
+            <DockPanel>
+                <Button x:Name="StartupWarningDetails" DockPanel.Dock="Right" Content="查看插件看板" />
+                <TextBlock x:Name="StartupWarningText" VerticalAlignment="Center" TextWrapping="Wrap" />
+            </DockPanel>
+        </Border>
+        <views:MainView Grid.Row="1" />
         <Border x:Name="ContentFullscreenLayer"
+                Grid.RowSpan="2"
                 IsVisible="False"
                 Background="Black"
                 ZIndex="10000">
@@ -31,6 +39,7 @@
                             VerticalContentAlignment="Stretch" />
         </Border>
         <Border x:Name="CommandPaletteLayer"
+                Grid.RowSpan="2"
                 IsVisible="False"
                 Background="#99000000"
                 ZIndex="20000">

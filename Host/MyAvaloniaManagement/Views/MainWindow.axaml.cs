@@ -45,6 +45,13 @@ internal sealed partial class MainWindow : Window, IWindowContentFullscreenHost
     }
 
     internal void OpenCommandPalette() => _interaction.OpenCommandPalette();
+    /// <summary>显示启动诊断摘要，让未能及时读到 Splash 提示的用户仍能查阅插件失败原因。</summary>
+    internal void ShowStartupWarning(int count, Action showDetails)
+    {
+        StartupWarningText.Text = $"启动时有 {count} 条插件诊断，部分功能可能不可用。";
+        StartupWarningBanner.IsVisible = true;
+        StartupWarningDetails.Click += (_, _) => showDetails();
+    }
     internal bool HasFullscreenContent => _interaction.HasFullscreenContent;
 
     protected override async void OnClosing(WindowClosingEventArgs e)

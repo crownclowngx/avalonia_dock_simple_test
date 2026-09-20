@@ -1,0 +1,50 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:MyAvaloniaManagement.ViewModels.Startup"
+        x:Class="MyAvaloniaManagement.Views.SplashWindow" x:DataType="vm:SplashViewModel"
+        Width="520" Height="380" CanResize="False" WindowStartupLocation="CenterScreen"
+        Title="启动工作台" Icon="/Assets/avalonia-logo.ico"
+        Background="{DynamicResource SplashBackground}" Foreground="{DynamicResource SplashForeground}">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="SplashBackground" Color="#F8FAFC" />
+                    <SolidColorBrush x:Key="SplashForeground" Color="#172B4D" />
+                    <SolidColorBrush x:Key="SplashSecondary" Color="#526580" />
+                    <SolidColorBrush x:Key="SplashWarning" Color="#9A6700" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="SplashBackground" Color="#131E2F" />
+                    <SolidColorBrush x:Key="SplashForeground" Color="#E6F0FF" />
+                    <SolidColorBrush x:Key="SplashSecondary" Color="#ABC0DB" />
+                    <SolidColorBrush x:Key="SplashWarning" Color="#FFD089" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+    <StackPanel Margin="32,18,32,20" Spacing="8">
+        <!-- 路径直接内嵌，单文件交付无需旁置 SVG 或额外图像运行时。动画只改变整个羽毛的变换。 -->
+        <Viewbox x:Name="Feather" Width="80" Height="80" RenderTransformOrigin="50%,65%">
+            <Canvas Width="160" Height="160">
+                <Path Data="M126 18C101 19 72 36 54 62C40 82 37 101 47 114C53 122 63 126 74 121C88 115 100 102 110 83C121 62 130 36 126 18Z">
+                    <Path.Fill><LinearGradientBrush StartPoint="0%,100%" EndPoint="100%,0%">
+                        <GradientStop Color="#2563EB" Offset="0" /><GradientStop Color="#0891B2" Offset="0.52" /><GradientStop Color="#5EEAD4" Offset="1" />
+                    </LinearGradientBrush></Path.Fill>
+                </Path>
+                <Path Data="M126 18C101 19 72 36 54 62C40 82 37 101 47 114C51 119 56 122 61 123C79 91 101 55 126 18Z" Fill="#40ECFEFF" />
+                <Path Data="M58 110L48 91 M69 94L57 70 M80 78L69 53 M91 62L83 39 M103 45L100 29 M61 108L83 108 M72 91L96 91 M83 75L108 73 M95 57L117 53 M106 41L122 36"
+                      Stroke="#BAECFEFF" StrokeThickness="2.2" StrokeLineCap="Round" />
+                <Path Data="M32 145C53 120 76 85 98 54C109 39 119 26 126 18" Stroke="#0E7490" StrokeThickness="4" StrokeLineCap="Round" />
+                <Path Data="M51 120C69 94 85 71 100 50C110 36 119 25 126 18" Stroke="#ECFEFF" StrokeThickness="2" StrokeLineCap="Round" />
+            </Canvas>
+        </Viewbox>
+        <TextBlock Text="{Binding Title}" FontSize="22" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,8" />
+        <TextBlock Text="{Binding StageText}" FontSize="14" />
+        <TextBlock Text="{Binding PluginText}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding PluginText}" Foreground="{DynamicResource SplashSecondary}" />
+        <ProgressBar Height="4" Minimum="0" Maximum="100" Value="{Binding ProgressValue}" IsIndeterminate="{Binding IsIndeterminate}" Foreground="#0891B2" />
+        <TextBlock Text="{Binding CountText}" FontSize="12" Foreground="{DynamicResource SplashSecondary}" />
+        <TextBlock Text="{Binding RecentText}" Height="54" LineHeight="18" FontSize="12" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding RecentText}" Foreground="{DynamicResource SplashSecondary}" />
+        <TextBlock Text="{Binding FailureText}" FontSize="12" Foreground="{DynamicResource SplashWarning}" />
+    </StackPanel>
+</Window>

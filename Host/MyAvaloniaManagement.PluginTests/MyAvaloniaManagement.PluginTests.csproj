@@ -14,6 +14,7 @@
     <Compile Remove="TestAssets\ManagedOnly\**\*.cs" />
     <Compile Remove="TestAssets\WorkflowActionG1\**\*.cs" />
     <Compile Remove="TestAssets\RestartHarness\**\*.cs" />
+    <Compile Remove="TestAssets\StartupProbe\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -38,6 +39,7 @@
     </ProjectReference>
     <!-- 隔离夹具只参与构建，不进入测试进程默认上下文。 -->
     <ProjectReference Include="TestAssets\RestartHarness\RestartHarness.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="TestAssets\StartupProbe\StartupProbe.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="TestAssets\PluginIsolation\PluginV1\PluginV1.csproj"
                       ReferenceOutputAssembly="false" />
     <ProjectReference Include="TestAssets\PluginIsolation\PluginV2\PluginV2.csproj"
@@ -58,6 +60,15 @@
     <MSBuild Projects="$(MSBuildThisFileDirectory)TestAssets\RestartHarness\RestartHarness.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
     <ItemGroup><RestartHarnessFile Include="$(MSBuildThisFileDirectory)TestAssets\RestartHarness\bin\$(Configuration)\$(TargetFramework)\**\*" /></ItemGroup>
     <Copy SourceFiles="@(RestartHarnessFile)" DestinationFiles="@(RestartHarnessFile->'$(OutDir)RestartHarness\%(RecursiveDir)%(Filename)%(Extension)')" />
+  </Target>
+  <Target Name="CopyStartupProbe" AfterTargets="Build">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)TestAssets\StartupProbe\StartupProbe.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
+    <ItemGroup>
+      <StartupProbeFile Include="$(MSBuildThisFileDirectory)TestAssets\StartupProbe\bin\$(Configuration)\$(TargetFramework)\StartupProbe.Plugin.dll" />
+      <StartupProbeFile Include="$(MSBuildThisFileDirectory)TestAssets\StartupProbe\bin\$(Configuration)\$(TargetFramework)\StartupProbe.Plugin.deps.json" />
+      <StartupProbeFile Include="$(MSBuildThisFileDirectory)TestAssets\StartupProbe\plugin.manifest.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(StartupProbeFile)" DestinationFolder="$(OutDir)StartupProbe" />
   </Target>
   <Target Name="CopyOldIconSdkFixture" AfterTargets="Build">
     <PropertyGroup>

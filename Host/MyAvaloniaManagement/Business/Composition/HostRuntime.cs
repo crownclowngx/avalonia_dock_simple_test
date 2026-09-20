@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using System.Threading.Tasks;
+using MyAvaloniaManagement.Business.Startup;
+using MyAvaloniaManagement.Business.Docking;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Commands.Catalog;
 using MyAvaloniaManagement.Business.Commands.Execution;
@@ -39,9 +42,14 @@ internal sealed class HostRuntime : IDisposable
         _shutdown = shutdown;
     }
 
-    internal static HostRuntime Create(HostDiagnosticSession diagnostics, IHostRestartHandoff? restart = null)
+    /// <summary>只组合非 UI 服务；调用者在启动工作线程执行，工作区与控件延迟到 AttachWorkbench。</summary>
+    internal static async Task<HostRuntime> CreateAsync(HostDiagnosticSession diagnostics,
+        IHostRestartHandoff? restart = null, IStartupProgressSink? progress = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(diagnostics);
+        cancellationToken.ThrowIfCancellationRequested();
+        progress.ReportSafely(new(StartupStage.Preparing));
         var services = new ServiceCollection();
         var registryBuilder = new PluginRegistryBuilder();
         var pluginProviders = new PluginProviderOwner();
@@ -58,7 +66,7 @@ internal sealed class HostRuntime : IDisposable
         var enablementStore = new PluginEnablementSettingsStore(System.IO.Path.Combine(dataRoot, PluginEnablementSettingsStore.FileName));
         var settings = enablementStore.Load();
         var discovery = AssemblyLoaderHelper.Discover(
-            PluginDeploymentConstants.PluginsSubdirectory, settings, dataRoot);
+            PluginDeploymentConstants.PluginsSubdirectory, settings, dataRoot, progress, cancellationToken);
         // 本次启动事实由发现缓存拥有，下次意图由服务拥有；两个引用不能在保存时一起更新。
         services.AddSingleton(discovery);
         var enablement = new PluginEnablementService(enablementStore, settings,
@@ -109,30 +117,32 @@ internal sealed class HostRuntime : IDisposable
         var shutdown = new HostRuntimeShutdown(pluginProviders, provider, documentScopes.CloseAll,
             participants, HostResourceRetention.ProcessLifetime, diagnostics);
         var runtime = new HostRuntime(provider, shutdown);
-        return Initialize(runtime, () =>
+        return await InitializeAsync(runtime, async () =>
         {
             pluginProviders.Compose(
                 pluginCatalog,
                 provider,
                 registryBuilder,
                 documentScopes,
-                diagnostics);
+                diagnostics, progress, cancellationToken);
 
             // 显式解析 Registry 只校验已经冻结的声明并提交冲突结果，不创建 Document/Tool。
-            // 该步骤必须在 UI 启动前完成，以便立即释放冲突 Provider，并保证 UI 只看到最终快照。
+            // 该步骤必须在主工作台创建前完成，以便立即释放冲突 Provider，并保证 UI 只看到最终快照。
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                progress.ReportSafely(new(StartupStage.Validating));
                 var registry = provider.GetRequiredService<PluginRegistry>();
-                // Catalog 在 UI 启动前完成 Host/Plugin 最终合并；即使合法命名空间原则上不会
-                // 碰撞，也不能把损坏快照推迟到第一次用户执行时才发现。
-                provider.GetRequiredService<WorkbenchCommandCatalog>();
+                // Workflow 的目录是纯声明。工作台命令目录会通过 Host Handler 间接解析 Workspace，
+                // 因此它的最终校验放到 AttachWorkbench 的 UI 边界，仍早于任何主窗口展示或用户执行。
                 provider.GetRequiredService<WorkflowActionCatalogStore>().Commit(
                     registry,
                     provider.GetRequiredService<PluginAvailabilityReadModel>());
                 var lifecycles = provider.GetRequiredService<PluginLifecycleCoordinator>();
-                lifecycles.InitializeAllAsync().GetAwaiter().GetResult();
-                provider.GetRequiredService<WorkspaceSession>();
+                await lifecycles.InitializeAllAsync(cancellationToken, progress).ConfigureAwait(false);
+                cancellationToken.ThrowIfCancellationRequested();
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (HostCompositionException exception)
             {
                 ReportCompositionDiagnostics(
@@ -151,35 +161,59 @@ internal sealed class HostRuntime : IDisposable
                 });
                 throw;
             }
-        }, diagnostics);
+        }, diagnostics).ConfigureAwait(false);
     }
 
     /// <summary>
     /// 组合完成后的启动事务边界。关闭流程复用正常退出，回滚失败只附加诊断，始终重新抛出原始启动异常。
     /// 通过显式初始化委托注入失败点，不为测试增加 public SDK，也不在 catch 里解析缺失服务。
     /// </summary>
-    internal static HostRuntime Initialize(HostRuntime runtime, Action initialization, IHostDiagnosticSink diagnostics)
+    internal static HostRuntime Initialize(HostRuntime runtime, Action initialization, IHostDiagnosticSink diagnostics) =>
+        InitializeAsync(runtime, () => { initialization(); return Task.CompletedTask; }, diagnostics).GetAwaiter().GetResult();
+
+    /// <summary>异步回滚沿用唯一关闭链；原异常优先，清理失败只追加诊断，不掩盖取消或启动失败。</summary>
+    internal static async Task<HostRuntime> InitializeAsync(HostRuntime runtime, Func<Task> initialization, IHostDiagnosticSink diagnostics)
     {
-        try
-        {
-            initialization();
-            return runtime;
-        }
+        try { await initialization().ConfigureAwait(false); return runtime; }
         catch
         {
-            try { runtime.Dispose(); }
+            try
+            {
+                var result = await runtime.ShutdownAsync().ConfigureAwait(false);
+                if (result.Failures.Count != 0) throw new AggregateException(result.Failures);
+            }
             catch (Exception cleanupException)
             {
-                try
-                {
-                    diagnostics.Report(new HostDiagnosticDraft(HostDiagnosticCodes.HostStartupCleanupFailed,
-                        HostDiagnosticPhase.HostBootstrap) { Exception = cleanupException });
-                }
-                catch { /* 清理诊断失败不能覆盖原始启动异常。 */ }
+                try { diagnostics.Report(new HostDiagnosticDraft(HostDiagnosticCodes.HostStartupCleanupFailed,
+                    HostDiagnosticPhase.HostBootstrap) { Exception = cleanupException }); }
+                catch { /* 清理诊断不能覆盖原始启动异常。 */ }
             }
             throw;
         }
     }
+
+    /// <summary>只在 UI 线程装配完整资源及工作台。Runtime 从未在后台解析 WorkspaceSession 或创建 View。</summary>
+    internal void AttachWorkbench(App application, Avalonia.Controls.ApplicationLifetimes.IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        Avalonia.Threading.Dispatcher.UIThread.VerifyAccess();
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        application.InstallWorkbenchResources(_provider.GetRequiredService<ViewLocator>(),
+            _provider.GetRequiredService<DocumentControlRecycling>());
+        _provider.GetRequiredService<WorkbenchCommandCatalog>();
+        _provider.GetRequiredService<IHostDesktopShell>().Attach(application, desktop);
+    }
+
+    /// <summary>失败摘要留在正式工作台；按钮复用同一插件看板服务，不另建诊断窗口体系。</summary>
+    internal void ShowStartupWarning(MyAvaloniaManagement.Views.MainWindow window, int count) =>
+        window.ShowStartupWarning(count, _provider.GetRequiredService<PluginStatusWindowService>().ShowOrActivate);
+
+    /// <summary>异步收尾用于消息循环仍可用的启动失败路径；正常进程退出也共享这个任务。</summary>
+    internal Task<HostRuntimeShutdownResult> ShutdownAsync()
+    {
+        _disposed = true;
+        return _shutdown.RunAsync();
+    }
+
     /// <summary>使用当前 Runtime 独占的容器创建生产 Avalonia 应用。</summary>
     /// <remarks>
     /// Builder 工厂捕获的是本 Runtime 的 provider，不存在进程全局 Current 容器；消息循环结束后

@@ -1,5 +1,7 @@
 # 项目文档导航
 
+V15 羽毛启动窗口与真实插件进度已接入；本次 `D:\data\avalonia` 单文件自包含交付见[专用部署说明](maintenance/host-v15-local-deployment.md)和[实际部署证据](archive/records/host-v15/local-deployment-20260920.json)。
+
 V14 一键自动重启已接入文件菜单和插件看板，见[使用指南](quick-start/restart-host.md)、[行为契约](reference/host-restart.md)、[执行方案](roadmap/host-v14-automatic-restart-plan.md)及[专用开发验证](maintenance/host-v14-automatic-restart-verification.md)。最终本地 verify 结果见[开发记录与证据](archive/records/host-v14/development-acceptance.md)；单文件、自包含安装交付见[桌面工作台部署](maintenance/host-v14-local-deployment.md)，原生桌面体验仍独立验收。本轮不使用 AIFLOW、Windows CI 或正式发布门禁。
 
 V13 插件开关已实现：在[插件看板](quick-start/plugin-status.md)保存下次启动设置，重启生效。见[行为契约](reference/plugin-enablement.md)、[实施计划](roadmap/host-v13-plugin-enablement-plan.md)、[专用验证](maintenance/host-v13-plugin-enablement-verification.md)及[开发记录](archive/records/host-v13/development-acceptance.md)；最终 verify 结果以记录内 JSON 为准，原生桌面待验收。本机单文件、自包含交付见[桌面工作台部署](maintenance/host-v13-local-deployment.md)。
@@ -7,6 +9,8 @@ V13 插件开关已实现：在[插件看板](quick-start/plugin-status.md)保�
 > 用途：主项目唯一总导航。状态：当前；核对日期：2026-09-19。技术基线见[版本与交付边界](reference/platform-baseline.md)。
 
 ## 使用工作台
+
+- [启动窗口与插件加载](quick-start/startup.md)：羽毛首屏、真实进度、取消和失败反馈。
 
 - [工作区搜索与功能入口](quick-start/workbench-search.md)：找到功能、切换已有页面、恢复工具、执行命令。
 - [功能中心与插件目录](quick-start/plugin-navigation-and-function-center.md)：分类、创建意图、目录偏好。
@@ -46,6 +50,7 @@ V13 插件开关已实现：在[插件看板](quick-start/plugin-status.md)保�
 
 ## 未完成工作与历史
 
+- [V15 启动引导与插件加载进度](roadmap/host-v15-startup-splash-plan.md)：实现与专项已接入；见[使用说明](quick-start/startup.md)、[现行契约](reference/host-startup.md)、[专用验证](maintenance/host-v15-startup-verification.md)及[开发记录与最终证据](archive/records/host-v15/development-acceptance.md)。原生桌面、单文件和部署独立记录。
 - [V12 Host 内部职责重构方案](roadmap/host-v12-internal-refactor-plan.md)：Registry 校验、UI 刷新调度和工作区查询快照已接入，专项已通过；最终 verify 见[证据](archive/records/host-v12/final-development-evidence.json)，原生桌面验证边界见[记录](archive/records/host-v12/development-acceptance.md)。
 - [Document 拖入已有浮窗崩溃修复方案](roadmap/host-document-cross-window-layout-crash-fix-plan.md)：框架补丁与自动化回归已完成，真实桌面验收仍待完成；本地安装状态见[单文件部署说明](maintenance/dock-cross-window-layout-deployment.md)。
 - [V11 浮动窗口恢复与 Layout V3 计划](roadmap/host-v11-floating-windows-and-layout-v3-plan.md)：实现已接入，最终开发验证见[证据](archive/records/host-v11/final-development-evidence.json)；工具浮窗恢复位置和分组，Document 支持运行时浮动但不跨启动重开；结果见 [V11 开发记录](archive/records/host-v11/development-acceptance.md)。

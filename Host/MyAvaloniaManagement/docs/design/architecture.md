@@ -1,6 +1,6 @@
 # MyAvaloniaManagement 内部架构
 
-> 用途：当前 Host 内部实现与资源所有权。状态：当前；核对日期：2026-09-17。事实源：[Business 实现](../../Business)、[Host 测试](../../../MyAvaloniaManagement.Tests)及 [Plugin 测试](../../../MyAvaloniaManagement.PluginTests)。
+> 用途：当前 Host 内部实现与资源所有权。状态：当前；核对日期：2026-09-20。事实源：[Business 实现](../../Business)、[Host 测试](../../../MyAvaloniaManagement.Tests)及 [Plugin 测试](../../../MyAvaloniaManagement.PluginTests)。
 
 版本和交付范围集中在[版本基线](../../../../docs/reference/platform-baseline.md)。本仓仅保留 Host 与 MyPlugTest；其他业务插件独立交付。历史封板不能代表当前工作树的发布资格，未完成事项见[待办](../../../../docs/roadmap/README.md)。
 
@@ -45,7 +45,9 @@ V14 自动重启在 Program 入口先分流无插件助手；正常 Host 由 `Ho
 
 ```mermaid
 flowchart TB
-    Program["Program<br/>兼容启动入口"] --> Runtime["HostRuntime<br/>Composition Root"]
+    Program["Program<br/>唯一启动入口"] --> Startup["App / Splash<br/>轻量首屏"]
+    Startup --> Coordinator["StartupCoordinator<br/>受观察任务与终态"]
+    Coordinator --> Runtime["HostRuntime<br/>Composition Root"]
     Runtime --> Loader["AssemblyLoaderHelper<br/>插件程序集快照"]
     Runtime --> Catalog["PluginModuleCatalog<br/>Managed 模块"]
     Runtime --> RegistryBuilder["PluginRegistryBuilder<br/>收集 / 激活 / 校验"]
@@ -112,18 +114,20 @@ flowchart TB
 
 ### 3.1 `HostRuntime` 是唯一实际组合根
 
-[`HostRuntime`](../../Business/Composition/HostRuntime.cs) 按以下顺序启动：
+V15 先由 Program 初始化唯一轻量 App 和 Splash，再从首帧调度启动后台组合。StartupWorker 的 Windows 同步入口保持 STA；进度通过有界快照传给 UI，详见[启动契约](../../../../docs/reference/host-startup.md)。
+
+[`HostRuntime`](../../Business/Composition/HostRuntime.cs) 随后按以下顺序组合：
 
 1. 创建 `PluginRegistryBuilder`，注册宿主核心服务、ViewModel 和宿主显式贡献；
 2. 读取全部 manifest v2，检查单一 Core/UI SDK 区间与全局身份；
 3. 验证精确入口 `.deps.json`，建立 ALC 并按大小写敏感完整名称取得清单入口类型；
-4. 预检并实例化该 `IPluginModule`；不扫描或执行程序集中的其他模块，身份只取自 manifest；
+4. 预检该 `IPluginModule` 并保存延迟构造入口；不扫描或执行程序集中的其他模块，身份只取自 manifest；
 5. 以 `ValidateScopes`、`ValidateOnBuild` 构建 Host Provider；
 6. 按 manifest `pluginId` 顺序为每个插件创建空服务集合，执行一次 `Configure` 并构建私有 Provider；
 7. 单插件成功后才合并其声明；失败则释放自身并继续后续插件；
 8. 只读取已冻结声明完成跨所有者冲突过滤，释放冲突 Provider，再发布不可变 `PluginRegistry`；
-9. 先解析 Host/Plugin 合并 `WorkbenchCommandCatalog` 并一次提交 `WorkflowActionCatalogStore`，再由 internal `PluginLifecycleCoordinator` 按 PluginId 启动可用插件并显式解析唯一 `WorkspaceSession`；
-10. 将完全组合成功的 Host Provider 交给 Avalonia 启动路径。
+9. 一次提交 `WorkflowActionCatalogStore`，由 internal `PluginLifecycleCoordinator` 按 PluginId 初始化可用插件；
+10. 回到 UI 线程，在同一 App 安装完整资源；解析会间接创建 Workspace 的 `WorkbenchCommandCatalog`，随后通过桌面 Shell 创建正式主窗口，成功交接后关闭 Splash。
 
 关闭时先由 Workflow Action 与 Workbench Command 门控拒绝新调用并传播取消，再撤回插件可用性并让
 Session 停止新建。Command 可能仍在使用 Workspace、活动 Document 或 Scope，因此必须先排空 Command，
@@ -144,12 +148,9 @@ Workflow 管理器；回滚不重新解析 Workspace 或关闭参与者。初始
 迟到初始化按原始启动序号处理，越过关闭位置后不补插。无法安全关闭时，`HostResourceRetention`
 只持有必要对象图到进程退出；不提供全局服务定位、重试或恢复。保留期间已有后台活动可能继续，
 尤其启动失败窗口并不意味着进程立即退出。生命周期诊断出口在释放/交接前关闭，并等待既有报告结束。
-委托调用线程不变；返回 Task 前的同步阻塞以及同步 Dispose 不受异步等待超时保证约束。
+生命周期执行器不自行重调度回调；V15 的初始调用来自启动工作线程。返回 Task 前的同步阻塞以及同步 Dispose 不受异步等待超时保证约束。
 
-[`Program`](../../Program.cs) 只保留进程入口和失败应用编排。`HostRuntime` 通过 internal
-`HostAvaloniaBuilder` 使用 `Func<App>` 创建应用；App 注入 `IHostDesktopShell`，不再存在静态
-`ServiceProvider` 或生产 ViewModel 无参构造。仓库测试与 Harness 通过明确 friend assembly
-访问 internal 组合入口。
+[`Program`](../../Program.cs) 保留助手分流、轻量 App 工厂及最终收尾。生产 App 注入 StartupCoordinator 和诊断；StartupDesktopShell 适配窗口，Runtime.AttachWorkbench 在 UI 线程解析正式 IHostDesktopShell。资源测试保留显式 Shell 构造入口，生产不使用静态 ServiceProvider，也不会因启动失败再次创建 Application。仓库测试与 Harness 通过明确 friend assembly 访问 internal 组合入口。
 
 ### 3.2 为什么不直接采用通用 Host Builder
 

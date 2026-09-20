@@ -285,9 +285,9 @@ reader 不读取 manifest v1，也不存在 v1/v2 双 reader；清单只解决�
 ## 6. 启动和关闭契约
 
 - `Program.Main` 继续作为唯一生产入口；Avalonia Builder 是 Host internal 组合根能力；
-- App 通过 `IHostDesktopShell` 构造注入，生产启动不得读取进程全局服务定位器；
+- V15 生产 App 构造注入轻量启动协调器和诊断，完整 Shell 随工作台装配解析；生产不得读取进程全局服务定位器；
 - 根容器继续启用 `ValidateScopes` 与 `ValidateOnBuild`；
-- 插件在 Avalonia 消息循环前初始化；
+- V15 在唯一 Avalonia 消息循环启动、Splash 首帧调度后初始化插件，正式主工作台仍在插件组合结束后展示；Windows 同步入口使用独立 STA 工作线程，异步及原生边界见[启动契约](../../../../docs/reference/host-startup.md)；
 - 关闭先拒绝新操作并排空 Command、Workflow 与 Document 在途工作，再按所有权释放 Workspace 和 Scope；
 - 生命周期协调器维护初始化、超时、迟到完成与 Shutdown 状态，停止和释放不能仅按外层等待是否返回判断；
 - 仅在实际任务和取消通知安全结束、所需 Shutdown 成功后释放 Provider；否则保留相关对象图并记录脱敏结果；

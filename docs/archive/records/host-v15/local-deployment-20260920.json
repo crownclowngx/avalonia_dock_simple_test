@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "recordType": "host-v15-local-single-exe-deployment",
+  "status": "pending-build",
+  "deploymentCompleted": false,
+  "date": "2026-09-20",
+  "target": "D:\\data\\avalonia",
+  "backupRequested": false,
+  "cleanupRequested": true
+}

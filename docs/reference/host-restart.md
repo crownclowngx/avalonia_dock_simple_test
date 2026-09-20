@@ -39,6 +39,8 @@ Workbench 重启 Handler 只在 UI Dispatcher 的 Background 优先级安排请�
 
 消息值为 Ready=1、CleanExit=2、Failed=3。身份与消息固定长度，不解析任意 JSON/命令。身份采用固定时间比较。设置排空、连接/Ready、最终结果确认分别最多 15 秒；助手 Ready 后等待最终许可和实际退出共最多 90 秒。测试用取消令牌及明确完成信号验证超时语义，不以固定 sleep 推断退出。新进程创建成功不等同于初始化成功，初始化仍走原启动链。
 
+V15 新 Host 先显示羽毛启动窗口，再完成插件组合与主窗口交接；助手正常等待仍不显示启动窗口。启动失败在同一 App 展示最小错误界面，不循环重启，详见[启动契约](host-startup.md)。
+
 ## 启动形式与环境
 
 apphost 使用当前 `Environment.ProcessPath`；`dotnet Host.dll` 保留 dotnet 可执行路径及实际入口 DLL。单文件按可执行路径处理，不依赖 `Assembly.Location`；单文件交付与实际启动检查见[本机部署记录](../maintenance/host-v14-local-deployment.md)，菜单/看板重启往返仍独立验收。`dotnet run` 只按最终进程形态重建，不重新执行构建命令。

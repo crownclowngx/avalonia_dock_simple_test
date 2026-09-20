@@ -1,6 +1,8 @@
 using System;
 using Avalonia;
 using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Startup;
+using MyAvaloniaManagement.Business.Diagnostics;
 
 namespace MyAvaloniaManagement.Business.Presentation;
 
@@ -12,6 +14,11 @@ namespace MyAvaloniaManagement.Business.Presentation;
 /// </remarks>
 internal static class HostAvaloniaBuilder
 {
+    /// <summary>生产首屏工厂：平台配置与原路径一致，App 不依赖尚未创建的完整容器。</summary>
+    internal static AppBuilder Build(StartupCoordinator startup, HostDiagnosticSession diagnostics) =>
+        AppBuilder.Configure(() => new App(startup, diagnostics))
+            .UsePlatformDetect().WithInterFont().LogToTrace();
+
     internal static AppBuilder Build(IServiceProvider services)
     {
         ArgumentNullException.ThrowIfNull(services);

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160" fill="none" role="img" aria-labelledby="feather-title feather-description">
+  <title id="feather-title">工作台启动羽毛</title>
+  <desc id="feather-description">一枚向右上舒展的青蓝色羽毛，透明背景，包含清晰的羽轴与简洁羽枝。</desc>
+  <defs>
+    <linearGradient id="feather-fill" x1="46" y1="119" x2="126" y2="20" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2563EB" />
+      <stop offset="0.52" stop-color="#0891B2" />
+      <stop offset="1" stop-color="#5EEAD4" />
+    </linearGradient>
+    <linearGradient id="feather-light" x1="48" y1="109" x2="115" y2="27" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#BAE6FD" stop-opacity="0.18" />
+      <stop offset="1" stop-color="#ECFEFF" stop-opacity="0.68" />
+    </linearGradient>
+  </defs>
+  <path d="M126 18C101 19 72 36 54 62C40 82 37 101 47 114C53 122 63 126 74 121C88 115 100 102 110 83C121 62 130 36 126 18Z" fill="url(#feather-fill)" />
+  <path d="M126 18C101 19 72 36 54 62C40 82 37 101 47 114C51 119 56 122 61 123C79 91 101 55 126 18Z" fill="url(#feather-light)" />
+  <g stroke="#ECFEFF" stroke-width="2.2" stroke-linecap="round" opacity="0.72">
+    <path d="M58 110L48 91M69 94L57 70M80 78L69 53M91 62L83 39M103 45L100 29" />
+    <path d="M61 108L83 108M72 91L96 91M83 75L108 73M95 57L117 53M106 41L122 36" />
+  </g>
+  <path d="M32 145C53 120 76 85 98 54C109 39 119 26 126 18" stroke="#0E7490" stroke-width="4" stroke-linecap="round" />
+  <path d="M51 120C69 94 85 71 100 50C110 36 119 25 126 18" stroke="#ECFEFF" stroke-width="2" stroke-linecap="round" />
+</svg>

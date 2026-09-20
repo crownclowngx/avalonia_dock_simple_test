@@ -16,6 +16,7 @@ using MyAvaloniaManagement.ViewModels.FunctionCenter;
 using MyAvaloniaManagement.ViewModels.PluginStatus;
 using MyAvaloniaManagement.Views.PluginStatus;
 using MyAvaloniaManagement.Views.FunctionCenter;
+using MyAvaloniaManagement.Views;
 using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.RestartHarness;
@@ -38,14 +39,63 @@ internal static class Program
             helper, stage, at = DateTimeOffset.UtcNow, args = helper ? args[6..] : args,
             workingDirectory = Environment.CurrentDirectory, dataRoot = Environment.GetEnvironmentVariable("MYAVALONIA_DATA_DIRECTORY") }));
         var failure = false;
-        var result = MyAvaloniaManagement.Program.Run(args, (runtime, arguments) =>
+        var result = MyAvaloniaManagement.Program.Run(args, (startupBuilder, arguments) =>
         {
-            var builder = runtime.BuildAvaloniaApp().UseHeadless(new AvaloniaHeadlessPlatformOptions());
+            var builder = startupBuilder.UseHeadless(new AvaloniaHeadlessPlatformOptions());
             builder.AfterSetup(_ => Dispatcher.UIThread.Post(async () =>
             {
                 var desktop = (IClassicDesktopStyleApplicationLifetime)Application.Current!.ApplicationLifetime!;
                 try
                 {
+                    var application = (MyAvaloniaManagement.App)Application.Current!;
+                    if (mode is "startup-slow" or "startup-cancel-loading")
+                    {
+                        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                        using var watcher = new FileSystemWatcher(root, "startup-entered.json");
+                        watcher.Created += (_, _) => entered.TrySetResult();
+                        watcher.EnableRaisingEvents = true;
+                        if (File.Exists(Path.Combine(root, "startup-entered.json"))) entered.TrySetResult();
+                        await entered.Task.WaitAsync(TimeSpan.FromSeconds(15));
+                        var splash = desktop.MainWindow as SplashWindow ?? throw new InvalidOperationException("慢插件初始化前未显示首屏。");
+                        if (!splash.IsVisible || application.StartupFirstFrameElapsed is null || application.StartupCompletion.IsCompleted)
+                            throw new InvalidOperationException("插件同步阻塞期间的首帧与启动任务状态不符。");
+                        // 在插件仍同步等待时，再取得一帧，证明 UI 消息循环确实持续工作。
+                        var nextFrame = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                        splash.RequestAnimationFrame(_ => nextFrame.TrySetResult());
+                        await nextFrame.Task.WaitAsync(TimeSpan.FromSeconds(5));
+                        File.WriteAllText(Path.Combine(root, "startup-responsive.json"), JsonSerializer.Serialize(new
+                        { visible = splash.IsVisible, frameDuringBlockedPlugin = true, uiThread = Environment.CurrentManagedThreadId }));
+                        if (mode == "startup-cancel-loading")
+                        {
+                            splash.Close();
+                            await application.StartupCompletion;
+                            File.WriteAllText(Path.Combine(root, "startup.json"), JsonSerializer.Serialize(new
+                            { mainCreated = desktop.Windows.OfType<MainWindow>().Any(), cancelled = true }));
+                            return;
+                        }
+                        File.WriteAllText(Path.Combine(root, "startup-release.json"), "{}");
+                    }
+                    if (mode == "startup-cancel")
+                    {
+                        var splash = desktop.MainWindow as SplashWindow ?? throw new InvalidOperationException("启动首屏缺失。");
+                        splash.Close();
+                        await application.StartupCompletion;
+                        File.WriteAllText(Path.Combine(root, "startup.json"), JsonSerializer.Serialize(new
+                        { mainCreated = desktop.Windows.OfType<MainWindow>().Any(), cancelled = true }));
+                        return;
+                    }
+                    await application.StartupCompletion;
+                    if (mode == "startup-failure")
+                    {
+                        var failureWindow = desktop.MainWindow as StartupFailureWindow ?? throw new InvalidOperationException("未显示最小启动失败界面。");
+                        File.WriteAllText(Path.Combine(root, "startup.json"), JsonSerializer.Serialize(new
+                        { mainCreated = desktop.Windows.OfType<MainWindow>().Any(), failureVisible = failureWindow.IsVisible }));
+                        failureWindow.Close();
+                        return;
+                    }
+                    if (application.StartupFirstFrameElapsed is not { } firstFrame || application.StartupReadyElapsed is not { } ready || ready < firstFrame)
+                        throw new InvalidOperationException("首帧与工作台交接的诊断时序缺失。");
+                    if (desktop.Windows.OfType<SplashWindow>().Any()) throw new InvalidOperationException("交接后启动窗口仍然存活。");
                     var window = desktop.MainWindow!;
                     var model = (MainWindowViewModel)window.DataContext!;
                     // 新 Host 在生产组合时已尝试获取布局锁；测试另一个 Writer 必须失败，证明其确实拥有锁。
@@ -55,6 +105,18 @@ internal static class Program
                     try { using var probe = new FileStream(lockPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None); }
                     catch (IOException) { locked = true; }
                     if (!locked) throw new InvalidOperationException("真实 Host 未持有布局锁。");
+                    File.WriteAllText(Path.Combine(root, $"startup-{stage}.json"), JsonSerializer.Serialize(new
+                    { firstFrameMs = firstFrame.TotalMilliseconds, readyMs = ready.TotalMilliseconds,
+                        mainVisible = window.IsVisible, splashClosed = !desktop.Windows.OfType<SplashWindow>().Any() }));
+                    if (mode is "startup-empty" or "startup-disabled" or "startup-warning" or "startup-slow")
+                    {
+                        var banner = window.FindControl<Border>("StartupWarningBanner")!;
+                        if (banner.IsVisible != (mode == "startup-warning")) throw new InvalidOperationException("失败摘要不符合真实启动事实。");
+                        File.WriteAllText(Path.Combine(root, "startup.json"), JsonSerializer.Serialize(new
+                        { mainCreated = true, warning = banner.IsVisible }));
+                        window.Close();
+                        return;
+                    }
                     if (mode == "roundtrip")
                     {
                         var layout = model.Layout ?? throw new InvalidOperationException("工作区尚未初始化。");

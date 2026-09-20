@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 2,
+  "pluginId": "myavalonia.plugin.startup-probe",
+  "pluginVersion": "1.0.0",
+  "entryPoint": { "assembly": "StartupProbe.Plugin.dll", "type": "StartupProbe.Module" },
+  "sdk": { "minInclusive": "3.0.0", "maxExclusive": "4.0.0" }
+}

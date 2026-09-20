@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
+using MyAvaloniaManagement.Business.Startup;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Composition;
@@ -40,7 +42,8 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
         IServiceProvider hostProvider,
         PluginRegistryBuilder registryBuilder,
         DocumentScopeRegistry documentScopes,
-        IHostDiagnosticSink diagnostics)
+        IHostDiagnosticSink diagnostics, IStartupProgressSink? progress = null,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(catalog);
         ArgumentNullException.ThrowIfNull(hostProvider);
@@ -55,11 +58,15 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
 
         _composed = true;
         _documentScopes = documentScopes;
+        var completed = 0;
+        progress.ReportSafely(new(StartupStage.Registering, Total: catalog.Entries.Count));
         foreach (var entry in catalog.Entries)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var manifest = entry.Manifest ?? throw new InvalidOperationException(
                 "manifest v2 是生产插件组合的必需入口事实。");
             var pluginId = new PluginId(manifest.PluginId.Value);
+            progress.ReportSafely(new(StartupStage.Registering, pluginId.Value, completed, catalog.Entries.Count));
             IPluginModule module;
             try
             {
@@ -75,11 +82,14 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
                     AssemblyName = entry.Assembly.GetName(),
                     Exception = exception,
                 });
+                progress.ReportSafely(new(StartupStage.Registering, pluginId.Value, ++completed,
+                    catalog.Entries.Count, StartupOutcome.Failed, HostDiagnosticCodes.PluginModuleActivationFailed));
                 continue;
             }
 
             ServiceProvider? provider = null;
             var failureCode = HostDiagnosticCodes.PluginServiceRegistrationFailed;
+            var succeeded = false;
             try
             {
                 // 模块开始配置时看到的是真正空集合；Host Port、Scope 基础设施和贡献根只有在
@@ -131,6 +141,7 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
                 _leases.Add(new PluginProviderLease(
                     pluginId, provider, scopeManager));
                 provider = null;
+                succeeded = true;
             }
             catch (HostCompositionException exception)
             {
@@ -153,6 +164,9 @@ internal sealed class PluginProviderOwner : IDisposable, IPluginLifecycleResolve
                     Exception = exception,
                 });
             }
+            progress.ReportSafely(new(StartupStage.Registering, pluginId.Value, ++completed,
+                catalog.Entries.Count, succeeded ? StartupOutcome.Succeeded : StartupOutcome.Failed,
+                succeeded ? null : failureCode));
         }
     }
 

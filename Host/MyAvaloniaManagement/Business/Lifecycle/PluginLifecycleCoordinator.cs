@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using MyAvaloniaManagement.Business.Startup;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Plugins.Registration;
 using MyAvaloniaManagement.PluginSdk;
@@ -79,7 +80,8 @@ internal sealed class PluginLifecycleCoordinator
         }
     }
 
-    internal async Task InitializeAllAsync(CancellationToken cancellationToken = default)
+    internal async Task InitializeAllAsync(CancellationToken cancellationToken = default,
+        IStartupProgressSink? progress = null)
     {
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
@@ -89,8 +91,11 @@ internal sealed class PluginLifecycleCoordinator
                 return;
             }
 
-            foreach (var declaration in _registry.Lifecycles
-                         .OrderBy(item => item.OwnerId.Value, StringComparer.Ordinal))
+            var pending = _registry.Lifecycles.OrderBy(item => item.OwnerId.Value, StringComparer.Ordinal)
+                .Where(item => _states.GetState(item.OwnerId)?.Status == PluginLifecycleStatus.NotStarted).ToArray();
+            var completed = 0;
+            progress.ReportSafely(new(StartupStage.Initializing, Total: pending.Length));
+            foreach (var declaration in pending)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 if (_states.GetState(declaration.OwnerId)?.Status !=
@@ -102,6 +107,7 @@ internal sealed class PluginLifecycleCoordinator
                 _states.SetState(new PluginLifecycleState(
                     declaration.OwnerId,
                     PluginLifecycleStatus.Initializing));
+                progress.ReportSafely(new(StartupStage.Initializing, declaration.OwnerId.Value, completed, pending.Length));
                 var lifecycle = _lifecycleResolver.GetRequiredLifecycle(
                     declaration.OwnerId,
                     declaration.ImplementationType);
@@ -135,6 +141,9 @@ internal sealed class PluginLifecycleCoordinator
                 }
 
                 CommitInitializationResult(declaration.OwnerId, result);
+                progress.ReportSafely(new(StartupStage.Initializing, declaration.OwnerId.Value, ++completed,
+                    pending.Length, result.Outcome == PluginLifecycleOperationOutcome.Succeeded
+                        ? StartupOutcome.Succeeded : StartupOutcome.Failed, _states.GetState(declaration.OwnerId)?.ErrorCode));
             }
 
             _initializationCompleted = true;

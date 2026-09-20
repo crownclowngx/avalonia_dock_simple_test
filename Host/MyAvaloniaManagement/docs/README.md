@@ -1,5 +1,7 @@
 # Host 内部文档
 
+V15 通过唯一 App 提前显示矢量羽毛启动窗口，后台插件组合报告真实进度，UI 线程完成工作台交接；见[现行契约](../../../docs/reference/host-startup.md)、[专用验证](../../../docs/maintenance/host-v15-startup-verification.md)及[开发记录](../../../docs/archive/records/host-v15/development-acceptance.md)。
+
 V14 一键自动重启已接入，见[现行契约](../../../docs/reference/host-restart.md)、[执行方案](../../../docs/roadmap/host-v14-automatic-restart-plan.md)、[专用验证](../../../docs/maintenance/host-v14-automatic-restart-verification.md)及[开发记录](../../../docs/archive/records/host-v14/development-acceptance.md)。复用原关闭所有权与一次性进程交接；最终开发、桌面、单文件与部署状态分别记载。
 
 V13 插件开关已接入：在看板保存下次启动设置，在 DLL 加载前过滤。见[行为契约](../../../docs/reference/plugin-enablement.md)、[实施计划](../../../docs/roadmap/host-v13-plugin-enablement-plan.md)、[专用验证](../../../docs/maintenance/host-v13-plugin-enablement-verification.md)及[开发记录](../../../docs/archive/records/host-v13/development-acceptance.md)。

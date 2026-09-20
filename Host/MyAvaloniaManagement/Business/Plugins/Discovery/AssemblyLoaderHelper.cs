@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
+using MyAvaloniaManagement.Business.Startup;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Plugins.Enablement;
 
@@ -105,7 +106,8 @@ internal static class AssemblyLoaderHelper
     /// 取得生产组合根使用的完整发现快照。
     /// </summary>
     internal static PluginDiscoverySnapshot Discover(string rootPluginsDirName,
-        PluginEnablementReadResult? startupSettings = null, string? dataRoot = null)
+        PluginEnablementReadResult? startupSettings = null, string? dataRoot = null,
+        IStartupProgressSink? progress = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootPluginsDirName);
         var rootPath = PluginRootDirectoryPolicy.Resolve(
@@ -117,12 +119,15 @@ internal static class AssemblyLoaderHelper
         return RootSnapshots.GetOrAdd(
             key,
             _ => new Lazy<PluginDiscoverySnapshot>(
-                () => LoadRootSnapshot(rootPath, startupSettings ?? PluginEnablementReadResult.Default),
+                () => LoadRootSnapshot(rootPath, startupSettings ?? PluginEnablementReadResult.Default, progress, cancellationToken),
                 LazyThreadSafetyMode.ExecutionAndPublication)).Value;
     }
 
-    private static PluginDiscoverySnapshot LoadRootSnapshot(string rootPath, PluginEnablementReadResult startupSettings)
+    private static PluginDiscoverySnapshot LoadRootSnapshot(string rootPath, PluginEnablementReadResult startupSettings,
+        IStartupProgressSink? progress, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        progress.ReportSafely(new(StartupStage.Scanning));
         var loaded = new List<Assembly>();
         var manifestsByAssembly = new Dictionary<Assembly, PluginManifest>();
         var moduleTypesByAssembly = new Dictionary<Assembly, Type>();
@@ -149,6 +154,8 @@ internal static class AssemblyLoaderHelper
             foreach (var pluginDirectory in Directory.GetDirectories(rootPath)
                          .OrderBy(path => path, StringComparer.OrdinalIgnoreCase))
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                progress.ReportSafely(new(StartupStage.Scanning, Path.GetFileName(pluginDirectory)));
                 if (!PluginManifestReader.TryRead(
                         pluginDirectory,
                         out var manifest,
@@ -159,6 +166,8 @@ internal static class AssemblyLoaderHelper
                         pluginDirectory,
                         manifest: null,
                         errorCode ?? HostDiagnosticCodes.PluginManifestInvalid));
+                    progress.ReportSafely(new(StartupStage.Scanning, Path.GetFileName(pluginDirectory),
+                        Outcome: StartupOutcome.Failed, ErrorCode: errorCode));
                     continue;
                 }
 
@@ -192,11 +201,21 @@ internal static class AssemblyLoaderHelper
                     diagnostics, inventory, startupSettings);
             }
 
+            var enabled = candidates.Where(candidate => startupSettings.Settings?.IsEnabled(candidate.Manifest.PluginId) == true).ToArray();
+            var completed = 0;
+            progress.ReportSafely(new(StartupStage.Loading, Total: enabled.Length));
             foreach (var candidate in candidates)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 // 保留清单供看板重新启用，但在任何 ALC、DLL、构造及兼容执行之前过滤。
                 // 无可靠配置表示暂停加载；不能将读取失败误解释为空禁用集合。
-                if (startupSettings.Settings?.IsEnabled(candidate.Manifest.PluginId) != true) continue;
+                if (startupSettings.Settings?.IsEnabled(candidate.Manifest.PluginId) != true)
+                {
+                    progress.ReportSafely(new(StartupStage.Loading, candidate.Manifest.PluginId.Value,
+                        completed, enabled.Length, StartupOutcome.Skipped));
+                    continue;
+                }
+                progress.ReportSafely(new(StartupStage.Loading, candidate.Manifest.PluginId.Value, completed, enabled.Length));
                 if (!PluginCompatibilityEvaluator.TryEvaluate(
                         candidate.Manifest,
                         PluginSdkCompatibilityProfile.Current,
@@ -207,6 +226,8 @@ internal static class AssemblyLoaderHelper
                         candidate.DirectoryPath,
                         candidate.Manifest,
                         errorCode!));
+                    progress.ReportSafely(new(StartupStage.Loading, candidate.Manifest.PluginId.Value,
+                        ++completed, enabled.Length, StartupOutcome.Failed, errorCode));
                     continue;
                 }
 
@@ -217,6 +238,9 @@ internal static class AssemblyLoaderHelper
                     manifestsByAssembly,
                     moduleTypesByAssembly,
                     diagnostics);
+                var loadedSuccessfully = manifestsByAssembly.Values.Contains(candidate.Manifest);
+                progress.ReportSafely(new(StartupStage.Loading, candidate.Manifest.PluginId.Value,
+                    ++completed, enabled.Length, loadedSuccessfully ? StartupOutcome.Succeeded : StartupOutcome.Failed));
             }
         }
         catch (Exception exception) when (

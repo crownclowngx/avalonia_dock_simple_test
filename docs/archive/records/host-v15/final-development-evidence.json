@@ -1,0 +1,393 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "date": "2026-09-20",
+  "scope": "V15 startup splash and actual plugin progress; local development validation only",
+  "branch": "master",
+  "baseline": {
+    "revision": "640202e10b6a1638383b345beaf3f174f3291375",
+    "passed": true,
+    "summary": {
+      "path": "artifacts/gate/20260919-234451-640202e10b6a/summary.json",
+      "sha256": "ba248b0241c7166ad6f4c33d33923c0a122ca15146e5761747f34fc4d4fe89ab"
+    }
+  },
+  "finalGate": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "exitCode": 0,
+    "runId": "20260920-001841-640202e10b6a",
+    "summary": {
+      "path": "artifacts/gate/20260920-001841-640202e10b6a/summary.json",
+      "sha256": "e858d5e0f9dbf70634118a8b06c8dc0dbcf3c7ff0ea9c4044dec299b036910fe"
+    },
+    "sources": {
+      "main": {
+        "revision": "640202e10b6a1638383b345beaf3f174f3291375",
+        "tree": "1297569bd65c2872e9d4658b34f1ac8d8e70a96d",
+        "clean": false,
+        "files": 1020,
+        "sha256": "CE3A3E55AF3D900C5404D4DD6C3D1B49F4028E326EE1D1BF865CFFF4E3A4608F"
+      }
+    },
+    "startedAtUtc": "2026-09-20T00:18:41.103414+00:00",
+    "finishedAtUtc": "2026-09-20T00:21:20.1963043+00:00",
+    "stages": [
+      {
+        "id": "avalonia-layout-patch",
+        "status": "passed",
+        "durationMilliseconds": 776
+      },
+      {
+        "id": "dock-patch",
+        "status": "passed",
+        "durationMilliseconds": 571
+      },
+      {
+        "id": "restore",
+        "status": "passed",
+        "durationMilliseconds": 1959
+      },
+      {
+        "id": "build",
+        "status": "passed",
+        "durationMilliseconds": 8471
+      },
+      {
+        "id": "tests",
+        "status": "passed",
+        "durationMilliseconds": 140623
+      },
+      {
+        "id": "contracts",
+        "status": "passed",
+        "durationMilliseconds": 4448
+      },
+      {
+        "id": "packages",
+        "status": "passed",
+        "durationMilliseconds": 14
+      },
+      {
+        "id": "package-acceptance",
+        "status": "passed",
+        "durationMilliseconds": 1796
+      }
+    ],
+    "build": {
+      "configuration": "Release",
+      "warningsAsErrors": true,
+      "warnings": 0,
+      "errors": 0
+    },
+    "tests": [
+      {
+        "path": "artifacts/gate/20260920-001841-640202e10b6a/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "b1e17637071804ee14ddcab828c0baf258094dd786dc36434f281145fb87d959",
+        "total": 292,
+        "passed": 292,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "artifacts/gate/20260920-001841-640202e10b6a/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "e8bb72d4bc0aed80d3ed586ac658344946752d0b9eaedd7337147164e42984e4",
+        "total": 230,
+        "passed": 230,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "artifacts/gate/20260920-001841-640202e10b6a/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "6e7dc03e8c145d219920907a10b88610ea618a015fd6509820c8af2a56fdc82e",
+        "total": 593,
+        "passed": 593,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "artifacts/gate/20260920-001841-640202e10b6a/pass-1/tests/my-plug-test/my-plug-test.trx",
+        "sha256": "6db90a5add4a0ff80e58ee74f285feda4279634e6b4257cc9f080847d1eb2f13",
+        "total": 11,
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "artifacts/gate/20260920-001841-640202e10b6a/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+        "sha256": "6a1cb35a1a3c7861c458eab6f34f405880b681fdb9a272da0ceb49bbed15c91d",
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "path": "artifacts/gate/20260920-001841-640202e10b6a/pass-1/tests/sdk/sdk.trx",
+        "sha256": "5e960cf4611db29c1a0154c92703c48c523f58475b5603c3dc389fe79d27a57c",
+        "total": 91,
+        "passed": 91,
+        "failed": 0,
+        "skipped": 0
+      }
+    ],
+    "total": 1218,
+    "passed": 1218,
+    "failed": 0,
+    "skipped": 0,
+    "host": {
+      "releaseEligible": false,
+      "publishable": false
+    },
+    "repeatability": {
+      "requested": false,
+      "verified": false
+    }
+  },
+  "gateToolSelfTests": {
+    "command": "dotnet test tools/MyAvaloniaManagement.Gate.Tests -c Release -m:1 --results-directory artifacts/v15/tests/gate-tools --logger trx;LogFileName=v15-gate-tools.trx",
+    "path": "artifacts/v15/tests/gate-tools/v15-gate-tools.trx",
+    "sha256": "136fa7031834ce8279881d5c1fcf148b066708cc600a55cff1fb3a92b0bd4d4f",
+    "total": 68,
+    "passed": 68,
+    "failed": 0,
+    "skipped": 0
+  },
+  "sourceIdentity": {
+    "head": "640202e10b6a1638383b345beaf3f174f3291375",
+    "workingTreeClean": false,
+    "gateFingerprintVerifiedBeforeEvidenceFinalization": true,
+    "gateEvidencePlaceholderSha256": "090b0da887bd24677998940860bef0bad81ba8cda27107fdfe93040c70bb1036",
+    "finalSourcesExcludingEvidenceFile": {
+      "files": 1019,
+      "sha256": "75b10054bc48a73fbb58f713f3081259b12d0495a42210da3e6165652379f828"
+    },
+    "fingerprintAlgorithm": "Same as Gate: Windows ordinal path order; each UTF-8 normalized relative path, NUL, raw file bytes, NUL; SHA-256.",
+    "exclusion": "docs/archive/records/host-v15/final-development-evidence.json",
+    "note": "Final Gate included the pending evidence JSON. Only this JSON is finalized after Gate; executable source, tests and Markdown are unchanged. Excluding this file avoids a self-referential hash.",
+    "trackedDiff": {
+      "path": "artifacts/v15/source/tracked.patch",
+      "sha256": "b7de4fb5f566dc447d2924892392c66e9d6103c61d49c90401928061319ad562"
+    },
+    "changedFilesExcludingEvidence": [
+      {
+        "path": "Host/MyAvaloniaManagement.PluginTests/HostRestartProcessTests.cs",
+        "sha256": "f01e57e0d85d3ba75def2532aafe726635c89fdd5d22cc7d02fdf6c64a485ea3"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj",
+        "sha256": "d36db66b85b267acb4b4ecd892536320c05ffdb6c147972478ae378fa0bc71ab"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.PluginTests/StartupPluginProgressTests.cs",
+        "sha256": "92f48e357ca8996e185cce660c23a9d0ef15b128cf968070d0acc588eb720bb1"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.PluginTests/TestAssets/RestartHarness/Program.cs",
+        "sha256": "6add7638cdc7082d0115fae0488738b14102e7b43bc7a3cbf03e78913f66d5b2"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.PluginTests/TestAssets/StartupProbe/Module.cs",
+        "sha256": "043d1e7e3b80d0910bb9db19e96c9b0b3c855d5192943acf4f8c0b69b8c99077"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.PluginTests/TestAssets/StartupProbe/StartupProbe.csproj",
+        "sha256": "b400d36c1cfe98e52fe53a0b97afc6a68a317d63bafbfbf9f7774c413b2fa343"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.PluginTests/TestAssets/StartupProbe/packages.lock.json",
+        "sha256": "3c5421c6d95600f959c77d10129ec567082ec2eef1df2373b8f70428eeeca92f"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.PluginTests/TestAssets/StartupProbe/plugin.manifest.json",
+        "sha256": "e10b097de112d0bfe3af8167d1af75f433235dc46f879fc6ebe3e83a10fc9a7f"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.Tests/StartupCoordinatorTests.cs",
+        "sha256": "d5a93d04f268068f38d2a47eb5e2f69d001cfd01e1fe50e7d12e4d76a2048898"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.UiTests/ApplicationAndWindowTests.cs",
+        "sha256": "05970e07c49a5c3645e3c800602fd1490972519d5bca3222378478e5825db0f6"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.UiTests/StartupSplashUiTests.cs",
+        "sha256": "b8fbf8249172af62c3765262036f71a54cd507d44a36fb8a2a567c9565883859"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/App.axaml.cs",
+        "sha256": "1b9235da35a3e62ce253beb29f171500ae580ede367eaedc4e0d6aef5ae25654"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Composition/HostRuntime.cs",
+        "sha256": "a255f215f908e7bc14f0f3df10ada3fa2a8ed1cb970dfe1450e2d42f33d86b88"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Lifecycle/PluginLifecycleCoordinator.cs",
+        "sha256": "d469a591e2f07f0a9da9c1224c7811a1b647531a9cf034a3929f9aae45ed9a72"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Plugins/Discovery/AssemblyLoaderHelper.cs",
+        "sha256": "d24fa8903ce6e107bdd46f7d7a4acfd0b6d240c14f44f1d5ec7f80d3110c82e7"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Plugins/Registration/PluginProviderOwner.cs",
+        "sha256": "6c3793e2c40a424297a0e4478664d982bb580ee0913514e5ac1e46ba69ca270d"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Presentation/HostAvaloniaBuilder.cs",
+        "sha256": "9d1d49f0ba3bd6f2626479b7afea80673b9f1036f98c35acaf6ffb0884b2e6a2"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Presentation/StartupDesktopShell.cs",
+        "sha256": "970580a4022b63f599379d14e757644f4a02bb9a67fd08a3080aeb634f062448"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Startup/StartupCoordinator.cs",
+        "sha256": "764ec8834e857145203b19d9d6d210f8efd48870eb31c1f289e9e36a0a67f842"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Startup/StartupProgress.cs",
+        "sha256": "16db71e66f435044fbd76da37a34be1f77ab4cb0079ee1f4e0fea7f49bb60345"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Business/Startup/StartupWorker.cs",
+        "sha256": "6f31bb5733a9d25cce52973b541e269f3a678e5ce8771dc0b665d5486feb1586"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Program.cs",
+        "sha256": "0be0c01be46cb0507dcc0c5a99088a593fb6cbb9484c07ee87b84a50bfc6aaf0"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/ViewModels/Startup/SplashViewModel.cs",
+        "sha256": "b85fe6a5cceb6b8f184c94ee685d1188fe92d5f4b4bf9a6c908822a6e00e2794"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Views/MainWindow.axaml",
+        "sha256": "08dfe0704f127241d41c46c24b21f229053ea94faa38653c7d836ab60bbea99b"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Views/MainWindow.axaml.cs",
+        "sha256": "8d8bcc65161f6c01f33c77e27e9bf3106203e31118b9dd400d63db8050a46b19"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Views/SplashWindow.axaml",
+        "sha256": "49c481ad040bdf38ecb3063422ab8534bc05d632d9b3b8320cca96af1691edb2"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/Views/SplashWindow.axaml.cs",
+        "sha256": "82edef41c8d0fcb9b254417a2f5e26706b5405d9292c120cad20f80737ece7d3"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/README.md",
+        "sha256": "9c151fb7529f72f7b60b5dd768d32caa2139309a5ad9b956ccb90c2423e459d3"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/design/architecture.md",
+        "sha256": "517c62a39e437fbd6709ca61ae3b33e95e0a1d254f1236c918622b5a4bea909a"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+        "sha256": "9aeab2e372b11fc56f47348e51a8d32afcbb164f0578a5f8141f1dda9b1cd107"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md",
+        "sha256": "1ec14dc220e2c55d0231d0b458e062659800d86d8b1a89dd475c09661e1592df"
+      },
+      {
+        "path": "docs/README.md",
+        "sha256": "b0fcf14c9b8c9319ac018f52299311080a2baa897f4cbfb7e67bcfca303b9f43"
+      },
+      {
+        "path": "docs/archive/records/host-v15/development-acceptance.md",
+        "sha256": "6cf396f47322010220b955df7ef03b21209bb13dac36b69d3c4d57dc59fee94e"
+      },
+      {
+        "path": "docs/maintenance/host-v15-startup-verification.md",
+        "sha256": "c12ccf6468a9cb89f5cf37b939285522693bd718a14321ddb9ac93f58b15018b"
+      },
+      {
+        "path": "docs/maintenance/verification.md",
+        "sha256": "cfd04e60dc55e760aa6c8daa5396f1089be9f7332372b0387d7d008875c79d8b"
+      },
+      {
+        "path": "docs/quick-start/startup.md",
+        "sha256": "c9fc3dc9c6d49296aab83cff6af244f28b2d3ec22be3744850ed52df12c7c25c"
+      },
+      {
+        "path": "docs/reference/host-restart.md",
+        "sha256": "38b5d8dc85f7a9a872f077b3005b7dda4d9624026320ea01caea5bec0d3b04a0"
+      },
+      {
+        "path": "docs/reference/host-startup.md",
+        "sha256": "44f35ffdef8216c20967ee913dbff656ddf8ac75dbd684662fb670f8e5343327"
+      },
+      {
+        "path": "docs/roadmap/README.md",
+        "sha256": "338ecfcef341c0e3e3c0b25e9fac73873b8beb4493ce3dcdd2b830674c71f1c5"
+      },
+      {
+        "path": "docs/roadmap/assets/host-v15-startup-feather.svg",
+        "sha256": "344611c656c87f38dfd1aff20ea33146ce830148345e5f0f57d3600d8cbb79b8"
+      },
+      {
+        "path": "docs/roadmap/host-v15-startup-splash-plan.md",
+        "sha256": "fcd8faced5dfff2dbbfe88cecf00b0f428fe04d7623fb3efdc1a7835d3da5a14"
+      }
+    ]
+  },
+  "processEvidence": {
+    "receiptManifest": {
+      "path": "artifacts/v15/process-receipts.json",
+      "sha256": "906c05e81aae47528f145c5e43a339bb36afab14d63b73672b85213ea572befa"
+    },
+    "runDirectories": 15,
+    "startupScenarios": [
+      "startup-disabled",
+      "startup-warning",
+      "startup-slow",
+      "startup-cancel-loading",
+      "startup-empty",
+      "startup-cancel",
+      "startup-failure"
+    ],
+    "platform": "Actual OS child processes using Avalonia Headless; not native desktop visual acceptance."
+  },
+  "screenshots": {
+    "review": "Both images visually inspected; feather, theme, progress, long identifier and warning layout checked.",
+    "files": [
+      {
+        "path": "Host/MyAvaloniaManagement.UiTests/bin/Release/net10.0/TestResults/v15-ui/splash-light.png",
+        "sha256": "024a3058ecfb9879c34531a429bd62f09855ed6cda8d9c7804f29292fda03fab"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement.UiTests/bin/Release/net10.0/TestResults/v15-ui/splash-dark.png",
+        "sha256": "75e0f887d7613e27ac799d4c60d03936cc858217182498c302654de29f444598"
+      }
+    ]
+  },
+  "intermediateFailedRuns": [
+    {
+      "runId": "20260920-001225-640202e10b6a",
+      "reason": "New StartupProbe generated sources were included by parent test project. Fixed with Compile Remove."
+    },
+    {
+      "runId": "20260920-001510-640202e10b6a",
+      "reason": "Existing UI assertion assumed MainView was child zero. Updated to identify MainView and verify layout rows plus hidden warning default."
+    }
+  ],
+  "notExecuted": [
+    "Native desktop focus, animation continuity, Alt+F4 and mixed DPI acceptance",
+    "External business plugins and native/STA dependencies",
+    "Matching single-file physical deployment sample",
+    "Install-directory deployment or publication",
+    "AIFLOW",
+    "Windows CI",
+    "seal and release Smoke, coverage or repeatability gates"
+  ],
+  "documents": [
+    "docs/roadmap/host-v15-startup-splash-plan.md",
+    "docs/reference/host-startup.md",
+    "docs/quick-start/startup.md",
+    "docs/maintenance/host-v15-startup-verification.md",
+    "docs/archive/records/host-v15/development-acceptance.md"
+  ]
+}

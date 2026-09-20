@@ -1,5 +1,7 @@
 # 待办与验收
 
+V15 启动引导与插件加载进度已接入；见[实施方案](host-v15-startup-splash-plan.md)、[专用验证](../maintenance/host-v15-startup-verification.md)及[开发记录与最终证据](../archive/records/host-v15/development-acceptance.md)。
+
 V14 一键自动重启已接入，开发结果见[开发记录与最终证据](../archive/records/host-v14/development-acceptance.md)。入口：[执行方案与阶段](host-v14-automatic-restart-plan.md)、[专用开发验证](../maintenance/host-v14-automatic-restart-verification.md)；单文件交付与实际启动检查见[本机部署](../maintenance/host-v14-local-deployment.md)，原生重启往返和桌面体验继续独立验收。
 
 V13 插件开关的实现与专项已完成，原生桌面检查待验收。入口：[计划与阶段](host-v13-plugin-enablement-plan.md)、[专用开发验证](../maintenance/host-v13-plugin-enablement-verification.md)、[开发记录与最终证据](../archive/records/host-v13/development-acceptance.md)。本轮只运行本地开发 verify，不使用 AIFLOW、Windows CI 或发布门禁。
@@ -8,6 +10,7 @@ V13 插件开关的实现与专项已完成，原生桌面检查待验收。入�
 
 | 工作名称 | 状态 / 所属范围 | 事实依据 | 完成条件 |
 | --- | --- | --- | --- |
+| V15 启动引导与插件加载进度 | 实现与专项已接入，原生桌面待验收 / Host 启动 | [方案](host-v15-startup-splash-plan.md)、[专用验证](../maintenance/host-v15-startup-verification.md)、[开发证据](../archive/records/host-v15/final-development-evidence.json) | 最终本地 verify 见 JSON；原生 M01–M07、外部业务、单文件与部署分别记录，不以 Headless 代替 |
 | V14 Host 一键自动重启 | 实现与自动化已接入，原生重启/桌面体验待验收 | [执行方案](host-v14-automatic-restart-plan.md)、[专用验证](../maintenance/host-v14-automatic-restart-verification.md)、[开发证据](../archive/records/host-v14/final-development-evidence.json)、[本机交付](../maintenance/host-v14-local-deployment.md) | 本机单文件产物和启动检查按部署 JSON 记录，不能替代 M01–M07 原生交互及单文件菜单/看板重启往返。不使用 AIFLOW、Windows CI 或本轮正式发布门禁 |
 | V12 Host 内部职责重构 | 源码与专项已完成，桌面未执行 / Host 内部 | [V12 方案](host-v12-internal-refactor-plan.md)、[开发记录](../archive/records/host-v12/development-acceptance.md)、[最终证据](../archive/records/host-v12/final-development-evidence.json)、[安装版影响范围](../maintenance/host-v12-local-deployment.md) | 三阶段实现、单元／插件集成／Headless 专项已完成；完整本地 verify 以最终证据为准。原生鼠标、焦点、多屏 DPI 与外部业务未执行，后续按需要独立验收；本轮不使用 AIFLOW、Windows CI 或发布门禁 |
 | Document 拖入已有浮窗崩溃 | 框架补丁与自动化已接入，桌面和部署待补 / Host 运行时 | [修复方案](host-document-cross-window-layout-crash-fix-plan.md)、[专项维护](../maintenance/dock-cross-window-layout-verification.md)、[本轮证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json) | 完整 verify 结果以本轮证据为准；补 M01–M03 真实桌面操作及原截图百度网盘场景，然后另行部署 |

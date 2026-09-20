@@ -8,6 +8,36 @@ namespace MyAvaloniaManagement.PluginTests;
 public sealed class HostRestartProcessTests
 {
     [Theory]
+    [InlineData("startup-cancel", 1)]
+    [InlineData("startup-failure", 1)]
+    [InlineData("startup-empty", 0)]
+    [InlineData("startup-disabled", 0)]
+    [InlineData("startup-warning", 0)]
+    [InlineData("startup-slow", 0)]
+    [InlineData("startup-cancel-loading", 1)]
+    public async Task V15启动首屏取消失败与空插件沿同一生产链收尾(string mode, int exitCode)
+    {
+        using var run = new RunFiles();
+        run.PrepareStartup(mode);
+        var process = run.Start(mode, false);
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(40));
+        await process.WaitForExitAsync(timeout.Token);
+        Assert.False(run.HasErrors, run.Errors);
+        Assert.Equal(exitCode, process.ExitCode);
+        using var state = JsonDocument.Parse(File.ReadAllText(Path.Combine(run.Root, "startup.json")));
+        Assert.Equal(exitCode == 0, state.RootElement.GetProperty("mainCreated").GetBoolean());
+        if (mode is "startup-slow" or "startup-cancel-loading")
+        {
+            using var responsive = JsonDocument.Parse(File.ReadAllText(Path.Combine(run.Root, "startup-responsive.json")));
+            using var entered = JsonDocument.Parse(File.ReadAllText(Path.Combine(run.Root, "startup-entered.json")));
+            Assert.True(responsive.RootElement.GetProperty("frameDuringBlockedPlugin").GetBoolean());
+            Assert.NotEqual(responsive.RootElement.GetProperty("uiThread").GetInt32(), entered.RootElement.GetProperty("thread").GetInt32());
+        }
+        Assert.Empty(Directory.GetFiles(run.Root, "helper-*.start.json"));
+        run.SaveEvidence();
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task 新进程禁用再启用并交接布局锁_两种启动形式(bool dotnet)
@@ -36,6 +66,10 @@ public sealed class HostRestartProcessTests
             Assert.Equal(Path.Combine(run.Root, "data"), started.RootElement.GetProperty("dataRoot").GetString());
             using var exited = JsonDocument.Parse(File.ReadAllText(Path.Combine(run.Root, $"host-{stage}.exit.json")));
             Assert.Equal(0, exited.RootElement.GetProperty("code").GetInt32());
+            using var startup = JsonDocument.Parse(File.ReadAllText(Path.Combine(run.Root, $"startup-{stage}.json")));
+            Assert.True(startup.RootElement.GetProperty("splashClosed").GetBoolean());
+            Assert.True(startup.RootElement.GetProperty("mainVisible").GetBoolean());
+            Assert.True(startup.RootElement.GetProperty("readyMs").GetDouble() >= startup.RootElement.GetProperty("firstFrameMs").GetDouble());
         }
         using var writer = new FileStream(Path.Combine(run.Root, "data", "layout-v3.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
         Assert.True(File.Exists(Path.Combine(run.Root, "data", "layout-v3.json")));
@@ -121,9 +155,33 @@ public sealed class HostRestartProcessTests
             if (dotnet) info.ArgumentList.Add(app + ".dll");
             info.ArgumentList.Add(mode); info.ArgumentList.Add("中文 空格\"&$(data)"); info.ArgumentList.Add(Root);
             info.Environment["MYAVALONIA_DATA_DIRECTORY"] = Path.Combine(Root, "data");
+            info.Environment["MYAVALONIA_V15_PROBE_ROOT"] = Root;
             var process = Process.Start(info)!;
             _owned.Add(process);
             return process;
+        }
+
+        /// <summary>只调整本夹具的隔离副本；用户部署目录和数据不参与失败注入。</summary>
+        internal void PrepareStartup(string mode)
+        {
+            var controls = Path.Combine(Root, "app", "Controls");
+            var plugin = Path.Combine(controls, "MyPlugTest");
+            if (mode is "startup-slow" or "startup-cancel-loading")
+                Copy(Path.Combine(AppContext.BaseDirectory, "StartupProbe"), Path.Combine(controls, "StartupProbe"));
+            if (mode == "startup-empty") Directory.Delete(controls, true);
+            if (mode == "startup-warning") File.Delete(Path.Combine(plugin, "MyPlugTest.dll"));
+            if (mode == "startup-failure")
+            {
+                var duplicate = Path.Combine(controls, "duplicate");
+                Directory.CreateDirectory(duplicate);
+                File.Copy(Path.Combine(plugin, "plugin.manifest.json"), Path.Combine(duplicate, "plugin.manifest.json"));
+            }
+            if (mode == "startup-disabled")
+            {
+                var store = new MyAvaloniaManagement.Business.Plugins.Enablement.PluginEnablementSettingsStore(
+                    Path.Combine(Root, "data", MyAvaloniaManagement.Business.Plugins.Enablement.PluginEnablementSettingsStore.FileName));
+                Assert.True(store.TrySave(store.Load(), new([new MyAvaloniaManagement.PluginSdk.PluginId("myavalonia.plugin.my-plug-test")])).Success);
+            }
         }
 
         internal async Task WaitFor(Func<bool> condition)
