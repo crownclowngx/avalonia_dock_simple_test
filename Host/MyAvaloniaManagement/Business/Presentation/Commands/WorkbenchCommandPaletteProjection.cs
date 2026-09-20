@@ -169,7 +169,7 @@ internal sealed class WorkbenchCommandPaletteProjection :
         {
             foreach (var tool in _tools.Capture())
             {
-                var rank = WorkbenchTextMatch.Rank(tool.DisplayName, normalizedQuery, tool.Description, tool.SourceName, tool.ToolId);
+                var rank = WorkbenchTextMatch.Rank(tool.DisplayName, normalizedQuery, tool.Description, tool.SourceName, SourceName(tool.SourceName), tool.ToolId);
                 if (rank == int.MaxValue) continue;
                 var identity = new ToolPaletteIdentity(new ToolTypeId(tool.ToolId));
                 var binding = new WorkspacePaletteCommand(identity, _workspaceActions);
@@ -185,24 +185,25 @@ internal sealed class WorkbenchCommandPaletteProjection :
         {
             foreach (var function in _functions.ReadDirectory().Items)
             {
-                var rank = function.MatchRank(normalizedQuery);
+                var source = function.Entry.OwnerId?.Value ?? "主程序";
+                var rank = Math.Min(function.MatchRank(normalizedQuery), WorkbenchTextMatch.Rank(function.DisplayName, normalizedQuery, source));
                 if (rank == int.MaxValue) continue;
                 var identity = new FunctionPaletteIdentity(function.Entry.DocumentTypeId, function.Entry.CreationIntentId);
                 result.Add(new(identity, function.DisplayName,
-                    $"{function.Description} · {function.CategoryPath} · {function.Entry.OwnerId?.Value ?? "内置"}", string.Empty,
+                    $"{function.Description} · {function.CategoryPath}", string.Empty,
                     _workspace?.CanCreateDocuments == true, new WorkspacePaletteCommand(identity, _workspaceActions))
                     { MatchRank = rank, ActionText = "打开新标签", IconRequest = function.IconRequest, IconRenderer = _icons,
-                        SourceText = function.Entry.OwnerId?.Value ?? "主程序", ExecuteHint = $"新开“{function.DisplayName}”" });
+                        SourceText = source, ExecuteHint = $"新开“{function.DisplayName}”" });
             }
         }
         if (_workspace is not null && _workspaceActions is not null)
         {
             foreach (var page in pages)
             {
-                var rank = WorkbenchTextMatch.Rank(page.Title, normalizedQuery, page.FunctionName, page.SourceName);
+                var rank = WorkbenchTextMatch.Rank(page.Title, normalizedQuery, page.FunctionName, page.SourceName, SourceName(page.SourceName));
                 if (rank == int.MaxValue) continue;
                 var identity = new PagePaletteIdentity(page.Id);
-                result.Add(new(identity, page.Title, page.Description, string.Empty, page.CanActivate,
+                result.Add(new(identity, page.Title, page.FunctionName + (page.IsModified ? " · 未保存修改" : string.Empty), string.Empty, page.CanActivate,
                     new WorkspacePaletteCommand(identity, _workspaceActions)) { MatchRank = rank,
                     ActionText = "切换到页面", IconRequest = page.IconRequest, IconRenderer = _icons,
                     SourceText = SourceName(page.SourceName),

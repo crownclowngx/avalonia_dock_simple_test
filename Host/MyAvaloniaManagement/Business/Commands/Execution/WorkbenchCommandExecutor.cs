@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MyAvaloniaManagement.Business.Commands.Catalog;
+using MyAvaloniaManagement.Business.Commands.Context;
 using MyAvaloniaManagement.Business.Commands.State;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.PluginSdk;
@@ -53,7 +54,8 @@ internal sealed class WorkbenchCommandExecutor :
     /// <summary>执行指定稳定身份，并把预期拒绝、取消和失败映射为结果而不是未观察异常。</summary>
     internal async ValueTask<WorkbenchCommandExecutionResult> ExecuteAsync(
         CommandId commandId,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        WorkbenchCommandTargetExpectation? expectedTarget = null)
     {
         ArgumentNullException.ThrowIfNull(commandId);
         if (!TryBeginInvocation())
@@ -65,6 +67,12 @@ internal sealed class WorkbenchCommandExecutor :
         try
         {
             var route = _states.Resolve(commandId);
+            // Palette 明确展示了目标时，旧提交必须失败，不能把菜单式的“当前实例”语义套到另一页。
+            // 约束是调用参数而非共享字段；菜单/快捷键传 null，继续沿用原来的当前目标路由。
+            if (expectedTarget is not null && !expectedTarget.Matches(route.Capture))
+            {
+                return WorkbenchCommandExecutionResult.FromStatus(WorkbenchCommandExecutionStatus.TargetUnavailable);
+            }
             if (route.StructuralStatus != WorkbenchCommandStateStatus.Enabled || route.Entry is null)
             {
                 return FromState(route.StructuralStatus);

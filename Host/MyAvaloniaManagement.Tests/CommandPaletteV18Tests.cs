@@ -39,13 +39,17 @@ public sealed class CommandPaletteV18Tests
         Assert.Equal(current.Take(1), WorkbenchPaletteOrdering.PreserveOrder(previous, current.Take(1).ToArray()));
     }
 
-    [Fact]
-    public void 禁用原因无事实时使用通用说明且命令名称不被推断为完成结果()
+    [Theory]
+    [InlineData("预览小说正文导出")]
+    [InlineData("本章完成后暂停")]
+    [InlineData("取消当前工作流")]
+    [InlineData("持续创作")]
+    public void 禁用原因无事实时使用通用说明且命令名称不被推断为完成结果(string name)
     {
-        var entry = Item(3, "预览小说正文导出", 0) with { IsEnabled = false };
+        var entry = Item(3, name, 0) with { IsEnabled = false };
         Assert.Equal("当前状态下不可用", entry.EnterHint);
         Assert.Equal("没有可用连接", (entry with { UnavailableReason = "没有可用连接" }).EnterHint);
-        Assert.Equal("Enter 执行：预览小说正文导出", (entry with { IsEnabled = true }).EnterHint);
+        Assert.Equal("Enter 执行：" + name, (entry with { IsEnabled = true }).EnterHint);
         Assert.Equal(string.Empty, entry.LeadingAction);
     }
 

@@ -107,7 +107,7 @@ internal sealed class WorkbenchCommandPresentationDesignData :
             new(new PagePaletteIdentity(new WorkspacePageId(Guid.Parse("00000000-0000-0000-0000-000000000002"))),
                 "欢迎", "第二个独立实例", "", true, open)
                 { SourceText = "主程序", InstanceText = "页面 2", ExecuteHint = "回到“欢迎”（页面 2）" },
-            new(new FunctionPaletteIdentity(HostExtensionIds.WelcomeDocument, null), "欢迎主程序", "在新标签中开始使用", "", true, open)
+            new(new FunctionPaletteIdentity(HostExtensionIds.WelcomeDocument, null), "欢迎主程序", "在新标签中开始使用：此较长说明用于检查窄窗口中的省略与完整提示", "", true, open)
                 { SourceText = "主程序", ExecuteHint = "新开“欢迎主程序”" },
             new(new ToolPaletteIdentity(HostExtensionIds.FileSystemTree), "文件系统浏览器", "已隐藏", "", true, open)
                 { SourceText = "主程序", ActionText = "显示", ExecuteHint = "显示“文件系统浏览器”" },
@@ -117,7 +117,7 @@ internal sealed class WorkbenchCommandPresentationDesignData :
                 "打开一个已保存的文档",
                 string.Empty,
                 true,
-                open),
+                open) { SourceText = "主程序", ExecuteHint = "选择文件…" },
             new WorkbenchCommandPaletteProjectionEntry(
                 new CommandPaletteIdentity(HostWorkbenchCommandIds.SaveDocument),
                 "保存",

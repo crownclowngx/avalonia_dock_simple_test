@@ -3,9 +3,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Presenters;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Presentation.Commands;
@@ -36,10 +38,7 @@ internal sealed partial class CommandPaletteView : UserControl
     {
         InitializeComponent();
         SearchBox.TextChanged += OnSearchTextChanged;
-        PaletteItems.DoubleTapped += (_, _) =>
-        {
-            if (!IsBusy) CurrentExecution = ExecuteSelectionAsync();
-        };
+        PaletteItems.SelectionChanged += (_, _) => UpdateSelectionHint();
         DataContextChanged += OnDataContextChanged;
         AttachedToVisualTree += OnAttachedToVisualTree;
         DetachedFromVisualTree += OnDetachedFromVisualTree;
@@ -132,6 +131,7 @@ internal sealed partial class CommandPaletteView : UserControl
             _projection = null;
         }
         PaletteItems.ItemsSource = null;
+        UpdateSelectionHint();
         EmptyState.IsVisible = true;
     }
 
@@ -169,16 +169,32 @@ internal sealed partial class CommandPaletteView : UserControl
             ? (PaletteItems.SelectedItem as WorkbenchCommandPaletteProjectionEntry)?.StableKey
             : null;
         var items = _projection?.GetItems(SearchBox.Text).ToArray() ?? [];
+        var scroll = PaletteItems.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+        var offset = scroll?.Offset;
+        if (preserveSelection)
+            items = WorkbenchPaletteOrdering.PreserveOrder(PaletteItems.Items.OfType<WorkbenchCommandPaletteProjectionEntry>().ToArray(), items);
         PaletteItems.ItemsSource = items;
         EmptyState.IsVisible = items.Length == 0;
 
         var selectedIndex = selectedId is null
             ? -1
             : Array.FindIndex(items, item => item.StableKey == selectedId);
-        PaletteItems.SelectedIndex = selectedIndex >= 0
-            ? selectedIndex
-            : items.Length > 0 ? 0 : -1;
+        var firstEnabled = Array.FindIndex(items, item => item.IsEnabled);
+        PaletteItems.SelectedIndex = selectedIndex >= 0 ? selectedIndex :
+            firstEnabled >= 0 ? firstEnabled : items.Length > 0 ? 0 : -1;
+        if (selectedId is not null && selectedIndex < 0)
+            SetStatus("原目标已不可用，请确认新的选择后再执行。");
+        if (selectedIndex >= 0 && scroll is not null && offset is { } previousOffset)
+        {
+            PaletteItems.UpdateLayout();
+            scroll.Offset = previousOffset;
+        }
+        UpdateSelectionHint();
     }
+
+    /// <summary>底部只预告选中项的动作；失败信息保留在独立状态行，不被普通选择通知覆盖。</summary>
+    private void UpdateSelectionHint() => SelectionHint.Text =
+        (PaletteItems.SelectedItem as WorkbenchCommandPaletteProjectionEntry)?.EnterHint ?? string.Empty;
 
     private void OnPreviewKeyDown(object? sender, KeyEventArgs args)
     {
@@ -186,6 +202,11 @@ internal sealed partial class CommandPaletteView : UserControl
         {
             return;
         }
+
+        // Avalonia TextBox 同样以 PreeditText 判断组合输入。候选字确认、方向键和 Esc 应先留给输入法，
+        // 否则窗口级 Tunnel 处理器会在 TextBox 有机会检查前误执行命令。这里只读取控件公开展示状态。
+        if (SearchBox.GetVisualDescendants().OfType<TextPresenter>().Any(presenter => !string.IsNullOrEmpty(presenter.PreeditText)))
+            return;
 
         switch (args.Key)
         {
@@ -225,6 +246,13 @@ internal sealed partial class CommandPaletteView : UserControl
         }
     }
 
+    // 双击仅绑定结果正文；组标题和列表空白不能执行先前的选择。
+    private void OnResultDoubleTapped(object? sender, TappedEventArgs args)
+    {
+        if (!IsBusy) CurrentExecution = ExecuteSelectionAsync();
+        args.Handled = true;
+    }
+
     /// <summary>一次搜索会话拥有一次在途动作；失败保留现场，成功后才移除遮罩。</summary>
     /// <remarks>
     /// 普通命令仍先关闭再执行，保持文件选择器与当前 Target 的既有时序。
@@ -234,17 +262,29 @@ internal sealed partial class CommandPaletteView : UserControl
     internal async Task ExecuteSelectionAsync()
     {
         if (!_sessionActive || IsBusy) return;
-        if (PaletteItems.SelectedItem is not WorkbenchCommandPaletteProjectionEntry item ||
-            !item.IsEnabled || !item.Command.CanExecute(null))
+        var item = PaletteItems.SelectedItem as WorkbenchCommandPaletteProjectionEntry;
+        var current = item is null ? null : _projection?.GetItems(SearchBox.Text).FirstOrDefault(next => next.StableKey == item.StableKey);
+        // 捕获原选择后只验证同一身份；更新列表时自动补选的结果不能消费本次 Enter。
+        if (item is null || current is null || !item.IsEnabled || !current.IsEnabled ||
+            item.ExpectedTarget != current.ExpectedTarget || !item.Command.CanExecute(null))
         {
-            SetStatus("目标暂不可用，请重新选择。");
+            SetStatus(item is { IsEnabled: false } ? item.DisabledText : "目标或状态已变化，请确认后再执行。");
             RefreshItems(preserveSelection: true);
             return;
         }
         if (item.Identity is CommandPaletteIdentity)
         {
+            if (item.Command is WorkbenchPresentationCommand guarded && !guarded.CanExecuteForTarget(item.ExpectedTarget))
+            {
+                SetStatus("命令目标已变化，请确认后再执行。");
+                RefreshItems(preserveSelection: true);
+                return;
+            }
             CloseRequested?.Invoke(this, new(true));
-            item.Command.Execute(null);
+            if (item.Command is WorkbenchPresentationCommand command)
+                await command.ExecuteObservedAsync(item.ExpectedTarget);
+            else
+                item.Command.Execute(null);
             return;
         }
         var version = _sessionVersion;

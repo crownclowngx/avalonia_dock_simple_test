@@ -321,16 +321,29 @@ public sealed class ToolCenterUiTests
             Assert.Null(entry.CommandId);
             Assert.Equal(HostExtensionIds.FileSystemTree, entry.ToolTypeId);
             Assert.StartsWith("tool:", entry.StableKey);
+            Assert.Equal("显示", entry.LeadingAction);
+            Assert.Contains("显示", entry.EnterHint);
             entry.Command.Execute(null);
             await Flush();
             Assert.Equal([entry.ToolTypeId!.Value], preferences.Current.RecentToolIds);
             var tool = context.Workspace.CreatedTools[entry.ToolTypeId.Value];
+            Assert.Equal("定位", Assert.Single(palette.GetItems("file-system-tree")).LeadingAction);
             context.Workspace.DockFactory.PinDockable(tool);
+            Assert.Equal("展开", Assert.Single(palette.GetItems("file-system-tree")).LeadingAction);
             entry.Command.Execute(null);
             Assert.Same(tool, context.Workspace.DockFactory.FindRoot(tool, _ => true)!.PinnedDock?.ActiveDockable);
             Assert.True(entry.Command.CanExecute(null));
+            context.Workspace.DockFactory.UnpinDockable(tool);
+            context.Workspace.DockFactory.FloatDockable(tool);
+            await Flush();
+            var floating = Assert.Single(palette.GetItems("file-system-tree"));
+            Assert.Equal("定位", floating.LeadingAction);
+            Assert.Contains("浮", floating.Description);
+            floating.Command.Execute(null);
+            Assert.Same(tool, context.Workspace.CreatedTools[entry.ToolTypeId.Value]);
             context.Workspace.BeginShutdown();
             Assert.False(entry.Command.IsEnabled);
+            Assert.Equal("工作区正在退出", Assert.Single(palette.GetItems("file-system-tree")).DisabledText);
             entry.Command.Execute(null);
         }
         finally { owner.Close(); }

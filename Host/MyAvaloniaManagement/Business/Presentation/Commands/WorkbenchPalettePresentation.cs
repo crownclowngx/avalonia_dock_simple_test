@@ -48,6 +48,7 @@ internal sealed record WorkbenchCommandPaletteProjectionEntry(
     public string DisabledText => IsEnabled ? string.Empty :
         UnavailableReason.Length > 0 ? UnavailableReason : "当前状态下不可用";
     public string DetailText => Join(TargetText.Length > 0 ? TargetText : Description, DisabledText);
+    public string ContextText => Join(SourceText, DetailText);
     public string EnterHint => IsEnabled
         ? "Enter " + (ExecuteHint.Length > 0 ? ExecuteHint : "执行：" + DisplayName)
         : DisabledText;

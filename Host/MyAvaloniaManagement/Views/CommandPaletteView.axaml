@@ -12,7 +12,7 @@
             BorderBrush="{DynamicResource AppBorderBrush}"
             Background="{DynamicResource AppPanelBrush}"
             BoxShadow="0 12 32 0 #66000000">
-        <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="10">
+        <Grid RowDefinitions="Auto,Auto,*,Auto,Auto" RowSpacing="10">
             <TextBlock Text="命令面板"
                        FontSize="18"
                        FontWeight="SemiBold" />
@@ -22,29 +22,53 @@
                      AutomationProperties.Name="命令面板搜索" />
             <Grid Grid.Row="2" MinHeight="80">
                 <ListBox x:Name="PaletteItems"
-                         MaxHeight="400"
+                         MaxHeight="350"
                          AutomationProperties.Name="命令面板结果">
+                    <!-- 组标题附着于组首真实结果，但选中色只作用于结果正文，避免标题看起来也能执行。 -->
+                    <ListBox.Styles>
+                        <Style Selector="ListBoxItem" x:DataType="commands:WorkbenchCommandPaletteProjectionEntry">
+                            <Setter Property="Padding" Value="0" />
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="AutomationProperties.Name" Value="{Binding AccessibleText}" />
+                            <Setter Property="Template">
+                                <ControlTemplate>
+                                    <ContentPresenter Content="{TemplateBinding Content}"
+                                                      ContentTemplate="{TemplateBinding ContentTemplate}"
+                                                      HorizontalContentAlignment="Stretch" />
+                                </ControlTemplate>
+                            </Setter>
+                        </Style>
+                        <Style Selector="Border.palette-row">
+                            <Setter Property="Background" Value="Transparent" />
+                        </Style>
+                        <Style Selector="Border.palette-row.selected">
+                            <Setter Property="Background" Value="{DynamicResource AppToolSelectedBrush}" />
+                        </Style>
+                    </ListBox.Styles>
                     <ListBox.ItemTemplate>
                         <DataTemplate x:DataType="commands:WorkbenchCommandPaletteProjectionEntry">
-                            <Grid ColumnDefinitions="24,*,Auto" ColumnSpacing="12" Margin="4,6">
-                                <icons:HostIconView Width="22" Height="22" Foreground="{DynamicResource AppInfoBrush}" Source="{Binding IconRequest}" Renderer="{Binding IconRenderer}" />
-                                <StackPanel Grid.Column="1" Spacing="2">
-                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
-                                        <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DisplayName}"
-                                                   FontWeight="SemiBold" />
-                                        <TextBlock Grid.Column="1" Text="不可用"
-                                                   IsVisible="{Binding !IsEnabled}"
-                                                   Opacity="0.65" />
+                            <StackPanel>
+                                <TextBlock Classes="palette-group" Text="{Binding GroupName}" IsVisible="{Binding StartsGroup}"
+                                           Margin="8,10,8,4" FontSize="12" FontWeight="SemiBold" Opacity="0.72"
+                                           Focusable="False" IsHitTestVisible="False" />
+                                <Border Classes="palette-row" Classes.selected="{Binding $parent[ListBoxItem].IsSelected}"
+                                        Padding="8" CornerRadius="4" ToolTip.Tip="{Binding AccessibleText}"
+                                        DoubleTapped="OnResultDoubleTapped">
+                                    <Grid ColumnDefinitions="22,Auto,*,Auto" ColumnSpacing="8">
+                                        <icons:HostIconView Width="20" Height="20" Foreground="{DynamicResource AppInfoBrush}"
+                                                            Source="{Binding IconRequest}" Renderer="{Binding IconRenderer}" />
+                                        <TextBlock Grid.Column="1" Text="{Binding LeadingAction}" VerticalAlignment="Top" />
+                                        <StackPanel Grid.Column="2" Spacing="3">
+                                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+                                                <TextBlock Text="{Binding DisplayName}" TextTrimming="CharacterEllipsis" FontWeight="SemiBold" />
+                                                <TextBlock Grid.Column="1" Text="{Binding InstanceText}" Opacity="0.8" />
+                                            </Grid>
+                                            <TextBlock Text="{Binding ContextText}" TextTrimming="CharacterEllipsis" Opacity="0.75" />
+                                        </StackPanel>
+                                        <TextBlock Grid.Column="3" Text="{Binding ShortcutText}" VerticalAlignment="Center" Opacity="0.75" />
                                     </Grid>
-                                    <TextBlock Text="{Binding Description}"
-                                               TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Description}"
-                                               Opacity="0.72" />
-                                </StackPanel>
-                                <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="4">
-                                    <TextBlock Text="{Binding ActionText}" />
-                                    <TextBlock Text="{Binding ShortcutText}" Opacity="0.75" />
-                                </StackPanel>
-                            </Grid>
+                                </Border>
+                            </StackPanel>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
@@ -57,6 +81,12 @@
             </Grid>
             <TextBlock Grid.Row="3" x:Name="OperationStatus" IsVisible="False" TextWrapping="Wrap"
                        AutomationProperties.Name="搜索操作结果" />
+            <Grid Grid.Row="4" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                <TextBlock Text="↑↓ 选择" Opacity="0.7" />
+                <TextBlock Grid.Column="1" x:Name="SelectionHint" TextWrapping="Wrap"
+                           AutomationProperties.Name="所选结果的回车效果" />
+                <TextBlock Grid.Column="2" Text="Esc 关闭" Opacity="0.7" />
+            </Grid>
         </Grid>
     </Border>
 </UserControl>

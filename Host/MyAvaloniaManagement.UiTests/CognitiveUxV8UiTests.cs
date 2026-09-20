@@ -131,7 +131,7 @@ public sealed class CognitiveUxV8UiTests
             await Flush();
             var items = list.Items.Cast<WorkbenchCommandPaletteProjectionEntry>().ToArray();
             Assert.Equal(2, items.Length);
-            Assert.Equal(2, items.Select(item => item.Description).Distinct().Count());
+            Assert.Equal(2, items.Select(item => item.IdentityText).Distinct().Count());
             list.SelectedItem = items.Single(item => item.Identity == new PagePaletteIdentity(first.PageId));
             window.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
             await palette.CurrentExecution;
@@ -148,7 +148,7 @@ public sealed class CognitiveUxV8UiTests
             // 在投影排队刷新前提交旧绑定，验证执行复查，而非仅验证查询时过滤。
             await palette.ExecuteSelectionAsync();
             Assert.True(window.FindControl<Border>("CommandPaletteLayer")!.IsVisible);
-            Assert.Contains("暂不可用", palette.FindControl<TextBlock>("OperationStatus")!.Text);
+            Assert.Contains("原目标已不可用", palette.FindControl<TextBlock>("OperationStatus")!.Text);
             Assert.Equal(2, probe.Activations.Count);
             Assert.Single(list.Items);
             window.KeyPressQwerty(PhysicalKey.Escape, RawInputModifiers.None);

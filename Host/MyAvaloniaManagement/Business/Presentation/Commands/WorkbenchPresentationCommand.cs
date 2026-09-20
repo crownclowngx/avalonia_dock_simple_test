@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia.Threading;
 using MyAvaloniaManagement.Business.Commands.Execution;
+using MyAvaloniaManagement.Business.Commands.Context;
 using MyAvaloniaManagement.Business.Commands.State;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.PluginSdk;
@@ -123,7 +124,8 @@ internal sealed class WorkbenchPresentationCommand :
     /// 当前实例和 CanExecute，因而菜单显示与用户真正触发之间发生的目标切换不会误保存旧 Document。
     /// </remarks>
     internal ValueTask<WorkbenchCommandExecutionResult> ExecuteAsync(
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        WorkbenchCommandTargetExpectation? expectedTarget = null)
     {
         lock (_gate)
         {
@@ -135,16 +137,25 @@ internal sealed class WorkbenchPresentationCommand :
             }
         }
 
-        return _executor.ExecuteAsync(CommandId, cancellationToken);
+        return _executor.ExecuteAsync(CommandId, cancellationToken, expectedTarget);
     }
 
-    private async Task ExecuteObservedAsync()
+    /// <summary>关闭面板前检查本次展示目标；真正调用时 Executor 还会重查，不能用此检查替代执行边界。</summary>
+    internal bool CanExecuteForTarget(WorkbenchCommandTargetExpectation? expectedTarget)
+    {
+        if (!CanExecute(null)) return false;
+        var route = _states.Resolve(CommandId);
+        return (expectedTarget is null || expectedTarget.Matches(route.Capture)) && _states.IsCurrent(route);
+    }
+
+    /// <summary>同步 ICommand 和 Palette 共用的异常观察路径；每次调用携带自己的目标约束，不修改共享适配器。</summary>
+    internal async Task ExecuteObservedAsync(WorkbenchCommandTargetExpectation? expectedTarget = null)
     {
         try
         {
             // ICommand 的同步签名无法返回 Task。这里真实等待 Executor，并在同一方法内观察
             // 所有意外异常，绝不把未观察 Task 或 async void 异常交还 Avalonia。
-            _ = await ExecuteAsync();
+            _ = await ExecuteAsync(expectedTarget: expectedTarget);
         }
         catch (Exception exception)
         {
