@@ -118,7 +118,7 @@ SOLID 是方案、实现与审查的首要规定。优先显露现有职责；�
 
 ## 5. V17-P2：命令展示文件按职责拆分
 
-源文件：[WorkbenchCommandProjection.cs](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandProjection.cs)。
+原文件为 `WorkbenchCommandProjection.cs`；当前入口为[菜单投影](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchMenuProjection.cs)、[快捷键投影](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchKeyBindingProjection.cs)和[展示组合对象](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandPresentation.cs)。
 
 | 目标文件 | 既有职责与组织 |
 | --- | --- |

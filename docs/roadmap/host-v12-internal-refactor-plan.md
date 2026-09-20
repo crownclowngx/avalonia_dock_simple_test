@@ -110,7 +110,7 @@ P1 注释重点是失败原子性和冲突排除规则；P2 是两种通知时�
 
 ### 5.1 改造前事实
 
-[菜单与快捷键投影](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandProjection.cs)、[Palette](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandPaletteProjection.cs) 和 [ICommand Adapter](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchPresentationCommand.cs) 分别维护排队标记、Dispatcher 和释放后抑制逻辑。
+[菜单投影](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchMenuProjection.cs)、[快捷键投影](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchKeyBindingProjection.cs)、[Palette](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandPaletteProjection.cs) 和 [ICommand Adapter](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchPresentationCommand.cs) 在提取前分别维护排队标记、Dispatcher 和释放后抑制逻辑。当前源码链接已随 V17 文件拆分更新，V12 的行为与历史证据不变。
 
 相似实现具有两种明确语义：
 
