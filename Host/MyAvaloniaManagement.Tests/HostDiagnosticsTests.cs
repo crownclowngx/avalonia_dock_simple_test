@@ -1,8 +1,10 @@
 using System.Reflection;
 using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Documents;
 using MyAvaloniaManagement.Business.Lifecycle;
+using MyAvaloniaManagement.Business.PluginStatus;
 using MyAvaloniaManagement.ViewModels.Tools;
 using MyAvaloniaManagement.PluginSdk;
 
@@ -24,6 +26,67 @@ public sealed class HostDiagnosticsTests
         "/home/secret/G15-private.mamdoc",
         "G15-document-body",
     ];
+
+    [Fact]
+    public void V17会话序号与文件顺序一致且释放后拒绝新增记录()
+    {
+        using var workspace = new DiagnosticWorkspace();
+        using var session = HostDiagnosticSession.Start(workspace.Root);
+        var draft = new HostDiagnosticDraft("V17_DIAGNOSTIC", HostDiagnosticPhase.Layout);
+        var first = session.Report(draft);
+        var second = session.Report(draft);
+
+        Assert.Equal(session.SessionId, first.SessionId);
+        Assert.Equal(first.SessionId, second.SessionId);
+        Assert.Equal(1, first.Sequence);
+        Assert.Equal(2, second.Sequence);
+        Assert.Equal(new[] { first, second }, session.Snapshot);
+        session.Dispose();
+        session.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => session.Report(draft));
+        Assert.Equal(new[] { first, second }, session.Snapshot);
+
+        // 释放必须完成写入，但不能销毁已交付的内存事实；释放后的失败也不能追加第三行。
+        var lines = File.ReadAllLines(Assert.IsType<string>(session.LogPath));
+        Assert.Equal(2, lines.Length);
+        for (var index = 0; index < lines.Length; index++)
+        {
+            using var json = JsonDocument.Parse(lines[index]);
+            Assert.Equal(session.SessionId, json.RootElement.GetProperty("sessionId").GetGuid());
+            Assert.Equal(index + 1, json.RootElement.GetProperty("sequence").GetInt64());
+        }
+    }
+
+    [Theory]
+    [InlineData(false, false)]
+    [InlineData(false, true)]
+    [InlineData(true, false)]
+    [InlineData(true, true)]
+    public void V17看板诊断解析保持具体会话优先和接口回退(bool registerSession, bool registerSink)
+    {
+        using var workspace = new DiagnosticWorkspace();
+        using var direct = HostDiagnosticSession.Start(Path.Combine(workspace.Root, "direct"));
+        using var fallback = HostDiagnosticSession.Start(Path.Combine(workspace.Root, "fallback"));
+        var owner = new PluginId("myavalonia.plugin.v17-diagnostic");
+        direct.Report(new HostDiagnosticDraft("V17_DIRECT", HostDiagnosticPhase.PluginAssemblyLoad) { PluginId = owner });
+        fallback.Report(new HostDiagnosticDraft("V17_FALLBACK", HostDiagnosticPhase.PluginAssemblyLoad) { PluginId = owner });
+        var services = new ServiceCollection();
+        services.AddApplicationServices();
+        if (registerSession) services.AddSingleton(direct);
+        if (registerSink) services.AddSingleton<IHostDiagnosticSink>(fallback);
+        using var provider = services.BuildServiceProvider();
+
+        // 从实际组合入口读取看板，验证 GetService 的可选性和两个来源的优先级，
+        // 不通过反射检查 Query 的私有字段，也不在测试里重建生产工厂。
+        var items = provider.GetRequiredService<IPluginStatusQuery>().Capture();
+        if (!registerSession && !registerSink)
+        {
+            Assert.Empty(items);
+            return;
+        }
+        var diagnostic = Assert.Single(Assert.Single(items).Diagnostics);
+        Assert.Equal(registerSession ? "V17_DIRECT" : "V17_FALLBACK", diagnostic.Code);
+    }
 
     [Fact]
     public void 会话记录写入内存和可逐条解析的JsonLines日志()

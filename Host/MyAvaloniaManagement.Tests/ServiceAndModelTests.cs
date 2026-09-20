@@ -2,6 +2,10 @@ using System.Globalization;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Converter;
 using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagement.Business.Commands.Execution;
+using MyAvaloniaManagement.Business.Documents;
+using MyAvaloniaManagement.Business.Lifecycle;
+using MyAvaloniaManagement.Business.WorkflowActions;
 using MyAvaloniaManagement.Models.FileSystem;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
@@ -15,6 +19,71 @@ namespace MyAvaloniaManagement.Tests;
 /// </summary>
 public sealed class ServiceAndModelTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void V17注册和容器验证保持共享输入身份且不提前创建关闭参与者(bool supplyOwners)
+    {
+        var services = new ServiceCollection();
+        var builder = supplyOwners ? new PluginRegistryBuilder() : null;
+        using var suppliedProviders = supplyOwners ? new PluginProviderOwner() : null;
+        var scopes = supplyOwners ? new DocumentScopeRegistry() : null;
+        var participants = supplyOwners ? new HostShutdownParticipants() : null;
+        services.AddApplicationServices(builder, suppliedProviders, scopes, participants);
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        {
+            ValidateScopes = true,
+            ValidateOnBuild = true,
+        });
+
+        var actualBuilder = provider.GetRequiredService<PluginRegistryBuilder>();
+        using var actualProviders = provider.GetRequiredService<PluginProviderOwner>();
+        var actualScopes = provider.GetRequiredService<DocumentScopeRegistry>();
+        var actualParticipants = provider.GetRequiredService<HostShutdownParticipants>();
+        if (supplyOwners)
+        {
+            Assert.Same(builder, actualBuilder);
+            Assert.Same(suppliedProviders, actualProviders);
+            Assert.Same(scopes, actualScopes);
+            Assert.Same(participants, actualParticipants);
+        }
+        Assert.Same(actualProviders, provider.GetRequiredService<IPluginLifecycleResolver>());
+        Assert.Same(actualProviders, provider.GetRequiredService<IWorkflowActionScopeFactory>());
+        Assert.Equal(0, actualScopes.ManagerCount);
+
+        // 只注册和验证容器时没有运行期参与者。若辅助方法提前解析了服务，冻结快照会暴露它，
+        // 无需把全部 ServiceDescriptor 或私有方法名称复制到测试中。
+        var snapshot = actualParticipants.Freeze();
+        Assert.Null(snapshot.Workflow);
+        Assert.Null(snapshot.Commands);
+        Assert.Null(snapshot.Lifecycles);
+        Assert.Null(snapshot.States);
+        Assert.Null(snapshot.Workspace);
+        Assert.Null(snapshot.Documents);
+        Assert.Null(snapshot.Layout);
+    }
+
+    [Fact]
+    public void V17关闭端口和工作区Factory复用实际登记实例()
+    {
+        using var context = new TestHostContext();
+        var provider = context.Provider;
+        var workflow = provider.GetRequiredService<WorkflowActionRunManager>();
+        var commands = provider.GetRequiredService<WorkbenchCommandExecutor>();
+        var documents = provider.GetRequiredService<DocumentOperationGate>();
+        var states = provider.GetRequiredService<PluginLifecycleStateStore>();
+
+        Assert.Same(workflow, provider.GetRequiredService<IWorkflowActionShutdownParticipant>());
+        Assert.Same(commands, provider.GetRequiredService<IWorkbenchCommandShutdownParticipant>());
+        Assert.Same(context.Workspace.DockFactory, provider.GetRequiredService<HostDockFactory>());
+        var snapshot = provider.GetRequiredService<HostShutdownParticipants>().Freeze();
+        Assert.Same(workflow, snapshot.Workflow);
+        Assert.Same(commands, snapshot.Commands);
+        Assert.Same(documents, snapshot.Documents);
+        Assert.Same(states, snapshot.States);
+        Assert.Same(context.Workspace, snapshot.Workspace);
+    }
+
     [Fact]
     public void 宿主服务可在作用域和构建验证开启时解析()
     {
