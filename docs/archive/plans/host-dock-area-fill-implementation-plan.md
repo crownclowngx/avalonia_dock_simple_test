@@ -1,10 +1,12 @@
 # Dock 区域默认居中停靠实施计划
 
-> 用途：主项目实施方案与验收跟踪。状态：区域 Fill 旧版已部署；后续跨窗布局修复已接入源码，真实桌面与新部署待补；核对日期：2026-09-17。实际维护入口见[专项指南](../maintenance/dock-area-fill-verification.md)，此前 verify、独立缓存重建及产物身份见[开发证据](../archive/records/dock-area-fill/development-evidence.json)。不执行 AIFLOW、Windows CI 或发布门禁。
+> 归档更新（2026-09-20）：本文保留原阶段方案、操作和验证快照；正文中的“本轮”“未执行”“待验收”指原记录时间。当前 Host 人工验收已由项目所有者确认通过，见[统一验收记录](../records/host/manual-acceptance-20260920.md)；后续候选与发布事项见[待办](../../roadmap/README.md)，现行操作从[文档导航](../../README.md)进入。
+
+> 用途：主项目实施方案与验收跟踪。状态：区域 Fill 旧版已部署；后续跨窗布局修复已接入源码，真实桌面与新部署待补；核对日期：2026-09-17。实际维护入口见[专项指南](../../maintenance/dock-area-fill-verification.md)，此前 verify、独立缓存重建及产物身份见[开发证据](../records/dock-area-fill/development-evidence.json)。不执行 AIFLOW、Windows CI 或发布门禁。
 
 ## 1. 目标与完成定义
 
-2026-09-17 状态补充：安装版的跨窗布局崩溃已按[专项方案](host-document-cross-window-layout-crash-fix-plan.md)实施路线 B。结果以[新证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)为准；下文原有完成勾选和旧部署证据不代表新修复已安装或真实桌面已验收。
+2026-09-17 状态补充：安装版的跨窗布局崩溃已按[专项方案](host-document-cross-window-layout-crash-fix-plan.md)实施路线 B。结果以[新证据](../records/dock-area-fill/cross-window-layout-fix-evidence.json)为准；下文原有完成勾选和旧部署证据不代表新修复已安装或真实桌面已验收。
 
 解决浮动窗口回停时必须精确命中中央小按钮、按钮被浮窗遮挡后难以操作的问题。
 
@@ -39,13 +41,13 @@
 ### 2.2 保留现有项目语义
 
 - Tool → Tool、浮窗内部的方向分割保持局部布局。
-- Tool → 主窗口 DocumentDock（含文档子组）的上、下分割保留现有全宽兼容策略；不能把所有方向预览统一写成当前分组的一半。对应实现见 [HostDockFactory](../../Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs) 与 [ToolDockCoordinator](../../Host/MyAvaloniaManagement/Business/Layout/ToolDockCoordinator.cs)。
+- Tool → 主窗口 DocumentDock（含文档子组）的上、下分割保留现有全宽兼容策略；不能把所有方向预览统一写成当前分组的一半。对应实现见 [HostDockFactory](../../../Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs) 与 [ToolDockCoordinator](../../../Host/MyAvaloniaManagement/Business/Layout/ToolDockCoordinator.cs)。
 - 中央回退遵守 Dock 原有的 Document / Tool 类型和分组约束，不主动放宽 `CanDockAsDocument` 等能力。
 - 主窗口固定布局骨架不能被当作可移动业务项；内容全屏期间的迁移限制保持有效。
 - 运行时 Document 实例与编辑状态必须保留；Layout V3 仍只恢复工具，不跨启动重开 Document，不保存文档路径或内容。
 - 浮窗回停后的外壳回收交给现有框架与 Host 适配协议，不将回停实现成关闭再新建页面。
 
-权威边界见 [浮窗使用指南](../quick-start/floating-windows-and-layout.md)、[Layout V3](../reference/dock-layout-snapshot-v3.md)、[Host 兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)。
+权威边界见 [浮窗使用指南](../../quick-start/floating-windows-and-layout.md)、[Layout V3](../../reference/dock-layout-snapshot-v3.md)、[Host 兼容约束](../../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)。
 
 ### 2.3 首版范围
 
@@ -59,13 +61,13 @@
 
 | 项目 | 本次核对值 / 入口 |
 | --- | --- |
-| .NET / Avalonia / Dock | `10.0.302` / `12.1.2` / `12.1.0.6`；见 [集中基线](../reference/platform-baseline.md) |
+| .NET / Avalonia / Dock | `10.0.302` / `12.1.2` / `12.1.0.6`；见 [集中基线](../../reference/platform-baseline.md) |
 | Dock 包源码提交 | `cc08602d02fde1b85067cec064da29f34785e505`；来自当前 Dock.Avalonia 包的 nuspec |
-| 依赖版本与锁定 | [Directory.Version.props](../../Directory.Version.props)、[Directory.Packages.props](../../Directory.Packages.props)、受影响项目的 `packages.lock.json` |
-| 主窗口 DockControl | [MainView.axaml](../../Host/MyAvaloniaManagement/Views/MainView.axaml) |
-| 浮窗及其 DockControl | [HostFloatingWindow.cs](../../Host/MyAvaloniaManagement/Views/HostFloatingWindow.cs) |
-| 全局主题接入 | [App.axaml](../../Host/MyAvaloniaManagement/App.axaml) |
-| 移动、分割和关闭适配 | [HostDockFactory.cs](../../Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs) |
+| 依赖版本与锁定 | [Directory.Version.props](../../../Directory.Version.props)、[Directory.Packages.props](../../../Directory.Packages.props)、受影响项目的 `packages.lock.json` |
+| 主窗口 DockControl | [MainView.axaml](../../../Host/MyAvaloniaManagement/Views/MainView.axaml) |
+| 浮窗及其 DockControl | [HostFloatingWindow.cs](../../../Host/MyAvaloniaManagement/Views/HostFloatingWindow.cs) |
+| 全局主题接入 | [App.axaml](../../../Host/MyAvaloniaManagement/App.axaml) |
+| 移动、分割和关闭适配 | [HostDockFactory.cs](../../../Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs) |
 
 以实际开始实施时的工作树和已还原包为准。若版本发生变化，先重新核对源码入口、现有能力及补丁适用性，不能直接套用行号。
 
@@ -73,7 +75,7 @@
 
 原始基线的 `DockTargetBase` 通过选择按钮判断操作，未命中时局部目标默认返回 `Window`。框架的整区 indicator-only 模式会隐藏选择按钮，不能直接满足“区域 Fill 与方向按钮并存”。内部 `AdornerHelper<DockTarget>` 直接创建目标实例，单纯继承一个 Host 控件不足以替换整条调用链。
 
-采用固定上游提交上的补丁，修改集中在 `Dock.Avalonia`，由宿主样式开启。已在局部 `DockTarget` 声明 `FillOnAreaDrop` 属性，默认 `false`，不扩散到 `GlobalDockTarget`、Plugin SDK 或布局 schema。已实现类型及构建差异见[补丁说明](../../patches/dock-area-fill/README.md)。
+采用固定上游提交上的补丁，修改集中在 `Dock.Avalonia`，由宿主样式开启。已在局部 `DockTarget` 声明 `FillOnAreaDrop` 属性，默认 `false`，不扩散到 `GlobalDockTarget`、Plugin SDK 或布局 schema。已实现类型及构建差异见[补丁说明](../../../patches/dock-area-fill/README.md)。
 
 不要仅把 `DefaultDockOperation` 改成 Fill：这不足以完成目标权限、区域边界、明确拒绝、预览和提交的一致性。也不要扩大中央 selector 的矩形覆盖其他按钮。
 
@@ -164,7 +166,7 @@
 - 在 App 样式为局部 DockTarget 开启 `FillOnAreaDrop`，覆盖主窗口和浮窗。关闭属性后可恢复原按钮命中行为。
 - 新增能力只属于 Host 的 Dock 实现。Plugin SDK、插件模板、manifest 和 Layout V3 不为本交互增加配置字段。
 
-实际产物变化会影响 Host 指纹和兼容证据，应按 [插件兼容验证](../maintenance/plugin-compatibility-verification.md) 重新生成适用结果，不复用旧 DLL 哈希的报告。补丁包本地消费不等同于公共 NuGet 发布。
+实际产物变化会影响 Host 指纹和兼容证据，应按 [插件兼容验证](../../maintenance/plugin-compatibility-verification.md) 重新生成适用结果，不复用旧 DLL 哈希的报告。补丁包本地消费不等同于公共 NuGet 发布。
 
 ## 6. 按阶段执行
 
@@ -302,4 +304,4 @@ finally {
 - [ ] 完整 Gate 结果、桌面矩阵与未完成事项，状态分别登记。
 - [ ] 补丁及 Host 实际产物身份、兼容证据适用范围和回退步骤。
 
-本计划当前只有文档交付完成。实现、自动化、桌面、部署、公开发布的状态不得互相代替；集中状态见 [待办与验收](README.md)。
+本计划当前只有文档交付完成。实现、自动化、桌面、部署、公开发布的状态不得互相代替；集中状态见 [待办与验收](../../roadmap/README.md)。

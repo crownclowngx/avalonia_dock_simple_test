@@ -1,7 +1,9 @@
 # V12 Host 内部重构开发验证
 
-> 用途：为 [V12 重构方案](../roadmap/host-v12-internal-refactor-plan.md)提供专项测试矩阵、开发门禁与证据规范。
-> 状态：P0–P3 专项验证已执行；结果见[开发记录](../archive/records/host-v12/development-acceptance.md)，完整 verify 见[最终开发证据](../archive/records/host-v12/final-development-evidence.json)。核对日期：2026-09-17。
+> 当前状态（2026-09-20）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260920.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
+
+> 用途：为 [V12 重构方案](../archive/plans/host-v12-internal-refactor-plan.md)提供专项测试矩阵、开发门禁与证据规范。
+> 状态：P0–P3 专项验证已执行；结果见[开发记录](../archive/records/host-v12/development-acceptance.md)，完整 verify 见[最终开发证据](../archive/records/host-v12/final-development-evidence.json)。核对日期：2026-09-20。
 > 事实源：现有 Host 测试、[Gate 执行图](../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs)、[Gate 配置](../../tools/MyAvaloniaManagement.Gate/gate.config.json)与[主仓验证](verification.md)。
 
 ## 1. 验证边界
@@ -146,7 +148,7 @@ Gate 当前只检查三个 README 的本仓文件链接。V12 专项文档和开
 
 实施后的本地交互建议覆盖：打开菜单与命令面板、切换同名页面、浮窗最小化后定位、隐藏／显示工具、关闭取消和退出。Headless 可以验证窗口协议，但不证明原生鼠标、焦点、多屏 DPI 或外部业务。
 
-真实桌面项目逐项记录已观察／失败／未执行及原因；缺环境时保留待验收，不启动发布 Smoke 替代。本轮不要求清理或重做历史 V11 桌面待办，也不把外部插件业务验证变为本仓开发构建的隐含前提。
+真实桌面项目逐项记录已观察／失败／未执行及原因；缺环境时保留待验收，不启动发布 Smoke 替代。当前 Host 人工验收结论见页首确认，历史 V11 待办已统一收口；外部插件业务验证仍不作为本仓开发构建的隐含前提。
 
 ## 9. 本轮矩阵与实际测试对应
 

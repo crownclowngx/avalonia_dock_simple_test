@@ -1,6 +1,6 @@
 # 插件启用与禁用契约
 
-> 状态：V13 已实现，重启 Host 生效。日期：2026-09-19。开发结果见[开发记录](../archive/records/host-v13/development-acceptance.md)及其 JSON 证据；原生桌面与外部业务验收单独记录。
+> 状态：V13 已实现，重启 Host 生效。核对日期：2026-09-20。开发结果见[开发记录](../archive/records/host-v13/development-acceptance.md)及其 JSON 证据；Host 人工验收已由所有者[确认通过](../archive/records/host/manual-acceptance-20260920.md)，外部专有业务由对应仓库记录。
 
 ## 用户行为
 

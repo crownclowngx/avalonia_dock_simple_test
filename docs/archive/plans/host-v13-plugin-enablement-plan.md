@@ -1,10 +1,12 @@
 # V13：插件启用与禁用（重启生效）实施计划
 
+> 归档更新（2026-09-20）：本文保留原阶段方案、操作和验证快照；正文中的“本轮”“未执行”“待验收”指原记录时间。当前 Host 人工验收已由项目所有者确认通过，见[统一验收记录](../records/host/manual-acceptance-20260920.md)；后续候选与发布事项见[待办](../../roadmap/README.md)，现行操作从[文档导航](../../README.md)进入。
+
 > 用途：规定 Host 插件开关的行为、职责边界、实施阶段及开发验收条件。
-> 状态：P0–P4 实现与专项、P5 文档已完成；最终完整开发 verify 的结果见[开发记录](../archive/records/host-v13/development-acceptance.md)中的 JSON。原生桌面待验收。日期：2026-09-19。
+> 状态：P0–P4 实现与专项、P5 文档已完成；最终完整开发 verify 的结果见[开发记录](../records/host-v13/development-acceptance.md)中的 JSON。原生桌面待验收。日期：2026-09-19。
 > 调研基线：`58d7bee` 及当时已有未提交修改；正式实施前重新记录工作树身份，不能仅用该提交代表实际源码。
 > V13 是 Host 改造序号，不改变产品、程序集、SDK 或 NuGet 版本。新增开关文件独立使用 schema 1，不改变 manifest V2、Document V2 或 Layout V3。
-> 专项测试矩阵、执行命令与证据要求见 [V13 专用开发验证](../maintenance/host-v13-plugin-enablement-verification.md)。
+> 专项测试矩阵、执行命令与证据要求见 [V13 专用开发验证](../../maintenance/host-v13-plugin-enablement-verification.md)。
 
 ## 1. 目标与实施边界
 
@@ -50,15 +52,15 @@ SOLID 是设计、实施和审查的首要规定。每个新增组件都应解�
 
 | 当前入口 | 现状与 V13 处理 |
 | --- | --- |
-| [HostRuntime](../../Host/MyAvaloniaManagement/Business/Composition/HostRuntime.cs) | 在建立插件 Catalog 前执行发现；此处读取并冻结启动设置，将同一份结果交给发现和看板服务 |
-| [AssemblyLoaderHelper](../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/AssemblyLoaderHelper.cs) | 先扫描全部清单并检查重复身份，再预检及加载；在身份检查后、兼容加载前应用开关 |
-| [PluginDiscoverySnapshot](../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/AssemblyLoaderHelper.cs) | 当前主要保存已加载程序集、类型与诊断；补充不依赖 Assembly 的候选记录，使禁用及失败候选仍可查询 |
-| [PluginLoadContext](../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/PluginLoadContext.cs) | 明确使用不可回收加载上下文，继续保持重启更新语义 |
-| [PluginStatusQuery](../../Host/MyAvaloniaManagement/Business/PluginStatus/PluginStatusQuery.cs) | 当前组合 Registry、Availability 和诊断；补充发现记录及启动/已保存设置，保持 Capture 无副作用 |
-| [插件看板 ViewModel](../../Host/MyAvaloniaManagement/ViewModels/PluginStatus/PluginStatusWindowViewModel.cs) 与 [View](../../Host/MyAvaloniaManagement/Views/PluginStatus/PluginStatusWindow.axaml) | 在现有概览中添加下次启动开关、保存反馈、待重启说明及筛选 |
-| [PluginDashboardEvidence](../../Host/MyAvaloniaManagement/Business/Compatibility/PluginDashboardEvidence.cs) | 当前从 Registry 的已加载插件取得目录；扩展为也能检查未加载候选的磁盘产物，区分检查结论 |
-| [HostDataRootPolicy](../../Host/MyAvaloniaManagement/Business/Storage/HostDataRootPolicy.cs) | 沿用数据根及 MYAVALONIA_DATA_DIRECTORY，不再另选存储目录 |
-| [DockLayoutTree](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutTree.cs) 与 [ToolCenterPreferencesStore](../../Host/MyAvaloniaManagement/Business/ToolCenter/ToolCenterPreferencesStore.cs) | 已保留缺失插件的工具布局与偏好；复用并验证禁用/再启用往返 |
+| [HostRuntime](../../../Host/MyAvaloniaManagement/Business/Composition/HostRuntime.cs) | 在建立插件 Catalog 前执行发现；此处读取并冻结启动设置，将同一份结果交给发现和看板服务 |
+| [AssemblyLoaderHelper](../../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/AssemblyLoaderHelper.cs) | 先扫描全部清单并检查重复身份，再预检及加载；在身份检查后、兼容加载前应用开关 |
+| [PluginDiscoverySnapshot](../../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/AssemblyLoaderHelper.cs) | 当前主要保存已加载程序集、类型与诊断；补充不依赖 Assembly 的候选记录，使禁用及失败候选仍可查询 |
+| [PluginLoadContext](../../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/PluginLoadContext.cs) | 明确使用不可回收加载上下文，继续保持重启更新语义 |
+| [PluginStatusQuery](../../../Host/MyAvaloniaManagement/Business/PluginStatus/PluginStatusQuery.cs) | 当前组合 Registry、Availability 和诊断；补充发现记录及启动/已保存设置，保持 Capture 无副作用 |
+| [插件看板 ViewModel](../../../Host/MyAvaloniaManagement/ViewModels/PluginStatus/PluginStatusWindowViewModel.cs) 与 [View](../../../Host/MyAvaloniaManagement/Views/PluginStatus/PluginStatusWindow.axaml) | 在现有概览中添加下次启动开关、保存反馈、待重启说明及筛选 |
+| [PluginDashboardEvidence](../../../Host/MyAvaloniaManagement/Business/Compatibility/PluginDashboardEvidence.cs) | 当前从 Registry 的已加载插件取得目录；扩展为也能检查未加载候选的磁盘产物，区分检查结论 |
+| [HostDataRootPolicy](../../../Host/MyAvaloniaManagement/Business/Storage/HostDataRootPolicy.cs) | 沿用数据根及 MYAVALONIA_DATA_DIRECTORY，不再另选存储目录 |
+| [DockLayoutTree](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutTree.cs) 与 [ToolCenterPreferencesStore](../../../Host/MyAvaloniaManagement/Business/ToolCenter/ToolCenterPreferencesStore.cs) | 已保留缺失插件的工具布局与偏好；复用并验证禁用/再启用往返 |
 
 ## 4. 行为契约与状态所有权
 
@@ -166,19 +168,19 @@ SOLID 是设计、实施和审查的首要规定。每个新增组件都应解�
 
 ## 8. 文档交付与同步清单
 
-实施记录及实际测试映射见[开发记录](../archive/records/host-v13/development-acceptance.md)，现行行为以[插件开关契约](../reference/plugin-enablement.md)为准。下表为本轮同步清单。
+实施记录及实际测试映射见[开发记录](../records/host-v13/development-acceptance.md)，现行行为以[插件开关契约](../../reference/plugin-enablement.md)为准。下表为本轮同步清单。
 
 已同步：
 
 | 文档 | 需更新内容 |
 | --- | --- |
-| [插件看板使用指南](../quick-start/plugin-status.md) | 开关位置、当前/下次状态、手动重启、保存失败、已禁用/待重启筛选；修订现有“不启停”表述的具体边界 |
-| [插件开关契约](../reference/plugin-enablement.md) | 实施后作为开关行为、配置格式、缓存及错误恢复的权威契约，避免长期重复维护计划与实现说明 |
-| [内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)、[兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md) | 启动过滤、状态所有权、窄操作端口、SDK 不变及重启语义 |
-| [插件兼容证据契约](../reference/plugin-compatibility.md) 与 [开发验证](../maintenance/plugin-compatibility-verification.md) | 未加载产物的磁盘检查与当前会话程序集证据区别 |
-| [浮窗与布局指南](../quick-start/floating-windows-and-layout.md)、[工具中心](../quick-start/tool-center.md) | 禁用期间保留偏好、再启用恢复，以及 Document 的既有边界 |
+| [插件看板使用指南](../../quick-start/plugin-status.md) | 开关位置、当前/下次状态、手动重启、保存失败、已禁用/待重启筛选；修订现有“不启停”表述的具体边界 |
+| [插件开关契约](../../reference/plugin-enablement.md) | 实施后作为开关行为、配置格式、缓存及错误恢复的权威契约，避免长期重复维护计划与实现说明 |
+| [内部架构](../../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)、[兼容约束](../../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md) | 启动过滤、状态所有权、窄操作端口、SDK 不变及重启语义 |
+| [插件兼容证据契约](../../reference/plugin-compatibility.md) 与 [开发验证](../../maintenance/plugin-compatibility-verification.md) | 未加载产物的磁盘检查与当前会话程序集证据区别 |
+| [浮窗与布局指南](../../quick-start/floating-windows-and-layout.md)、[工具中心](../../quick-start/tool-center.md) | 禁用期间保留偏好、再启用恢复，以及 Document 的既有边界 |
 | 本计划、专用开发验证、总导航、待办及 Host 入口 | 阶段实际状态、测试映射、维护契约与结果链接 |
-| [开发记录](../archive/records/host-v13/development-acceptance.md)和同目录 JSON | 实际取舍、命令、源码身份、TRX、Gate 结果和桌面观察；完成后接入归档导航 |
+| [开发记录](../records/host-v13/development-acceptance.md)和同目录 JSON | 实际取舍、命令、源码身份、TRX、Gate 结果和桌面观察；完成后接入归档导航 |
 
 上述契约与记录已建立。API/模板/业务插件契约未改变，不机械提升版本；最终门禁结论仅由实际 JSON 结果决定。
 

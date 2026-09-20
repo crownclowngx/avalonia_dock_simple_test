@@ -1,8 +1,10 @@
 # V13 插件启用与禁用开发记录
 
+> 后续确认（2026-09-20）：当前 Host 人工验收已由项目所有者实际手工使用后[确认通过](../host/manual-acceptance-20260920.md)；历次本机交付见[部署索引](../../../maintenance/local-deployment.md)。下文与相邻 JSON 保留原阶段事实，“未执行／待验收／未部署”均指当时状态。外部业务与发布事项由[现行待办](../../../roadmap/README.md)继续跟踪。
+
 > 日期：2026-09-19；分支：master；起点：58d7bee8957f0fc54ae69e412b6ee45ae7457556 及已有未提交修改。
 > 实现、专项及文档已完成；Markdown 定稿后执行最终本地 verify，最终判定、计数与源码/产物身份仅回填 [final-development-evidence.json](final-development-evidence.json)。本页不代替最终门禁结果。
-> 入口：[实施计划](../../../roadmap/host-v13-plugin-enablement-plan.md)、[行为契约](../../../reference/plugin-enablement.md)、[专用验证](../../../maintenance/host-v13-plugin-enablement-verification.md)。
+> 入口：[实施计划](../../plans/host-v13-plugin-enablement-plan.md)、[行为契约](../../../reference/plugin-enablement.md)、[专用验证](../../../maintenance/host-v13-plugin-enablement-verification.md)。
 
 ## 实际交付与设计审查
 

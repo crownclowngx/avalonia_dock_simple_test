@@ -2,11 +2,13 @@
 
 MyAvaloniaManagement 是基于 .NET 10、Avalonia 和 Dock 的模块化桌面工作台。Host 提供停靠工作区、文件打开与保存、插件生命周期和诊断；业务能力由内部可信 Managed Plugin 贡献。
 
-> 当前说明，核对日期：2026-09-16。版本以 [Directory.Version.props](Directory.Version.props) 为准；操作与维护入口统一见[文档导航](docs/README.md)。
+> 当前说明，核对日期：2026-09-20。版本以 [Directory.Version.props](Directory.Version.props) 为准；操作与维护入口统一见[文档导航](docs/README.md)。
 
-当前产品版本为 `3.0.0`，六个自有 NuGet 包统一为 `3.4.1`，Avalonia / Dock 基线为 `12.1.2` / `12.1.0.6`。Host 的 Dock 呈现层使用[可重建区域回停补丁](patches/dock-area-fill/README.md) `12.1.0.7-area.5`。包发布状态、最低兼容版本与数据格式分别说明，见[版本与交付边界](docs/reference/platform-baseline.md)。
+当前产品版本为 `3.0.0`，六个自有 NuGet 包统一为 `3.4.1`，Avalonia / Dock 基线为 `12.1.2` / `12.1.0.6`。Host 的 Avalonia.Base 使用[跨窗布局运行时补丁](patches/avalonia-cross-window-layout/README.md) `12.1.2-host-layout.1`；Dock 呈现层使用[可重建区域回停补丁](patches/dock-area-fill/README.md) `12.1.0.7-area.5`。包发布状态、最低兼容版本与数据格式分别说明，见[版本与交付边界](docs/reference/platform-baseline.md)。
 
 正式支持范围为 Windows x64、同一团队维护的可信进程内插件。更新插件需要退出 Host、整体替换插件目录并重新启动；不提供插件沙箱、在线市场或热卸载。macOS 仍为[实验路径](docs/quick-start/macos-experiment.md)。
+
+当前 Host 已完成至 V17 的实现，项目所有者手工使用后[确认人工验收通过](docs/archive/records/host/manual-acceptance-20260920.md)。最新已记录交付与历次部署见[本机部署](docs/maintenance/local-deployment.md)。
 
 ## 最短启动步骤
 
@@ -43,7 +45,7 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 - 使用工作台：[功能、页面与工具搜索](docs/quick-start/workbench-search.md)、[浮动窗口与布局恢复](docs/quick-start/floating-windows-and-layout.md)。
 - 开发独立插件：[Managed Plugin 快速开始](docs/quick-start/README.md)。
 - 维护 Host：[内部架构与兼容约束](Host/MyAvaloniaManagement/docs/README.md)。
-- 查看未完成工作：[待办与验收](docs/roadmap/README.md)。
+- 查看未完成工作：[待办与候选](docs/roadmap/README.md)。
 - 查找过去的决策、失败与发布证据：[历史归档](docs/archive/README.md)。
 
 ## 仓库结构

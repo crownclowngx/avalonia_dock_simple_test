@@ -1,10 +1,12 @@
 # V16：Document 浮窗关闭与新建位置方案
 
+> 归档更新（2026-09-20）：本文保留原阶段方案、操作和验证快照；正文中的“本轮”“未执行”“待验收”指原记录时间。当前 Host 人工验收已由项目所有者确认通过，见[统一验收记录](../records/host/manual-acceptance-20260920.md)；后续候选与发布事项见[待办](../../roadmap/README.md)，现行操作从[文档导航](../../README.md)进入。
+
 > 用途：规定最后一个 Document 关闭后的浮窗回收，以及命令面板中新建文档的窗口与分组归属。
-> 状态：P0–P2 实现和专项已完成；P3/P4 的最终本地门禁证据见[开发记录](../archive/records/host-v16/development-acceptance.md)。原生桌面 M01–M08 未执行。日期：2026-09-20。
+> 状态：P0–P2 实现和专项已完成；P3/P4 的最终本地门禁证据见[开发记录](../records/host-v16/development-acceptance.md)。原生桌面 M01–M08 未执行。日期：2026-09-20。
 > 调研基线：`61ff50cf077b39b6f41debd25a4ec255e60bb7d4`；本页第 2 节保留修复前事实用于追溯，实际实现见第 8 节及开发记录。
 > V16 是 Host 改造序号，不代表产品、程序集、SDK、NuGet 或持久化格式版本升级。
-> 专用测试矩阵、实际测试映射、开发命令与证据要求见 [V16 专用开发验证](../maintenance/host-v16-document-window-verification.md)。自动化通过不能替代原生黑框和焦点体验验收。
+> 专用测试矩阵、实际测试映射、开发命令与证据要求见 [V16 专用开发验证](../../maintenance/host-v16-document-window-verification.md)。自动化通过不能替代原生黑框和焦点体验验收。
 
 ## 1. 问题与目标
 
@@ -32,16 +34,16 @@
 
 | 位置 | 当前事实 | 设计影响 |
 | --- | --- | --- |
-| [HostFloatingWindow](../../Host/MyAvaloniaManagement/Views/HostFloatingWindow.cs) | 每个浮窗组合自己的命令面板覆盖层；窗口关闭有 Busy 和取消保护 | 面板展示位置已经支持浮窗，不能通过重新创建一套面板解决文档落点问题 |
-| [WorkbenchWindowContext](../../Host/MyAvaloniaManagement/Business/Presentation/WorkbenchWindowContext.cs) | 登记主窗与浮窗，记录活动窗口、交互 Owner 和唯一面板会话 | 可复用窗口身份；对话框 Owner 与文档插入位置仍是两种不同职责 |
-| [WorkspacePaletteActions](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkspacePaletteActions.cs) | 功能入口调用文档创建用例，没有携带本次目标窗口或文档组 | 必须把来源传过异步创建链，不能只调整遮罩位置 |
-| [DocumentPersistenceCoordinator](../../Host/MyAvaloniaManagement/Business/Documents/DocumentPersistenceCoordinator.cs) | 创建用例经过现有串行门，再调用工作区创建并发布 | 目标应在进入等待之前捕获，不能在串行门内重新读取活动窗口 |
-| [WorkspaceSession](../../Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.cs) | `PublishDocument` 固定使用主 `_documentDock`，并承担发布回滚和文档所有权 | 修改发布目标时必须保持原子发布、活动项通知及失败释放语义 |
-| [HostDockFactory](../../Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs) | 仅最后一个 Tool 经 `TryCloseLastToolWindow` 转入窗口关闭，Document 仍走普通关闭 | 需要补齐最后一个 Document 的关闭入口及重入边界，不能直接照搬 Tool 的隐藏语义 |
-| [DockWindowCloseCoordinator](../../Host/MyAvaloniaManagement/Business/Docking/DockWindowCloseCoordinator.cs) | 首次关闭先否决，完成异步范围确认后再排队重试；窗口移除、内容变化使旧请求失效 | 窗口模型不能在关闭尚未获准时提前解除 |
-| [DocumentCloseCoordinator](../../Host/MyAvaloniaManagement/Business/Documents/DocumentCloseCoordinator.cs) | 单页及范围关闭复用一次性许可、命令排空和取消恢复 | 不新增一套保存询问，不重复释放 Scope，不让关闭协调互相等待 |
+| [HostFloatingWindow](../../../Host/MyAvaloniaManagement/Views/HostFloatingWindow.cs) | 每个浮窗组合自己的命令面板覆盖层；窗口关闭有 Busy 和取消保护 | 面板展示位置已经支持浮窗，不能通过重新创建一套面板解决文档落点问题 |
+| [WorkbenchWindowContext](../../../Host/MyAvaloniaManagement/Business/Presentation/WorkbenchWindowContext.cs) | 登记主窗与浮窗，记录活动窗口、交互 Owner 和唯一面板会话 | 可复用窗口身份；对话框 Owner 与文档插入位置仍是两种不同职责 |
+| [WorkspacePaletteActions](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkspacePaletteActions.cs) | 功能入口调用文档创建用例，没有携带本次目标窗口或文档组 | 必须把来源传过异步创建链，不能只调整遮罩位置 |
+| [DocumentPersistenceCoordinator](../../../Host/MyAvaloniaManagement/Business/Documents/DocumentPersistenceCoordinator.cs) | 创建用例经过现有串行门，再调用工作区创建并发布 | 目标应在进入等待之前捕获，不能在串行门内重新读取活动窗口 |
+| [WorkspaceSession](../../../Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.cs) | `PublishDocument` 固定使用主 `_documentDock`，并承担发布回滚和文档所有权 | 修改发布目标时必须保持原子发布、活动项通知及失败释放语义 |
+| [HostDockFactory](../../../Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs) | 仅最后一个 Tool 经 `TryCloseLastToolWindow` 转入窗口关闭，Document 仍走普通关闭 | 需要补齐最后一个 Document 的关闭入口及重入边界，不能直接照搬 Tool 的隐藏语义 |
+| [DockWindowCloseCoordinator](../../../Host/MyAvaloniaManagement/Business/Docking/DockWindowCloseCoordinator.cs) | 首次关闭先否决，完成异步范围确认后再排队重试；窗口移除、内容变化使旧请求失效 | 窗口模型不能在关闭尚未获准时提前解除 |
+| [DocumentCloseCoordinator](../../../Host/MyAvaloniaManagement/Business/Documents/DocumentCloseCoordinator.cs) | 单页及范围关闭复用一次性许可、命令排空和取消恢复 | 不新增一套保存询问，不重复释放 Scope，不让关闭协调互相等待 |
 
-按 [Dock 固定基线](../../patches/dock-area-fill/baseline.json) 对应源码，普通文档关闭会经过 `RemoveDockable`、空组折叠及 `RemoveWindow`。`RemoveWindow` 在调用 `window.Exit()` 后继续解除模型引用；底层 HostAdapter 也会解除 Host 引用，无法表达宿主异步确认产生的“原生关闭暂时被取消”。宿主收到窗口移除通知又会撤销待重试许可。这条静态调用链可以解释内容已拆除、原生窗口仍存活的空壳现象。
+按 [Dock 固定基线](../../../patches/dock-area-fill/baseline.json) 对应源码，普通文档关闭会经过 `RemoveDockable`、空组折叠及 `RemoveWindow`。`RemoveWindow` 在调用 `window.Exit()` 后继续解除模型引用；底层 HostAdapter 也会解除 Host 引用，无法表达宿主异步确认产生的“原生关闭暂时被取消”。宿主收到窗口移除通知又会撤销待重试许可。这条静态调用链可以解释内容已拆除、原生窗口仍存活的空壳现象。
 
 P0 已通过真实标签按钮和命令面板输入建立两个失败的 Headless 行为断言，记录在 `docs/archive/records/host-v16/p0-red-evidence.json`。Document 标签模板只执行一次关闭命令，没有 ToolChrome 的 Click/Command 联动，故未添加 Document 按钮拦截。原生黑框仍未实测。参考 [V11-P2 Tool 浮窗修复](host-v11-p2-tool-window-close-fix-plan.md)，本次不倒写该历史记录。
 
@@ -193,20 +195,20 @@ P1 与 P2 应各自形成可审查、可独立验证的变更，之后做组合�
 
 ## 9. 文档同步与最终交付
 
-本次已同步本方案、[专用开发验证](../maintenance/host-v16-document-window-verification.md)、总导航、待办导航、Host 文档入口、开发验证入口及受影响的现行契约。原生桌面状态与已实现行为分开记录。
+本次已同步本方案、[专用开发验证](../../maintenance/host-v16-document-window-verification.md)、总导航、待办导航、Host 文档入口、开发验证入口及受影响的现行契约。原生桌面状态与已实现行为分开记录。
 
 文档收口范围如下：
 
 | 文档 | 更新内容 |
 | --- | --- |
-| [浮动窗口与布局恢复](../quick-start/floating-windows-and-layout.md) | 最后 Document、混合浮窗、取消和窗口回收 |
-| [工作区搜索](../quick-start/workbench-search.md) | 新建落在来源窗口/活动组、纯工具浮窗回退和已有页面定位差异 |
-| [Workbench Command 契约](../reference/workbench-commands.md) | 说明仅功能新建使用新的内部落点规则，普通命令目标语义保持原状 |
-| [Document 持久化](../reference/document-persistence.md) | 如内部发布入口描述受影响，更新提交/回滚说明；文件格式不变 |
-| [Layout V3](../reference/dock-layout-snapshot-v3.md) | 核对工具布局和纯文档浮窗边界；只有正文受影响时更新，不制造格式升级 |
-| [Host 架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)、[兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md) | 目标传递、关闭顺序、所有权、SOLID 和中文注释要求 |
+| [浮动窗口与布局恢复](../../quick-start/floating-windows-and-layout.md) | 最后 Document、混合浮窗、取消和窗口回收 |
+| [工作区搜索](../../quick-start/workbench-search.md) | 新建落在来源窗口/活动组、纯工具浮窗回退和已有页面定位差异 |
+| [Workbench Command 契约](../../reference/workbench-commands.md) | 说明仅功能新建使用新的内部落点规则，普通命令目标语义保持原状 |
+| [Document 持久化](../../reference/document-persistence.md) | 如内部发布入口描述受影响，更新提交/回滚说明；文件格式不变 |
+| [Layout V3](../../reference/dock-layout-snapshot-v3.md) | 核对工具布局和纯文档浮窗边界；只有正文受影响时更新，不制造格式升级 |
+| [Host 架构](../../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)、[兼容约束](../../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md) | 目标传递、关闭顺序、所有权、SOLID 和中文注释要求 |
 | 本方案、专用验证及各导航 | 按真实阶段更新状态、实际测试类及命令，不将计划测试写成已通过 |
 
-按惯例新增[开发验收记录](../archive/records/host-v16/development-acceptance.md)，最终运行后写入同目录 `final-development-evidence.json`，包含源码 HEAD、输入身份、命令、TRX、Gate 摘要、原生矩阵和未执行范围。最终 JSON 不参与帮助嵌入，避免验收结果本身反复改变已验证的资源输入。Layout V3 正文已核对，其工具布局及纯文档浮窗边界没有改变，无需修改格式说明。
+按惯例新增[开发验收记录](../records/host-v16/development-acceptance.md)，最终运行后写入同目录 `final-development-evidence.json`，包含源码 HEAD、输入身份、命令、TRX、Gate 摘要、原生矩阵和未执行范围。最终 JSON 不参与帮助嵌入，避免验收结果本身反复改变已验证的资源输入。Layout V3 正文已核对，其工具布局及纯文档浮窗边界没有改变，无需修改格式说明。
 
 开发完成的最低条件是两个问题的回归、完整本地 verify 和文档同步均有证据。若原生桌面未验收，明确标记待验收；不得仅凭 Headless 通过宣布真实黑框及焦点体验已经全部解决。部署和发布须另行执行及记录。

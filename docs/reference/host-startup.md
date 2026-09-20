@@ -1,7 +1,7 @@
 # V15 启动引导与进度契约
 
 > 用途：说明已接入的启动行为、进度含义及线程和所有权边界。核对日期：2026-09-20。
-> 实际开发验证与未验收范围见[开发记录](../archive/records/host-v15/development-acceptance.md)和[专用验证](../maintenance/host-v15-startup-verification.md)。本页不表示安装目录已经更新。
+> 实现与测试来源见[开发记录](../archive/records/host-v15/development-acceptance.md)和[专用验证](../maintenance/host-v15-startup-verification.md)。当前 Host 人工验收已[确认通过](../archive/records/host/manual-acceptance-20260920.md)，实际交付见[本机部署](../maintenance/local-deployment.md)。
 
 ## 用户可见行为
 

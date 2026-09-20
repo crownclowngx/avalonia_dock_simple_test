@@ -1,8 +1,10 @@
 # V16 Document 浮窗关闭与命令面板新建：开发记录
 
+> 后续确认（2026-09-20）：当前 Host 人工验收已由项目所有者实际手工使用后[确认通过](../host/manual-acceptance-20260920.md)；历次本机交付见[部署索引](../../../maintenance/local-deployment.md)。下文与相邻 JSON 保留原阶段事实，“未执行／待验收／未部署”均指当时状态。外部业务与发布事项由[现行待办](../../../roadmap/README.md)继续跟踪。
+
 > 日期：2026-09-20。范围：本地开发实现、自动化与文档同步。原生桌面待验收；未部署、未发布。
 > 最终完整 verify 的状态、输入 HEAD/tree、命令、退出码、TRX 数量和产物摘要记录在同目录 `final-development-evidence.json`。本文在该次运行前冻结，不能单独当作最终门禁通过证明。
-> 方案：[V16 实施方案](../../../roadmap/host-v16-document-floating-close-and-creation-target-plan.md)；矩阵、命令及 C/N 到实际测试的映射：[专用开发验证](../../../maintenance/host-v16-document-window-verification.md)。
+> 方案：[V16 实施方案](../../plans/host-v16-document-floating-close-and-creation-target-plan.md)；矩阵、命令及 C/N 到实际测试的映射：[专用开发验证](../../../maintenance/host-v16-document-window-verification.md)。
 
 ## 1. 输入与复现
 

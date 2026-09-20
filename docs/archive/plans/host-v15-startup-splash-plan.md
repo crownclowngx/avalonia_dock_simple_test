@@ -1,10 +1,12 @@
 # V15：启动引导与插件加载进度方案
 
+> 归档更新（2026-09-20）：本文保留原阶段方案、操作和验证快照；正文中的“本轮”“未执行”“待验收”指原记录时间。当前 Host 人工验收已由项目所有者确认通过，见[统一验收记录](../records/host/manual-acceptance-20260920.md)；后续候选与发布事项见[待办](../../roadmap/README.md)，现行操作从[文档导航](../../README.md)进入。
+
 > 用途：规定工作台启动窗口、矢量羽毛形象、插件进度反馈、启动职责调整及验收条件。
-> 状态：P0–P5 实现、专项与文档已接入；最终开发判定见[开发记录及证据](../archive/records/host-v15/development-acceptance.md)，原生桌面等范围独立待验收。日期：2026-09-20。
+> 状态：P0–P5 实现、专项与文档已接入；最终开发判定见[开发记录及证据](../records/host-v15/development-acceptance.md)，原生桌面等范围独立待验收。日期：2026-09-20。
 > 调研基线：`640202e10b6a1638383b345beaf3f174f3291375`；编写前工作树干净，实施前重新核对源码和已有差异。
 > V15 是 Host 改造序号，不代表产品、程序集、SDK、NuGet 或持久化格式版本升级。
-> 本文保留设计依据及验收目标；现行行为见[启动契约](../reference/host-startup.md)，实际类名、差异与验证结果见开发记录。
+> 本文保留设计依据及验收目标；现行行为见[启动契约](../../reference/host-startup.md)，实际类名、差异与验证结果见开发记录。
 
 ## 1. 目标与范围
 
@@ -78,13 +80,13 @@ SOLID 为首要设计约束，按单一变化原因分配职责，使用窄端�
 
 | 组件 | 当前事实 | V15 调整方向 |
 | --- | --- | --- |
-| [Program](../../Host/MyAvaloniaManagement/Program.cs) | 先 `HostRuntime.Create()`，再进入 Avalonia 桌面生命周期 | 保留助手最早分流，正常启动先建立轻量 UI，再开始受观察的启动任务 |
-| [HostRuntime](../../Host/MyAvaloniaManagement/Business/Composition/HostRuntime.cs) | 同步完成插件发现、组合及生命周期初始化，随后解析 `WorkspaceSession` | 拆分非 UI 组合与工作台装配，提供可等待、可报告进度的启动边界 |
-| [App](../../Host/MyAvaloniaManagement/App.axaml.cs) 与 [HostAvaloniaBuilder](../../Host/MyAvaloniaManagement/Business/Presentation/HostAvaloniaBuilder.cs) | App 构造依赖完整 Shell、ViewLocator、回收器；工厂来自 Runtime 容器 | 解除启动首屏对完整 Runtime 的依赖，在同一 Application 中延后安装工作台资源 |
-| [HostDesktopShell](../../Host/MyAvaloniaManagement/Business/Presentation/HostDesktopShell.cs) | 负责主题、主窗口及窗口入口绑定 | 在组合成功后执行，参与主窗口交接；保留窗口入口先于菜单绑定的顺序 |
-| [AssemblyLoaderHelper](../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/AssemblyLoaderHelper.cs) | 先校验清单身份，再加载启用候选；结果为进程内缓存快照 | 在实际扫描和加载边界报告进度，不额外扫描、不清除缓存 |
-| [PluginProviderOwner](../../Host/MyAvaloniaManagement/Business/Plugins/Registration/PluginProviderOwner.cs) | 逐插件构造模块、注册服务、建立私有 Provider | 报告注册开始、完成和失败，保持隔离与释放责任 |
-| [PluginLifecycleCoordinator](../../Host/MyAvaloniaManagement/Business/Lifecycle/PluginLifecycleCoordinator.cs) | 按既定顺序初始化生命周期并保存结果 | 报告当前插件和初始化结果，不重排插件、不增加并发初始化 |
+| [Program](../../../Host/MyAvaloniaManagement/Program.cs) | 先 `HostRuntime.Create()`，再进入 Avalonia 桌面生命周期 | 保留助手最早分流，正常启动先建立轻量 UI，再开始受观察的启动任务 |
+| [HostRuntime](../../../Host/MyAvaloniaManagement/Business/Composition/HostRuntime.cs) | 同步完成插件发现、组合及生命周期初始化，随后解析 `WorkspaceSession` | 拆分非 UI 组合与工作台装配，提供可等待、可报告进度的启动边界 |
+| [App](../../../Host/MyAvaloniaManagement/App.axaml.cs) 与 [HostAvaloniaBuilder](../../../Host/MyAvaloniaManagement/Business/Presentation/HostAvaloniaBuilder.cs) | App 构造依赖完整 Shell、ViewLocator、回收器；工厂来自 Runtime 容器 | 解除启动首屏对完整 Runtime 的依赖，在同一 Application 中延后安装工作台资源 |
+| [HostDesktopShell](../../../Host/MyAvaloniaManagement/Business/Presentation/HostDesktopShell.cs) | 负责主题、主窗口及窗口入口绑定 | 在组合成功后执行，参与主窗口交接；保留窗口入口先于菜单绑定的顺序 |
+| [AssemblyLoaderHelper](../../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/AssemblyLoaderHelper.cs) | 先校验清单身份，再加载启用候选；结果为进程内缓存快照 | 在实际扫描和加载边界报告进度，不额外扫描、不清除缓存 |
+| [PluginProviderOwner](../../../Host/MyAvaloniaManagement/Business/Plugins/Registration/PluginProviderOwner.cs) | 逐插件构造模块、注册服务、建立私有 Provider | 报告注册开始、完成和失败，保持隔离与释放责任 |
+| [PluginLifecycleCoordinator](../../../Host/MyAvaloniaManagement/Business/Lifecycle/PluginLifecycleCoordinator.cs) | 按既定顺序初始化生命周期并保存结果 | 报告当前插件和初始化结果，不重排插件、不增加并发初始化 |
 
 因此，单纯在 MainWindow 内增加遮罩不能覆盖目前最主要的等待。需要先调整启动顺序，再接入展示。此次设计涉及组合根、线程边界及退出责任，不应作为一个纯 XAML 外观改动实施。
 
@@ -175,7 +177,7 @@ UI 线程不使用 `.Wait()`、`.Result` 或 `.GetAwaiter().GetResult()` 等待�
 
 当前生命周期默认初始化期限为 30 秒、关闭期限为 10 秒、取消宽限为 2 秒；这些事实来自现有协调器，V15 展示层不另设更短的强制跳过期限。同步代码尚未返回 Task 时，现有异步等待期限不能自动中断它，实施验证必须覆盖这一限制。
 
-启动回滚和正常退出继续使用同一 Runtime 所有权链。协调器负责追踪任务，不能和 Program 各执行一套释放。取消、异常、日志释放结果及 `ResourcesRetained`、`Failures` 仍参与最终退出判定；[V14 自动重启契约](../reference/host-restart.md)中的清理成功和交接许可语义保持一致。
+启动回滚和正常退出继续使用同一 Runtime 所有权链。协调器负责追踪任务，不能和 Program 各执行一套释放。取消、异常、日志释放结果及 `ResourcesRetained`、`Failures` 仍参与最终退出判定；[V14 自动重启契约](../../reference/host-restart.md)中的清理成功和交接许可语义保持一致。
 
 ## 7. 实施阶段
 
@@ -194,7 +196,7 @@ UI 线程不使用 `.Wait()`、`.Result` 或 `.GetAwaiter().GetResult()` 等待�
 
 ## 8. 验收标准
 
-下表为验收目标；实际自动化映射及未执行的原生桌面范围见[专用开发验证](../maintenance/host-v15-startup-verification.md)。不得把自动化或源码支持等同于全部目标已人工验收。
+下表为验收目标；实际自动化映射及未执行的原生桌面范围见[专用开发验证](../../maintenance/host-v15-startup-verification.md)。不得把自动化或源码支持等同于全部目标已人工验收。
 
 | 编号 | 场景 | 必须观察到的结果 |
 | --- | --- | --- |

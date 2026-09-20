@@ -1,7 +1,9 @@
 # V11 浮动窗口与 Layout V3 开发记录
 
+> 后续确认（2026-09-20）：当前 Host 人工验收已由项目所有者实际手工使用后[确认通过](../host/manual-acceptance-20260920.md)；历次本机交付见[部署索引](../../../maintenance/local-deployment.md)。下文与相邻 JSON 保留原阶段事实，“未执行／待验收／未部署”均指当时状态。外部业务与发布事项由[现行待办](../../../roadmap/README.md)继续跟踪。
+
 > 状态：实施中。起始日期：2026-09-16。实施分支：`codex/host-v11-floating-layout`，从 `master` 的 `bbd4832` 创建；起始工作树干净。用户授权按阶段提交并写明标题与说明。
-> 范围与约束见 [V11 计划](../../../roadmap/host-v11-floating-windows-and-layout-v3-plan.md)。不使用 AIFLOW、Windows CI、seal、发布门禁、发布 Smoke，不部署或发布。
+> 范围与约束见 [V11 计划](../../plans/host-v11-floating-windows-and-layout-v3-plan.md)。不使用 AIFLOW、Windows CI、seal、发布门禁、发布 Smoke，不部署或发布。
 
 ## G0 开发基线
 

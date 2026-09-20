@@ -1,20 +1,22 @@
 # 历史归档
 
-新增 [V17 Host 可读性重构开发记录](records/host-v17/development-acceptance.md)：诊断和命令展示文件拆分、服务注册分组、行为保护与专项结果；最终完整本地 verify 结果由记录关联的非嵌入 JSON 单独保存。未执行 AIFLOW、Windows CI、发布门禁或安装部署。
+> 用途：查找过去的设计、验收与交付证据。核对日期：2026-09-20。正文中的“当前”、版本、命令及通过结果只对原始基线成立，不能作为当前操作指令。
 
-新增 [V15 启动引导开发记录](records/host-v15/development-acceptance.md)与[最终开发证据](records/host-v15/final-development-evidence.json)；后续单文件自包含本机交付见[部署说明](../maintenance/host-v15-local-deployment.md)及[部署证据](records/host-v15/local-deployment-20260920.json)，记录不备份与中间文件清理结果。
-
-新增 [V14 自动重启开发记录](records/host-v14/development-acceptance.md)与[最终开发证据](records/host-v14/final-development-evidence.json)：共享重启用例、正常关闭交接、真实进程和独立保留的原生桌面/单文件验收范围。
-
-后续 V14 桌面单文件、自包含交付见[部署说明](../maintenance/host-v14-local-deployment.md)及[部署证据](records/host-v14/local-deployment-20260919.json)，与开发基线和原生桌面验收分别记载。
-
-新增 [V13 插件开关开发记录](records/host-v13/development-acceptance.md)：实现、SOLID 取舍、专项与三进程重启验收；最终本地门禁结果见记录内 JSON，原生桌面、外部业务和发布状态分别保留。
-
-> 用途：查找过去的设计、验收与交付证据。归档日期：2026-09-17。正文中的“当前”、版本、命令及通过结果只对原始基线成立，不能作为当前操作指令。
-
-当前指南从[总导航](../README.md)进入，未完成事项由[待办](../roadmap/README.md)继续跟踪。归档不等于验收通过；失败、NO-GO、待人工确认和已清理产物状态均保留。
+当前指南从[总导航](../README.md)进入，未完成事项由[待办](../roadmap/README.md)继续跟踪。历史失败、NO-GO、当时未执行和已清理产物状态保留。当前 Host 人工验收以[2026-09-20 所有者确认](records/host/manual-acceptance-20260920.md)为准；已完成本机部署统一由[部署索引](../maintenance/local-deployment.md)进入。
 
 ## 方案与评审
+
+- [Dock 区域默认居中停靠实施计划](plans/host-dock-area-fill-implementation-plan.md)
+- [Document 拖入已有浮窗崩溃修复方案](plans/host-document-cross-window-layout-crash-fix-plan.md)
+- [MyAvaloniaManagement V11：浮动窗口恢复与 Layout V3 实施计划](plans/host-v11-floating-windows-and-layout-v3-plan.md)
+- [V11-P1：Tool 上下分割崩溃修复计划](plans/host-v11-p1-tool-split-fix-plan.md)
+- [V11-P2：Tool 浮窗关闭黑框修复](plans/host-v11-p2-tool-window-close-fix-plan.md)
+- [V12：Host 内部职责重构方案](plans/host-v12-internal-refactor-plan.md)
+- [V13：插件启用与禁用（重启生效）实施计划](plans/host-v13-plugin-enablement-plan.md)
+- [V14：Host 一键自动重启执行方案](plans/host-v14-automatic-restart-plan.md)
+- [V15：启动引导与插件加载进度方案](plans/host-v15-startup-splash-plan.md)
+- [V16：Document 浮窗关闭与新建位置方案](plans/host-v16-document-floating-close-and-creation-target-plan.md)
+- [V17：Host 面向人和 AI 的可读性重构计划](plans/host-v17-readability-refactor-plan.md)
 
 - [基于 Plugin SDK V3 / Host V4 的工作流执行与可选 AI 规划方案](plans/ai-workflow-plugin-exploration.md)
 - [Avalonia / Dock 最新稳定版升级评估](plans/avalonia-dock-upgrade-assessment-20260916.md)
@@ -39,6 +41,45 @@
 - [Document 保存 V1 设计](specifications/document-persistence-v1-design.md)
 
 ## 阶段与发布记录
+
+### documentation / Host 人工验收
+
+- [2026-09-20 Host 人工验收确认](records/host/manual-acceptance-20260920.md)
+- [2026-09-20 文档整理、漂移修正及处置清单](records/documentation/reorganization-20260920.md)
+- [2026-09-16 文档重组与原始处置清单](records/documentation/reorganization-20260916.md)
+
+### host-v17
+
+- [可读性重构开发记录](records/host-v17/development-acceptance.md)
+- [最终本地开发证据](records/host-v17/final-development-evidence.json)
+- [本机单文件部署证据](records/host-v17/local-deployment-20260920.json)
+
+### host-v16
+
+- [Document 浮窗关闭与新建位置开发记录](records/host-v16/development-acceptance.md)
+- [最终本地开发证据](records/host-v16/final-development-evidence.json)
+- [本机单文件部署证据](records/host-v16/local-deployment-20260920.json)
+
+### host-v15
+
+- [启动窗口与插件进度开发记录](records/host-v15/development-acceptance.md)
+- [最终本地开发证据](records/host-v15/final-development-evidence.json)
+- [本机单文件部署证据](records/host-v15/local-deployment-20260920.json)
+- [该次部署说明（历史）](records/host-v15/local-deployment-guide.md)
+
+### host-v14
+
+- [自动重启开发记录](records/host-v14/development-acceptance.md)
+- [最终本地开发证据](records/host-v14/final-development-evidence.json)
+- [本机单文件部署证据](records/host-v14/local-deployment-20260919.json)
+- [该次部署说明（历史）](records/host-v14/local-deployment-guide.md)
+
+### host-v13
+
+- [插件开关开发记录](records/host-v13/development-acceptance.md)
+- [最终本地开发证据](records/host-v13/final-development-evidence.json)
+- [本机单文件部署证据](records/host-v13/local-deployment-20260919.json)
+- [该次部署说明（历史）](records/host-v13/local-deployment-guide.md)
 
 ### host-v12
 
@@ -204,4 +245,4 @@
 - 记录附近的已提交 JSON 和图片随目录迁移，原始内容及哈希不改写。JSON 内的源码/产物路径仍是当时证据字段，不是今天的导航链接。
 - 标注“历史产物位置，文件已清理”的条目不再提供下载链接；保留当时摘要和哈希。
 - 外部插件链接为可选相邻仓库引用，当前父目录为 `avalonia_dock_plug_test`。没有这些检出目录不影响主仓验证。
-- 原 `docs/plan-history` 已迁至本目录 records，旧方案迁至 plans；逐份处置见[本次整理记录](records/documentation/reorganization-20260916.md)。
+- 原 `docs/plan-history` 已迁至本目录 records，旧方案迁至 plans；逐份处置见[2026-09-16 整理记录](records/documentation/reorganization-20260916.md)。

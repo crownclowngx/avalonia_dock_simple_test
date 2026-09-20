@@ -1,20 +1,8 @@
 # 主仓验证与封板
 
-V17 可读性重构的实现与专项已完成，见[实际方案](../roadmap/host-v17-readability-refactor-plan.md)、[专用开发验证](host-v17-readability-verification.md)及[开发记录与最终证据](../archive/records/host-v17/development-acceptance.md)。本轮只使用本地专项和完整 verify，不执行 AIFLOW、Windows CI 或下文正式发布门禁；拆文件时同步覆盖率路径清单不代表已经运行覆盖率验证。
-
-V16 Document 浮窗关闭与新建位置已实现，专项与测试映射见[专用开发验证](host-v16-document-window-verification.md)，实际命令和最终证据见[开发记录](../archive/records/host-v16/development-acceptance.md)。本轮使用本地专项、Gate 自测和完整 verify；不使用 AIFLOW、Windows CI 或本页正式发布门禁。原生桌面 M01–M08 待验收。
-
-V15 羽毛启动窗口与插件进度已接入，见[专用开发验证](host-v15-startup-verification.md)和[开发记录](../archive/records/host-v15/development-acceptance.md)。本轮仅使用本地专项、工具自测及完整 verify，不使用 AIFLOW、Windows CI 或发布门禁。
-
-V14 一键自动重启已接入；实际测试矩阵、真实子进程边界和本地命令见[专用开发验证](host-v14-automatic-restart-verification.md)，最终结果见[开发记录与证据](../archive/records/host-v14/development-acceptance.md)。本轮使用本地专项和完整 verify，不使用 AIFLOW、Windows CI 或正式发布门禁。
-
-V13 插件开关已实现，矩阵与命令见[专用开发验证](host-v13-plugin-enablement-verification.md)，实际结果见[开发记录](../archive/records/host-v13/development-acceptance.md)。本轮只使用本地专项和 verify，不使用 AIFLOW、Windows CI 或下文正式发布门禁；发布命令不属于 V13 执行范围。
-
 > 用途：维护 Host、SDK 和 MyPlugTest。状态：当前；核对日期：2026-09-20。事实源：[Gate 参数](../../tools/MyAvaloniaManagement.Gate/GateOptions.cs)、[配置](../../tools/MyAvaloniaManagement.Gate/gate.config.json)与执行实现。
 
 ## 日常开发
-
-V12 内部职责重构的阶段矩阵、专项命令和证据规范见 [V12 专用开发验证](host-v12-refactor-verification.md)。三阶段已接入，专项与最终结果见[开发记录](../archive/records/host-v12/development-acceptance.md)。本轮只使用本地开发验证，不使用 Windows CI 或本页的正式发布门禁。
 
 在主仓根目录运行：
 
@@ -22,7 +10,7 @@ V12 内部职责重构的阶段矩阵、专项命令和证据规范见 [V12 专�
 dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 ```
 
-`verify` 允许未提交修改，只使用本仓源码。它先经过 `avalonia-layout-patch` 和 `dock-patch`，准备[布局运行时补丁](../../patches/avalonia-cross-window-layout/README.md)及[固定 Dock 补丁](../../patches/dock-area-fill/README.md)，再执行 locked restore、Release 零警告构建和输出 DLL 摘要检查、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约及已发布 API 比较、MyPlugTest 打包和真实 ZIP 验收。不采集覆盖率，不启动 Windows Smoke，不授予发布资格。首次补丁构建需要 Git、PowerShell 7、SDK 10.0.302 及上游下载；首次 API 比较需要下载已记录摘要的三个公共基线包，后续使用校验后的缓存。跨窗崩溃的回归与桌面待办见[专项指南](dock-cross-window-layout-verification.md)。
+`verify` 允许未提交修改，只使用本仓源码。它先经过 `avalonia-layout-patch` 和 `dock-patch`，准备[布局运行时补丁](../../patches/avalonia-cross-window-layout/README.md)及[固定 Dock 补丁](../../patches/dock-area-fill/README.md)，再执行 locked restore、Release 零警告构建和输出 DLL 摘要检查、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约及已发布 API 比较、MyPlugTest 打包和真实 ZIP 验收。不采集覆盖率，不启动 Windows Smoke，不授予发布资格。首次补丁构建需要 Git、PowerShell 7、SDK 10.0.302 及上游下载；首次 API 比较需要下载已记录摘要的三个公共基线包，后续使用校验后的缓存。跨窗崩溃的回归矩阵见[专项指南](dock-cross-window-layout-verification.md)。
 
 `--scope host` 和 `--scope all` 都执行完整本仓验证。`workflow`、`workbench` scope 以及旧外部仓库参数均已退役；外部插件业务验证由各仓库独立负责。
 
@@ -44,6 +32,21 @@ dotnet test Host/MyAvaloniaManagement.PluginTests -c Release -m:1 --filter 'Full
 `-m:1` 避免专项工程引用的不同全局属性并发写入同一中间目录。专项通过只代表选定范围；具体测试数量和覆盖率应记入本次验收记录。
 
 外部旧插件产物需要单独提供完整 Controls 副本，默认 verify 不编译这些外部输入夹具；统一入口、报告交付、候选消费和覆盖边界见[插件兼容开发验证](plugin-compatibility-verification.md)。V9 原命令与历史范围保留在 [V9 验证说明](../quick-start/host-v9-upgrade.md)。
+
+## 专项回归索引
+
+Host 整体人工验收已由项目所有者[确认通过](../archive/records/host/manual-acceptance-20260920.md)。以下文档保留可复用命令与检查矩阵；其中阶段自动化计数指原开发记录。当前部署见[本机部署](local-deployment.md)。
+
+| 主题 | 专项验证 |
+| --- | --- |
+| 浮窗、工具关闭与布局 V3 | [浮窗与布局](floating-layout-verification.md) |
+| 区域回停及跨窗口布局补丁 | [区域回停](dock-area-fill-verification.md)、[跨窗布局](dock-cross-window-layout-verification.md) |
+| Registry、UI 调度与工作区查询 | [V12 内部职责](host-v12-refactor-verification.md) |
+| 插件兼容与下次启动开关 | [产物兼容](plugin-compatibility-verification.md)、[V13 插件开关](host-v13-plugin-enablement-verification.md) |
+| 进程重启与关闭交接 | [V14 自动重启](host-v14-automatic-restart-verification.md) |
+| 首屏及真实插件进度 | [V15 启动窗口](host-v15-startup-verification.md) |
+| Document 浮窗关闭及命令面板创建目标 | [V16 文档窗口](host-v16-document-window-verification.md) |
+| 诊断、命令展示和服务注册 | [V17 可读性](host-v17-readability-verification.md) |
 
 ## 正式 Host 封板
 

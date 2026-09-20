@@ -1,7 +1,9 @@
 # V12 单文件部署与手工影响范围
 
+> 归档更新（2026-09-20）：本文保留原阶段方案、操作和验证快照；正文中的“本轮”“未执行”“待验收”指原记录时间。当前 Host 人工验收已由项目所有者确认通过，见[统一验收记录](../host/manual-acceptance-20260920.md)；后续候选与发布事项见[待办](../../../roadmap/README.md)，现行操作从[文档导航](../../../README.md)进入。
+
 > 日期：2026-09-17。重构源码提交：`85a3bfee8da966c49ee3288152b8845946ae3b56`。
-> 用户已授权提交 Git、编译并部署到 `D:\data\avalonia`，随后自行手工验收。构建源码、安装 EXE、备份位置与完成状态以[本次部署证据](../archive/records/host-v12/local-deployment-20260917.json)为准。
+> 用户已授权提交 Git、编译并部署到 `D:\data\avalonia`，随后自行手工验收。构建源码、安装 EXE、备份位置与完成状态以[本次部署证据](local-deployment-20260917.json)为准。
 
 ## 1. 改动与影响范围
 
@@ -32,7 +34,7 @@ SDK public API、插件包依赖、产品版本、稳定 ID、manifest V2、Docu
 
 ## 3. 构建与本机部署
 
-重构完整开发 `verify` 已通过 1,095 项测试，新增 36 项，零失败、零跳过、构建零警告；SDK API 比较显示三个契约程序集的公开表面一致。详情见[开发记录](../archive/records/host-v12/development-acceptance.md)和[开发证据](../archive/records/host-v12/final-development-evidence.json)。本页是此后的文档补充，不改变已验证生产代码。
+重构完整开发 `verify` 已通过 1,095 项测试，新增 36 项，零失败、零跳过、构建零警告；SDK API 比较显示三个契约程序集的公开表面一致。详情见[开发记录](development-acceptance.md)和[开发证据](final-development-evidence.json)。本页是此后的文档补充，不改变已验证生产代码。
 
 发布采用 `Release`、`win-x64`、`SelfContained=true`、`PublishSingleFile=true`、`IncludeNativeLibrariesForSelfExtract=true`、`EnableCompressionInSingleFile=true`、`PublishTrimmed=false`、`SkipPluginDeploy=true`。Host 与 .NET 运行时打入一个 EXE，HelpWeb 仍为帮助资源，Controls 仍为独立插件目录。
 
@@ -46,4 +48,4 @@ SDK public API、插件包依赖、产品版本、稳定 ID、manifest V2、Docu
 
 回退前关闭安装实例，使用部署证据中的备份目录和文件清单恢复被替换文件，核对原 SHA-256。保留 Controls 和用户数据，不递归清理安装目录。回退撤销的是本轮 Host 更新，不恢复手工测试过程中自行修改的文档或布局。
 
-本轮不使用 AIFLOW，不上传包、不推送 Git、不创建公开发布。M01–M08 留给用户在安装版操作，构建和隔离启动通过不能代替手工验收。首次[开发记录](../archive/records/host-v12/development-acceptance.md)中的“尚未提交／未部署”描述的是当时状态，后续提交与本机安装以本页所链接的部署证据为准。
+本轮不使用 AIFLOW，不上传包、不推送 Git、不创建公开发布。M01–M08 留给用户在安装版操作，构建和隔离启动通过不能代替手工验收。首次[开发记录](development-acceptance.md)中的“尚未提交／未部署”描述的是当时状态，后续提交与本机安装以本页所链接的部署证据为准。

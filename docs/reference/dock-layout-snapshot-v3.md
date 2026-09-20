@@ -1,6 +1,6 @@
 # Dock 布局快照 V3
 
-> 用途：V11 工具布局的唯一线格式与恢复契约。状态：当前，已接入生产恢复、自动保存和退出流程；真实桌面验收单独跟踪。核对日期：2026-09-16。实施结果见 [V11 记录](../archive/records/host-v11/development-acceptance.md)。
+> 用途：V11 工具布局的唯一线格式与恢复契约。状态：当前，已接入生产恢复、自动保存和退出流程；Host 人工验收已[确认通过](../archive/records/host/manual-acceptance-20260920.md)。核对日期：2026-09-20。实施结果见 [V11 记录](../archive/records/host-v11/development-acceptance.md)。
 
 ## 文件与边界
 

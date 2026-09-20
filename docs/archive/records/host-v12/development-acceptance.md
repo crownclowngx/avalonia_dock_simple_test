@@ -1,7 +1,9 @@
 # V12 Host 内部职责重构开发记录
 
+> 后续确认（2026-09-20）：当前 Host 人工验收已由项目所有者实际手工使用后[确认通过](../host/manual-acceptance-20260920.md)；历次本机交付见[部署索引](../../../maintenance/local-deployment.md)。下文与相邻 JSON 保留原阶段事实，“未执行／待验收／未部署”均指当时状态。外部业务与发布事项由[现行待办](../../../roadmap/README.md)继续跟踪。
+
 > 日期：2026-09-17。起始源码：`538d173b7a0d90dc7f1b25dcbc901b5ac597f288`。分支：`codex/host-v12-internal-refactor`。
-> 计划见 [V12 方案](../../../roadmap/host-v12-internal-refactor-plan.md)，测试矩阵与重跑入口见[专用开发验证](../../../maintenance/host-v12-refactor-verification.md)。
+> 计划见 [V12 方案](../../plans/host-v12-internal-refactor-plan.md)，测试矩阵与重跑入口见[专用开发验证](../../../maintenance/host-v12-refactor-verification.md)。
 > 状态：P0–P3 实现及专项完成；Markdown 定稿后执行完整本地 verify，结果与源码、产物身份仅回填 [final-development-evidence.json](final-development-evidence.json)。
 
 ## 1. 实际范围与收益

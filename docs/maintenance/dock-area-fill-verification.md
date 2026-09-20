@@ -1,10 +1,12 @@
 # Dock 区域默认居中停靠专项验证
 
-> 用途：维护区域回停实现与本地开发门禁。核对日期：2026-09-17。实现记录见[专项记录](../archive/records/dock-area-fill/development-acceptance.md)，最终运行结果见[非嵌入证据](../archive/records/dock-area-fill/development-evidence.json)。本轮不使用 AIFLOW、Windows CI、seal 或发布 Smoke。
+> 当前状态（2026-09-20）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260920.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
+
+> 用途：维护区域回停实现与本地开发门禁。核对日期：2026-09-20。实现记录见[专项记录](../archive/records/dock-area-fill/development-acceptance.md)，最终运行结果见[非嵌入证据](../archive/records/dock-area-fill/development-evidence.json)。本轮不使用 AIFLOW、Windows CI、seal 或发布 Smoke。
 
 ## 行为边界
 
-2026-09-17 已为“Document 从存活主窗拖入已有浮窗”的崩溃接入固定 Avalonia 布局补丁。详见[独立维护指南](dock-cross-window-layout-verification.md)和[修复证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)。原区域回停验证与本次修复分别记录；桌面复验和安装目录更新仍待完成。
+2026-09-17 已为“Document 从存活主窗拖入已有浮窗”的崩溃接入固定 Avalonia 布局补丁。详见[独立维护指南](dock-cross-window-layout-verification.md)和[修复证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)。原区域回停验证与跨窗修复分别记录；后续本机部署已经完成，当前 Host 人工验收见页首确认。
 
 鼠标在合法 DocumentDock / ToolDock 正文内、没有指向明确按钮时，默认选择 Fill。已有标签保留，内容合并到目标组；只有空组才表现为填满空区域。不能把“填满”解释为覆盖已有页面。局部四向和外侧全局按钮保留分屏，明确可见按钮被拒绝时不回退成 Fill。标签栏保持排序/插入协议。
 
@@ -25,7 +27,7 @@ dotnet test tools/MyAvaloniaManagement.Gate.Tests -c Release -m:1
 dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 ```
 
-verify 的首阶段 `dock-patch` 负责补丁准备，失败会阻断 restore 和所有后续阶段。构建完成后，门禁核对 Host 与测试输出中的 Dock DLL 是否与包内 DLL 字节相同，拒绝增量复制留下的旧文件。主仓完整测试、SDK API 比较、MyPlugTest ZIP 验收继续沿用原门禁。没有运行任何 Windows 发布门禁。直接构建 Host 前先准备本地补丁源；外部插件无需引用补丁包。
+verify 在 `avalonia-layout-patch` 之后执行 `dock-patch` 准备 Dock 补丁，失败会阻断 restore 和所有后续阶段。构建完成后，门禁核对 Host 与测试输出中的 Dock DLL 是否与包内 DLL 字节相同，拒绝增量复制留下的旧文件。主仓完整测试、SDK API 比较、MyPlugTest ZIP 验收继续沿用原门禁。没有运行任何 Windows 发布门禁。直接构建 Host 前先准备本地补丁源；外部插件无需引用补丁包。
 
 ## 自动化覆盖
 
@@ -56,7 +58,7 @@ if ($LASTEXITCODE -ne 0) { throw '独立缓存 locked restore 失败' }
 
 ## 真实桌面及证据
 
-原生桌面矩阵继续使用[实施计划第 8 节](../roadmap/host-dock-area-fill-implementation-plan.md#8-真实桌面验收矩阵)：中央按钮被遮挡、整窗原生拖动、标签排序、取消、混合浮窗、多屏负坐标、100%/150%/200% DPI、WebView/视频。当前会话无法使用原生桌面输入工具，这些项记为未执行；Headless 的窗口坐标不等同于操作系统窗口定位。
+原生桌面矩阵继续使用[实施计划第 8 节](../archive/plans/host-dock-area-fill-implementation-plan.md#8-真实桌面验收矩阵)：中央按钮被遮挡、整窗原生拖动、标签排序、取消、混合浮窗、多屏负坐标、100%/150%/200% DPI、WebView/视频。原阶段逐项记录保留；当前 Host 整体人工结论见页首确认，矩阵供后续回归使用。Headless 的窗口坐标不等同于操作系统窗口定位。
 
 本轮不额外启用浮动提示窗口。区域判定已经支持正在拖动的源窗覆盖目标，但提示是否需要提升窗口层级，应由上述桌面结果决定。
 

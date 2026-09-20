@@ -1,5 +1,7 @@
 # Host V10：插件兼容治理与看板开发记录
 
+> 后续确认（2026-09-20）：当前 Host 人工验收已由项目所有者实际手工使用后[确认通过](../host/manual-acceptance-20260920.md)；历次本机交付见[部署索引](../../../maintenance/local-deployment.md)。下文与相邻 JSON 保留原阶段事实，“未执行／待验收／未部署”均指当时状态。外部业务与发布事项由[现行待办](../../../roadmap/README.md)继续跟踪。
+
 > 状态：开发实现与自动化验证完成；业务、真机、部署及公开发布未执行。日期：2026-09-16。方案见 [V10 计划](../../plans/host-v10-plugin-compatibility-and-dashboard-plan.md)。
 > 分支：`codex/host-v10-plugin-dashboard`，从 master 的 `9bceb0781fab` 创建。允许阶段提交；不使用 AIFLOW、Windows CI、seal 或发布流程，不修改用户安装目录或外部插件源码。
 

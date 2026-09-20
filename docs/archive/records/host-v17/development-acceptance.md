@@ -1,8 +1,10 @@
 # V17：Host 可读性重构开发记录
 
+> 后续确认（2026-09-20）：当前 Host 人工验收已由项目所有者实际手工使用后[确认通过](../host/manual-acceptance-20260920.md)；历次本机交付见[部署索引](../../../maintenance/local-deployment.md)。下文与相邻 JSON 保留原阶段事实，“未执行／待验收／未部署”均指当时状态。外部业务与发布事项由[现行待办](../../../roadmap/README.md)继续跟踪。
+
 > 日期：2026-09-20。范围：本地主仓 Host 可读性与表达整理。
 > P0 基线、行为补测及 P1–P3 实现和专项已完成。最终完整 `verify` 的状态、输入身份和输出摘要以[非嵌入开发证据](final-development-evidence.json)为准；本 Markdown 在最终验证前定稿，不预写最终通过结论。
-> 设计依据：[V17 计划](../../../roadmap/host-v17-readability-refactor-plan.md)。矩阵、方法映射和维护命令：[专用开发验证](../../../maintenance/host-v17-readability-verification.md)。
+> 设计依据：[V17 计划](../../plans/host-v17-readability-refactor-plan.md)。矩阵、方法映射和维护命令：[专用开发验证](../../../maintenance/host-v17-readability-verification.md)。
 
 ## 1. 源码与阶段
 

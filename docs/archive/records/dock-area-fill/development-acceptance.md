@@ -1,5 +1,7 @@
 # Dock 区域回停开发记录
 
+> 后续确认（2026-09-20）：当前 Host 人工验收已由项目所有者实际手工使用后[确认通过](../host/manual-acceptance-20260920.md)；历次本机交付见[部署索引](../../../maintenance/local-deployment.md)。下文与相邻 JSON 保留原阶段事实，“未执行／待验收／未部署”均指当时状态。外部业务与发布事项由[现行待办](../../../roadmap/README.md)继续跟踪。
+
 日期：2026-09-17。范围：主项目 Host、固定 Dock 呈现层补丁、专项测试与本地 verify。源码起点为 `2d06744960a56ed05c63798a54283e8042ebccf6`；最终工作区输入和产物以[开发证据](development-evidence.json)为准。
 
 ## 实现结果

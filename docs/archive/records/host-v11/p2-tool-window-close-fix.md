@@ -1,6 +1,8 @@
 # V11-P2 Tool 浮窗关闭故障记录
 
-> 日期：2026-09-16。起始基线：`d52600b`。计划见 [V11-P2](../../../roadmap/host-v11-p2-tool-window-close-fix-plan.md)。
+> 后续确认（2026-09-20）：当前 Host 人工验收已由项目所有者实际手工使用后[确认通过](../host/manual-acceptance-20260920.md)；历次本机交付见[部署索引](../../../maintenance/local-deployment.md)。下文与相邻 JSON 保留原阶段事实，“未执行／待验收／未部署”均指当时状态。外部业务与发布事项由[现行待办](../../../roadmap/README.md)继续跟踪。
+
+> 日期：2026-09-16。起始基线：`d52600b`。计划见 [V11-P2](../../plans/host-v11-p2-tool-window-close-fix-plan.md)。
 
 ## 原因及证据边界
 

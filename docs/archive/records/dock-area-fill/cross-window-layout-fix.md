@@ -1,6 +1,8 @@
 # 跨窗口布局崩溃修复记录
 
-日期：2026-09-17。任务依据为[修复方案](../../../roadmap/host-document-cross-window-layout-crash-fix-plan.md)；维护入口为[专项指南](../../../maintenance/dock-cross-window-layout-verification.md)。
+> 后续确认（2026-09-20）：当前 Host 人工验收已由项目所有者实际手工使用后[确认通过](../host/manual-acceptance-20260920.md)；历次本机交付见[部署索引](../../../maintenance/local-deployment.md)。下文与相邻 JSON 保留原阶段事实，“未执行／待验收／未部署”均指当时状态。外部业务与发布事项由[现行待办](../../../roadmap/README.md)继续跟踪。
+
+日期：2026-09-17。任务依据为[修复方案](../../plans/host-document-cross-window-layout-crash-fix-plan.md)；维护入口为[专项指南](../../../maintenance/dock-cross-window-layout-verification.md)。
 
 实现采用路线 B：固定 Avalonia Base 的内部队列归属检查。路线 A 的摘除后刷新在布局重入时不能排空旧队列，已保留失败证据并撤销候选。没有修改业务插件、正文所有权、SDK API、Dock 区域命中或 Layout V3 schema。
 

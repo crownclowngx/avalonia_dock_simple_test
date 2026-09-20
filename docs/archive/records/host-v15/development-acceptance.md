@@ -1,8 +1,10 @@
 # V15 启动引导与插件进度开发记录
 
+> 后续确认（2026-09-20）：当前 Host 人工验收已由项目所有者实际手工使用后[确认通过](../host/manual-acceptance-20260920.md)；历次本机交付见[部署索引](../../../maintenance/local-deployment.md)。下文与相邻 JSON 保留原阶段事实，“未执行／待验收／未部署”均指当时状态。外部业务与发布事项由[现行待办](../../../roadmap/README.md)继续跟踪。
+
 > 日期：2026-09-20。实施起点：`640202e10b6a1638383b345beaf3f174f3291375`，起点已有本任务前一轮的 V15 方案、SVG 及两处导航修改，予以保留。
 > 实现、专项及文档已接入；最终完整本地 verify 的结论、报告摘要和源码身份见 [final-development-evidence.json](final-development-evidence.json)。本页不提前代替最终结果。
-> 入口：[V15 方案](../../../roadmap/host-v15-startup-splash-plan.md)、[现行契约](../../../reference/host-startup.md)、[专用验证](../../../maintenance/host-v15-startup-verification.md)、[用户说明](../../../quick-start/startup.md)。
+> 入口：[V15 方案](../../plans/host-v15-startup-splash-plan.md)、[现行契约](../../../reference/host-startup.md)、[专用验证](../../../maintenance/host-v15-startup-verification.md)、[用户说明](../../../quick-start/startup.md)。
 
 ## 阶段交付
 

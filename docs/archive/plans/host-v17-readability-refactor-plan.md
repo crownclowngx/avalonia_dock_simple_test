@@ -1,10 +1,12 @@
 # V17：Host 面向人和 AI 的可读性重构计划
 
+> 归档更新（2026-09-20）：本文保留原阶段方案、操作和验证快照；正文中的“本轮”“未执行”“待验收”指原记录时间。当前 Host 人工验收已由项目所有者确认通过，见[统一验收记录](../records/host/manual-acceptance-20260920.md)；后续候选与发布事项见[待办](../../roadmap/README.md)，现行操作从[文档导航](../../README.md)进入。
+
 > 用途：以行为等价为前提，改善 Host 的文件定位、主流程阅读和设计意图表达。
-> 状态：P0–P3 实现与专项已完成，P4 文档和结构审查已收口；最终完整本地 verify 结果以[开发记录](../archive/records/host-v17/development-acceptance.md)关联的非嵌入 JSON 为准。日期：2026-09-20。
+> 状态：P0–P3 实现与专项已完成，P4 文档和结构审查已收口；最终完整本地 verify 结果以[开发记录](../records/host-v17/development-acceptance.md)关联的非嵌入 JSON 为准。日期：2026-09-20。
 > 调研基线：`1d9ad9e8e55603165ebf22e75f1dbd914900e013`；实施前重新记录 HEAD 和工作树状态。
 > V17 是 Host 改造序号，不代表产品、程序集、SDK、NuGet 或磁盘格式版本升级。
-> 测试矩阵、开发命令和结果记录规则统一见 [V17 专用开发验证](../maintenance/host-v17-readability-verification.md)。
+> 测试矩阵、开发命令和结果记录规则统一见 [V17 专用开发验证](../../maintenance/host-v17-readability-verification.md)。
 
 ## 1. 目标与范围
 
@@ -24,7 +26,7 @@
 
 初始文档任务已完成。现已进入用户授权的实施阶段，按 P0–P4 修改代码、补齐行为测试、同步文档并执行本地开发验证；Git 按阶段提交。
 
-实施已按阶段完成，实际文件映射、测试结果与审查记录见[开发记录](../archive/records/host-v17/development-acceptance.md)。下文保留设计要求；专项通过与最终完整门禁结果分别记录。
+实施已按阶段完成，实际文件映射、测试结果与审查记录见[开发记录](../records/host-v17/development-acceptance.md)。下文保留设计要求；专项通过与最终完整门禁结果分别记录。
 
 ### 1.2 后续候选与排除范围
 
@@ -79,7 +81,7 @@ SOLID 是方案、实现与审查的首要规定。优先显露现有职责；�
 
 ## 3. 行为等价边界
 
-权威规则继续来自 [Host 兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)、[内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[Workbench Command 契约](../reference/workbench-commands.md)及 [Host 启动契约](../reference/host-startup.md)。本计划不另建对外契约。
+权威规则继续来自 [Host 兼容约束](../../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)、[内部架构](../../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[Workbench Command 契约](../../reference/workbench-commands.md)及 [Host 启动契约](../../reference/host-startup.md)。本计划不另建对外契约。
 
 | 边界 | 必须保留 |
 | --- | --- |
@@ -96,7 +98,7 @@ SOLID 是方案、实现与审查的首要规定。优先显露现有职责；�
 
 ## 4. V17-P1：诊断文件按现有职责拆分
 
-原文件为 `HostDiagnostics.cs`；当前入口为[诊断契约](../../Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnosticContracts.cs)、[脱敏策略](../../Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnosticRedactionPolicy.cs)与[诊断会话](../../Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnosticSession.cs)。
+原文件为 `HostDiagnostics.cs`；当前入口为[诊断契约](../../../Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnosticContracts.cs)、[脱敏策略](../../../Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnosticRedactionPolicy.cs)与[诊断会话](../../../Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnosticSession.cs)。
 
 已在现有 `Business/Diagnostics` 目录内组织为下列七个文件，12 个既有类型的名称、命名空间和实现保持。语法标记比对排除注释及 using 组织后完全一致。
 
@@ -118,7 +120,7 @@ SOLID 是方案、实现与审查的首要规定。优先显露现有职责；�
 
 ## 5. V17-P2：命令展示文件按职责拆分
 
-原文件为 `WorkbenchCommandProjection.cs`；当前入口为[菜单投影](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchMenuProjection.cs)、[快捷键投影](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchKeyBindingProjection.cs)和[展示组合对象](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandPresentation.cs)。
+原文件为 `WorkbenchCommandProjection.cs`；当前入口为[菜单投影](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchMenuProjection.cs)、[快捷键投影](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchKeyBindingProjection.cs)和[展示组合对象](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandPresentation.cs)。
 
 | 目标文件 | 既有职责与组织 |
 | --- | --- |
@@ -131,7 +133,7 @@ SOLID 是方案、实现与审查的首要规定。优先显露现有职责；�
 
 保持命名空间、internal 边界、构造函数参数、事件订阅点和锁范围。不得把菜单与快捷键的通知逻辑抽成通用投影基类，不统一两者不同的诊断处理，也不改变 Palette 的排队行为。
 
-已同步 [覆盖率基线清单](../../Host/MyAvaloniaManagement.Tests/coverage-baseline.json)：原条目映射到四个包含可执行实现的新文件，均保留 `90.0`，相关小契约跟随投影文件保留。10 个既有类型的语法标记与原实现一致，没有新增契约文件的覆盖率豁免。
+已同步 [覆盖率基线清单](../../../Host/MyAvaloniaManagement.Tests/coverage-baseline.json)：原条目映射到四个包含可执行实现的新文件，均保留 `90.0`，相关小契约跟随投影文件保留。10 个既有类型的语法标记与原实现一致，没有新增契约文件的覆盖率豁免。
 
 当前开发 `verify` 不采集覆盖率；路径清单同步不等于完成覆盖率验证，也不意味着本轮执行发布覆盖率门禁。具体检查见专用验证文档。
 
@@ -139,7 +141,7 @@ SOLID 是方案、实现与审查的首要规定。优先显露现有职责；�
 
 ## 6. V17-P3：服务注册长方法分组
 
-源文件：[ServiceCollectionExtensions.cs](../../Host/MyAvaloniaManagement/Business/Composition/ServiceCollectionExtensions.cs)，入口为 `AddApplicationServices`。
+源文件：[ServiceCollectionExtensions.cs](../../../Host/MyAvaloniaManagement/Business/Composition/ServiceCollectionExtensions.cs)，入口为 `AddApplicationServices`。
 
 设计思路：外层保留唯一组合入口与共享输入，私有方法描述连续的登记步骤。优先在同一静态类、同一文件内完成，读者可以顺序阅读；仅当实施后出现明确独立主题时再评估文件拆分，不预先引入 partial 或注册模块对象。
 
@@ -192,11 +194,11 @@ SOLID 是方案、实现与审查的首要规定。优先显露现有职责；�
 | 文档 | 计划阶段 | 实施阶段 |
 | --- | --- | --- |
 | 本计划 | 描述范围、SOLID、设计理由及未开始的阶段 | 回填实际文件划分、方法分组和完成状态；候选不自动升级为实施项 |
-| [V17 专用开发验证](../maintenance/host-v17-readability-verification.md) | 给出 D/C/S 矩阵、开发命令与证据规则 | 对应到实际测试方法及执行结果 |
-| [总导航](../README.md)、[待办](README.md)、[Host 文档入口](../../Host/MyAvaloniaManagement/docs/README.md)、[主仓验证](../maintenance/verification.md) | 添加 V17 计划和验证入口，明确尚未实现 | 更新真实阶段状态与证据链接 |
-| [内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md) | 保持当前实现事实，不提前描述新文件为已存在 | 更新源码定位与注册职责，补详细中文设计思路，保留原所有权说明 |
+| [V17 专用开发验证](../../maintenance/host-v17-readability-verification.md) | 给出 D/C/S 矩阵、开发命令与证据规则 | 对应到实际测试方法及执行结果 |
+| [总导航](../../README.md)、[待办](../../roadmap/README.md)、[Host 文档入口](../../../Host/MyAvaloniaManagement/docs/README.md)、[主仓验证](../../maintenance/verification.md) | 添加 V17 计划和验证入口，明确尚未实现 | 更新真实阶段状态与证据链接 |
+| [内部架构](../../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md) | 保持当前实现事实，不提前描述新文件为已存在 | 更新源码定位与注册职责，补详细中文设计思路，保留原所有权说明 |
 | 当前契约和使用指南 | 行为不变，无需新增用户流程 | 核对路径引用；确有文字过时时定向修正，不复制第二套契约 |
-| 开发记录与非嵌入 JSON | 计划阶段不创建虚构结果 | 已建立[开发记录](../archive/records/host-v17/development-acceptance.md)及关联证据；真实结果与最终 verify 单独保存 |
+| 开发记录与非嵌入 JSON | 计划阶段不创建虚构结果 | 已建立[开发记录](../records/host-v17/development-acceptance.md)及关联证据；真实结果与最终 verify 单独保存 |
 
 实施完成前核对新增文档、拆分源码相关引用和覆盖率路径清单。历史验收记录保留当时事实，不批量改写为新路径；新记录说明旧文件到新文件的对应关系。
 

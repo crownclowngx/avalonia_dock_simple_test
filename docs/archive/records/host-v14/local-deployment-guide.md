@@ -1,13 +1,15 @@
 # V14 桌面工作台单文件自包含部署
 
+> 归档更新（2026-09-20）：本文保留原阶段方案、操作和验证快照；正文中的“本轮”“未执行”“待验收”指原记录时间。当前 Host 人工验收已由项目所有者确认通过，见[统一验收记录](../host/manual-acceptance-20260920.md)；后续候选与发布事项见[待办](../../../roadmap/README.md)，现行操作从[文档导航](../../../README.md)进入。
+
 > 日期：2026-09-19。用户授权提交 Git，并将产物部署到 `C:\Users\admin\Desktop\工作台`。
-> 本文在构建前定稿；固定源码、实际产物摘要、备份和完成状态以[本次部署证据](../archive/records/host-v14/local-deployment-20260919.json)为准，不以计划冒充部署成功。
+> 本文在构建前定稿；固定源码、实际产物摘要、备份和完成状态以[本次部署证据](local-deployment-20260919.json)为准，不以计划冒充部署成功。
 
 ## 交付内容
 
 Host 使用 `Release`、`win-x64`、`SelfContained=true`、`PublishSingleFile=true`、`IncludeNativeLibrariesForSelfExtract=true`、`EnableCompressionInSingleFile=true`、`PublishTrimmed=false`。Host、.NET 运行时和原生绘制库打入 `MyAvaloniaManagement.exe`，无需另外安装 .NET；帮助资源 `HelpWeb` 和独立插件目录 `Controls` 继续外置。
 
-包含 V14 **文件 → 重新启动 Host…**、插件看板 **重启并应用更改…**，行为见[重启指南](../quick-start/restart-host.md)及[契约](../reference/host-restart.md)。保存和关闭可取消，助手只在旧 Host 清理成功并实际退出后启动新进程。上次 Document 不自动重开，默认欢迎页仍创建。
+包含 V14 **文件 → 重新启动 Host…**、插件看板 **重启并应用更改…**，行为见[重启指南](../../../quick-start/restart-host.md)及[契约](../../../reference/host-restart.md)。保存和关闭可取消，助手只在旧 Host 清理成功并实际退出后启动新进程。上次 Document 不自动重开，默认欢迎页仍创建。
 
 ## 构建与交付检查
 
@@ -18,9 +20,9 @@ Host 使用 `Release`、`win-x64`、`SelfContained=true`、`PublishSingleFile=tr
 5. 确认安装实例未运行，记录目标全部文件摘要；变更文件先备份到桌面 `工作台-host-backups` 本轮目录，再逐项原子替换。核对交付文件与暂存一致，插件及其他保留文件字节不变。
 6. 部署完成后只回填非嵌入 JSON 并提交，不改已打包的源码或 Markdown。
 
-V14 完整开发 `verify` 已通过 1,186 项，零失败、零跳过，Release 构建零警告/错误，见[开发证据](../archive/records/host-v14/final-development-evidence.json)。本次不改生产代码，针对单文件、自包含交付重新编译并验证实际产物。
+V14 完整开发 `verify` 已通过 1,186 项，零失败、零跳过，Release 构建零警告/错误，见[开发证据](final-development-evidence.json)。本次不改生产代码，针对单文件、自包含交付重新编译并验证实际产物。
 
-启动检查只证明该格式的真实启动与正常关闭，不替代单文件下菜单/看板重启往返、原生保存选择器、焦点、多屏或业务插件验收；这些范围继续按[专用验证](host-v14-automatic-restart-verification.md)分别记录。
+启动检查只证明该格式的真实启动与正常关闭，不替代单文件下菜单/看板重启往返、原生保存选择器、焦点、多屏或业务插件验收；这些范围继续按[专用验证](../../../maintenance/host-v14-automatic-restart-verification.md)分别记录。
 
 ## 使用与回退
 

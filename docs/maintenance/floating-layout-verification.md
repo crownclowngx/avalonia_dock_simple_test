@@ -1,8 +1,10 @@
 # 浮窗与 Layout V3 开发验证
 
+> 当前状态（2026-09-20）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260920.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
+
 区域默认居中回停的补丁重建、命中规则和新增验收见[区域回停专项](dock-area-fill-verification.md)。本文原有布局与关闭回归继续执行。
 
-> 用途：V11 专用开发操作与故障排查。状态：当前；核对日期：2026-09-16。实现与实际结果见 [V11 开发记录](../archive/records/host-v11/development-acceptance.md)，使用说明见 [浮动窗口指南](../quick-start/floating-windows-and-layout.md)。
+> 用途：V11 专用开发操作与故障排查。状态：当前；核对日期：2026-09-20。实现与实际结果见 [V11 开发记录](../archive/records/host-v11/development-acceptance.md)，使用说明见 [浮动窗口指南](../quick-start/floating-windows-and-layout.md)。
 
 ## 开发入口
 

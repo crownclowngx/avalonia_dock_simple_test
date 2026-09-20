@@ -1,5 +1,7 @@
 # V11-P2：Tool 浮窗关闭黑框修复
 
+> 归档更新（2026-09-20）：本文保留原阶段方案、操作和验证快照；正文中的“本轮”“未执行”“待验收”指原记录时间。当前 Host 人工验收已由项目所有者确认通过，见[统一验收记录](../records/host/manual-acceptance-20260920.md)；后续候选与发布事项见[待办](../../roadmap/README.md)，现行操作从[文档导航](../../README.md)进入。
+
 > 分支：`codex/host-v11-floating-layout`。基线：`d52600b`。状态：修复与专项自动化已完成，最终 verify 另见非嵌入证据，真实桌面待验收。用户已授权修复 Tool 浮窗关闭；已先提交正式失败测试。安装目录部署另行交付，不使用 AIFLOW、Windows CI 或正式发布门禁。
 
 ## 故障与目标
@@ -25,6 +27,6 @@ ToolChrome 关闭按钮先触发浮窗关闭，随后执行 CloseDockable 命令
 - 同步专项记录、浮窗指南、V3 契约、Host 设计与导航；文档定稿后运行完整本地 verify，最终身份和哈希写非嵌入 JSON。
 - 按失败复现、修复及文档、最终证据分阶段提交中文标题和说明。Headless 结果与真实桌面分别登记。
 
-实施记录：[P2 修复记录](../archive/records/host-v11/p2-tool-window-close-fix.md)。
+实施记录：[P2 修复记录](../records/host-v11/p2-tool-window-close-fix.md)。
 
-新增 24 项 Headless UI、5 项协议单元测试；连同受影响回归，UI 专项 60 项、单元专项 25 项通过。最终完整本地结果以 [P2 开发证据](../archive/records/host-v11/p2-final-development-evidence.json) 为准，专项不替代最终 verify。安装目录中的既有 P1 产物不作为本补丁的验证产物。
+新增 24 项 Headless UI、5 项协议单元测试；连同受影响回归，UI 专项 60 项、单元专项 25 项通过。最终完整本地结果以 [P2 开发证据](../records/host-v11/p2-final-development-evidence.json) 为准，专项不替代最终 verify。安装目录中的既有 P1 产物不作为本补丁的验证产物。

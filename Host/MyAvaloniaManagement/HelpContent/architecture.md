@@ -28,6 +28,6 @@ Host 是运行环境和工作区的所有者。Plugin SDK 表达双方约定，�
 
 ## 版本与事实
 
-产品、SDK、插件版本和文件格式版本分别演进。当前产品为 {{ProductVersion}}，Core/UI SDK 为 {{SdkVersion}}；manifest、Document envelope 和布局继续使用 schema 2。
+产品、SDK、插件版本和文件格式版本分别演进。当前产品为 {{ProductVersion}}，Core/UI SDK 为 {{SdkVersion}}；manifest 和 Document envelope 使用 schema 2，工具布局使用 schema 3（Layout V3）。
 
 下面的动画展示主链路与对象所有权。完整架构正文保留工程细节；其中带阶段编号的验收记录应结合其日期和版本阅读。

@@ -47,6 +47,6 @@ dotnet pack Packaging/MyAvaloniaManagement.Plugin.Build -c Release -o artifacts/
 
 ## 开发依赖发布与 Host 产品发布
 
-NuGet 发布和 Host 安装程序发布独立。现有 verify 不授予 Host 发布资格；当前 API Unshipped 状态也不满足 seal 条件。Host 发布前还需处理[集中待办](../roadmap/README.md)中的人工、业务、备份及回退验收。
+NuGet 发布和 Host 安装程序发布独立。现有 verify 不授予 Host 发布资格；当前 API Unshipped 状态也不满足 seal 条件。Host 整体人工验收已由所有者确认；公开发布前仍需处理[集中待办](../roadmap/README.md)中的外部业务、发布条件及当次备份/回退验证。
 
 不把历史 PowerShell 脚本恢复成维护入口；旧范围、版本和签署记录只从[归档](../archive/README.md)查询。下一版本的具体授权与凭据应在实际发布任务中取得，本文本身不执行任何发布。

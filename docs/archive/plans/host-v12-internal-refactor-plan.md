@@ -1,9 +1,11 @@
 # V12：Host 内部职责重构方案
 
+> 归档更新（2026-09-20）：本文保留原阶段方案、操作和验证快照；正文中的“本轮”“未执行”“待验收”指原记录时间。当前 Host 人工验收已由项目所有者确认通过，见[统一验收记录](../records/host/manual-acceptance-20260920.md)；后续候选与发布事项见[待办](../../roadmap/README.md)，现行操作从[文档导航](../../README.md)进入。
+
 > 用途：规定 Registry 校验、UI 刷新调度和工作区查询快照三项重构的范围、设计与验收条件。
-> 状态：P0–P3 已实施并通过专项验证；最终本地 verify 以[开发证据](../archive/records/host-v12/final-development-evidence.json)为准。日期：2026-09-17；起始源码基线：`538d173`。
+> 状态：P0–P3 已实施并通过专项验证；最终本地 verify 以[开发证据](../records/host-v12/final-development-evidence.json)为准。日期：2026-09-17；起始源码基线：`538d173`。
 > V12 只表示 Host 改造序号，不改变产品、程序集、SDK、NuGet 包或磁盘 schema 版本。
-> 用户已授权按本方案实施。实际取舍、测试与桌面验证边界见[专用开发记录](../archive/records/host-v12/development-acceptance.md)。
+> 用户已授权按本方案实施。实际取舍、测试与桌面验证边界见[专用开发记录](../records/host-v12/development-acceptance.md)。
 
 ## 1. 目标与范围
 
@@ -17,7 +19,7 @@
 
 本轮不扩展到 Workflow 调用编排、诊断持久化、设置文件事务或 DI 全面整理；也不升级 Avalonia、Dock、SDK 或源码补丁。WorkspaceSession 继续独占业务实例与提交顺序。
 
-不使用 AIFLOW，不读取或维护 `.aiflow` 流程上下文。不使用 Windows CI、`seal`、发布 Windows Smoke、发布覆盖率或发布重复性门禁；不上传包、不创建发布标签、不部署安装目录。开发验证只走本地专项测试及已有 `verify`，详见 [V12 专用开发验证](../maintenance/host-v12-refactor-verification.md)。
+不使用 AIFLOW，不读取或维护 `.aiflow` 流程上下文。不使用 Windows CI、`seal`、发布 Windows Smoke、发布覆盖率或发布重复性门禁；不上传包、不创建发布标签、不部署安装目录。开发验证只走本地专项测试及已有 `verify`，详见 [V12 专用开发验证](../../maintenance/host-v12-refactor-verification.md)。
 
 ## 2. 首要规定：SOLID 与朴素设计
 
@@ -55,7 +57,7 @@ P1 注释重点是失败原子性和冲突排除规则；P2 是两种通知时�
 
 ## 3. 保持不变的外部约束
 
-完整事实源仍为 [Host 兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)、[Workbench Command 契约](../reference/workbench-commands.md)及 [Layout V3](../reference/dock-layout-snapshot-v3.md)。本方案不另建一套兼容定义。
+完整事实源仍为 [Host 兼容约束](../../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)、[Workbench Command 契约](../../reference/workbench-commands.md)及 [Layout V3](../../reference/dock-layout-snapshot-v3.md)。本方案不另建一套兼容定义。
 
 | 边界 | 本轮不可改变的内容 |
 | --- | --- |
@@ -73,7 +75,7 @@ P1 注释重点是失败原子性和冲突排除规则；P2 是两种通知时�
 
 ### 4.1 改造前事实
 
-[PluginRegistryBuilder](../../Host/MyAvaloniaManagement/Business/Plugins/Registration/PluginRegistryBuilder.cs) 同时包含 Add/Import、ValidateSingleOwner、Command/Placement 关系校验、全局冲突诊断和 Registry 构造。
+[PluginRegistryBuilder](../../../Host/MyAvaloniaManagement/Business/Plugins/Registration/PluginRegistryBuilder.cs) 同时包含 Add/Import、ValidateSingleOwner、Command/Placement 关系校验、全局冲突诊断和 Registry 构造。
 
 现有顺序具有实际含义：插件候选先局部校验；成功 Provider 的声明才导入；全局冲突排除整个 Owner；只读 Registry 构造完成后，才通过 PluginProviderOwner 提交排除和 Scope 所有权。Import 再次校验与 Build 全局防线不能因“重复”而删除。
 
@@ -110,7 +112,7 @@ P1 注释重点是失败原子性和冲突排除规则；P2 是两种通知时�
 
 ### 5.1 改造前事实
 
-[菜单投影](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchMenuProjection.cs)、[快捷键投影](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchKeyBindingProjection.cs)、[Palette](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandPaletteProjection.cs) 和 [ICommand Adapter](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchPresentationCommand.cs) 在提取前分别维护排队标记、Dispatcher 和释放后抑制逻辑。当前源码链接已随 V17 文件拆分更新，V12 的行为与历史证据不变。
+[菜单投影](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchMenuProjection.cs)、[快捷键投影](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchKeyBindingProjection.cs)、[Palette](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandPaletteProjection.cs) 和 [ICommand Adapter](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchPresentationCommand.cs) 在提取前分别维护排队标记、Dispatcher 和释放后抑制逻辑。当前源码链接已随 V17 文件拆分更新，V12 的行为与历史证据不变。
 
 相似实现具有两种明确语义：
 
@@ -152,9 +154,9 @@ P1 注释重点是失败原子性和冲突排除规则；P2 是两种通知时�
 
 ### 6.1 改造前事实
 
-[WorkspaceSession.Pages](../../Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.Pages.cs) 的 GetOpenPages 在筛选和可激活判断中重复寻找 DocumentDock。[ToolWorkspaceReadModel](../../Host/MyAvaloniaManagement/Business/Workspace/ToolWorkspaceReadModel.cs) 已捕获节点集合，但仍逐工具查找所属浮窗。
+[WorkspaceSession.Pages](../../../Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.Pages.cs) 的 GetOpenPages 在筛选和可激活判断中重复寻找 DocumentDock。[ToolWorkspaceReadModel](../../../Host/MyAvaloniaManagement/Business/Workspace/ToolWorkspaceReadModel.cs) 已捕获节点集合，但仍逐工具查找所属浮窗。
 
-[DockTreeNavigator](../../Host/MyAvaloniaManagement/Business/Layout/DockTreeNavigator.cs) 明确区分主树 Enumerate 与含浮窗的 EnumerateWorkspace。这个区分保护固定骨架查询，不能借统一遍历改变其含义。
+[DockTreeNavigator](../../../Host/MyAvaloniaManagement/Business/Layout/DockTreeNavigator.cs) 明确区分主树 Enumerate 与含浮窗的 EnumerateWorkspace。这个区分保护固定骨架查询，不能借统一遍历改变其含义。
 
 ### 6.2 已落地设计
 
@@ -196,9 +198,9 @@ P1 注释重点是失败原子性和冲突排除规则；P2 是两种通知时�
 | P3：查询 | 构造短命关系快照，接入页面和工具查询 | P3 对照、实例寿命、布局／UI 回归通过，性能结论如实记录 |
 | P4：收口 | 完成 SOLID 审查、文档定稿、全量本地 verify 与证据整理 | 专项必需项无失败、无未解释跳过、无零测试；完整开发验证成功 |
 
-各阶段保持可独立审查和回退的差异，不创建双生产路径或兼容开关。若后续实施涉及 Git 提交，阶段边界可按上述组织；本轮工作分支为 `codex/host-v12-internal-refactor`，重构已提交为 `85a3bfe`；开发 JSON 保留验证时的 HEAD 与未提交内容清单，后续[本机部署与手工影响范围](../maintenance/host-v12-local-deployment.md)单独记录。
+各阶段保持可独立审查和回退的差异，不创建双生产路径或兼容开关。若后续实施涉及 Git 提交，阶段边界可按上述组织；本轮工作分支为 `codex/host-v12-internal-refactor`，重构已提交为 `85a3bfe`；开发 JSON 保留验证时的 HEAD 与未提交内容清单，后续[本机部署与手工影响范围](../records/host-v12/local-deployment-guide.md)单独记录。
 
-门禁命令、逐项测试矩阵、TRX 证据要求与文档校验统一维护在 [V12 专用开发验证](../maintenance/host-v12-refactor-verification.md)，不以本表代替实际执行。
+门禁命令、逐项测试矩阵、TRX 证据要求与文档校验统一维护在 [V12 专用开发验证](../../maintenance/host-v12-refactor-verification.md)，不以本表代替实际执行。
 
 ### 7.1 失败处理与回退
 
@@ -213,7 +215,7 @@ P1 注释重点是失败原子性和冲突排除规则；P2 是两种通知时�
 | 总导航、待办、Host 文档入口、归档 | 实现和专项状态、专用记录与证据链接 | 原生桌面与外部业务仍独立记录 |
 | Host 内部架构与设计取舍 | 当前 Validator/Analyzer、Scheduler、QuerySnapshot 与所有权 | 描述当前代码，不扩大外部契约 |
 | 兼容约束、Command、Layout 文档 | 原权威规则保持有效 | 未修改对外契约或格式 |
-| V12 开发记录与最终证据 | 已创建 [Markdown 记录](../archive/records/host-v12/development-acceptance.md)及[非嵌入 JSON](../archive/records/host-v12/final-development-evidence.json) | 最终 verify 仅在实际运行后回填 |
+| V12 开发记录与最终证据 | 已创建 [Markdown 记录](../records/host-v12/development-acceptance.md)及[非嵌入 JSON](../records/host-v12/final-development-evidence.json) | 最终 verify 仅在实际运行后回填 |
 
 仓库 Markdown 会嵌入 Host。实施阶段应先定稿 Markdown，再运行最终 verify；运行 ID、TRX 摘要、源码身份和产物哈希写入非嵌入 JSON。验证后若又改 Markdown，原 DLL 哈希不再代表最终文档产物，应按影响重新验证。
 

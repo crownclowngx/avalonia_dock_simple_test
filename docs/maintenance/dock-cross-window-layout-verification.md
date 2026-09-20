@@ -1,12 +1,14 @@
 # Document 跨窗口布局崩溃专项维护
 
-> 核对日期：2026-09-17。框架补丁和自动化回归已实现；最终开发 verify 与产物身份以[开发证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)为准。真实 Windows 鼠标、原生页面、多屏 DPI 待验收；后续安装状态与流程见[单文件部署说明](dock-cross-window-layout-deployment.md)。
+> 当前状态（2026-09-20）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260920.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
+
+> 核对日期：2026-09-20。框架补丁和自动化回归已实现；最终开发 verify 与产物身份以[开发证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)为准。Host 人工验收见页首确认；交付状态与现行流程见[本机部署](local-deployment.md)。
 
 ## 原因与实际修复
 
 主窗正文迁入已有浮窗后，旧布局队列仍持有同一个控件。Avalonia 12.1.2 的内部消费会沿控件的新父级继续处理，重新安排时触发 `Attempt to call InvalidateArrange on wrong LayoutManager.`。原异常、最小复现见[诊断](../archive/records/dock-area-fill/cross-window-layout-crash-20260917.md)。
 
-已按[实施方案](../roadmap/host-document-cross-window-layout-crash-fix-plan.md)切换到路线 B。路线 A 的“摘除后刷新旧窗”在 Arrange 回调内迁移时仍失败，因为布局重入不会真正排空队列；该候选已撤销。生产正文回收器不增加刷新、延迟、反射或异常吞并。
+已按[实施方案](../archive/plans/host-document-cross-window-layout-crash-fix-plan.md)切换到路线 B。路线 A 的“摘除后刷新旧窗”在 Arrange 回调内迁移时仍失败，因为布局重入不会真正排空队列；该候选已撤销。生产正文回收器不增加刷新、延迟、反射或异常吞并。
 
 补丁在旧任务消费、祖先递归返回、用户布局回调返回和重新入队处核对布局根。旧根只处理自己的任务，新根正常测量和安排；模型、视图、编辑内容、Document Scope 均保留。框架代码只负责布局归属，构建脚本只负责来源与资产身份，Host 继续负责页面生命周期，遵循单一职责。
 
@@ -61,6 +63,6 @@ MSBuild 在 build/test 和 publish 文件列表中选择同一 Base DLL，并在
 
 ## 桌面验收和回退
 
-方案 M01–M07 均保留待验收，尤其是 M03 的百度网盘正文拖入欢迎浮窗、多屏 DPI、视频/WebView 原生句柄与焦点。当前工具没有原生 Windows 输入能力，Headless 鼠标事件不能替代这些结果。
+Host 当前人工验收已经收口；原方案 M01–M07 作为后续回归矩阵保留，不追加虚构的逐项日志。百度网盘、视频/WebView 等外部插件专有业务结果仍由对应插件记录。Headless 鼠标事件与所有者实际手工验收是不同来源的证据。
 
 部署按专用说明生成最终自包含单 EXE，核对本次补丁身份并记录安装版哈希；不得拿旧部署记录证明新修复已安装。完整回退恢复源码、补丁身份与对应交付物；修复前安装版仍带已知崩溃，恢复它只表示撤销候选，不能表示故障解决。

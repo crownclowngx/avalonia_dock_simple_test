@@ -2,13 +2,13 @@
 
 通过[插件看板](plugin-status.md)禁用插件并重启后，其工具暂不创建；布局仍保留缺失工具的位置、分组和显示意图。重新启用并重启后沿用原恢复逻辑。开关不删除文档文件，Document 仍不跨启动自动重开。
 
-> 用途：Host 浮窗使用指南（含 V16）。状态：实现已接入，真实桌面与外部原生控件验收单独跟踪；核对日期：2026-09-20。数据细节见 [Layout V3 契约](../reference/dock-layout-snapshot-v3.md)。
+> 用途：Host 浮窗使用指南（含 V16）。状态：当前；核对日期：2026-09-20。数据细节见 [Layout V3 契约](../reference/dock-layout-snapshot-v3.md)。
 
 ## 浮动与回停
 
 拖出 Document 标签或 Tool 标题可创建浮窗，也可使用 Dock 的浮动菜单。整组浮动移动组内内容，主窗口的中心文档停靠区继续保留。把鼠标拖入可接收分组的内容区域，看到整区高亮后松开即可回停，无须精确命中中央小按钮。目标已有标签时合并到该组，空组则填满区域；浮动和回停复用原模型、View 与文档 Scope。
 
-需要分屏时，将鼠标移到上、下、左、右的具体按钮；外侧全局方向按钮继续有效。标签栏仍按原方式排序或插入。悬停只显示预览，松开才处理；离开可接收区域或取消拖动不会执行默认合并。区域回停的原生遮挡和多屏体验仍在[专项验收](../maintenance/dock-area-fill-verification.md)中单独跟踪。
+需要分屏时，将鼠标移到上、下、左、右的具体按钮；外侧全局方向按钮继续有效。标签栏仍按原方式排序或插入。悬停只显示预览，松开才处理；离开可接收区域或取消拖动不会执行默认合并。回归检查矩阵见[区域回停专项](../maintenance/dock-area-fill-verification.md)。
 
 工具浮窗内可分组与分割。自动隐藏边栏属于主窗口：工具浮动后不能自动隐藏，回停后重新可用。内容全屏期间先退出全屏，再进行浮动、回停或重置布局。
 
@@ -33,7 +33,7 @@
 
 V11-P2 修复了工具浮窗右上角关闭后留下黑框的问题。标题栏按钮、工具菜单和工具中心统一遵守关闭许可；取消关闭不会先清空工具。关闭后的隐藏布局记录仍会保留，重启时不会因此创建空白窗口。
 
-V16 将最后一个 Document 的标签关闭接入同一窗口收尾协议，避免文档已移除而原生关闭仍等待确认的空壳。命令面板新建会使用发起窗口的活动文档组，具体回退规则见[工作区搜索](workbench-search.md)。原生黑框、DPI 和输入焦点仍需按 [V16 专用验证](../maintenance/host-v16-document-window-verification.md)进行桌面验收。
+V16 将最后一个 Document 的标签关闭接入同一窗口收尾协议，避免文档已移除而原生关闭仍等待确认的空壳。命令面板新建会使用发起窗口的活动文档组，具体回退规则见[工作区搜索](workbench-search.md)。当前 Host 人工验收已由项目所有者[确认通过](../archive/records/host/manual-acceptance-20260920.md)，后续回归沿用 [V16 专用验证](../maintenance/host-v16-document-window-verification.md)的检查矩阵。
 
 ## 重启时记住什么
 
@@ -69,4 +69,4 @@ Document 可以在本次运行中浮动，重启不会自动重开。布局文�
 
 保存失败时主窗口显示提示，可使用“重试保存布局”。失败不会改动文档保存结果，上一有效布局继续保留；最终布局保存失败时窗口保持打开，以便重试或处理文件占用。
 
-开发验证和真实桌面待办见 [专项验证指南](../maintenance/floating-layout-verification.md) 与 [V11 记录](../archive/records/host-v11/development-acceptance.md)。
+开发验证与回归矩阵见 [专项验证指南](../maintenance/floating-layout-verification.md) 与 [V11 记录](../archive/records/host-v11/development-acceptance.md)。

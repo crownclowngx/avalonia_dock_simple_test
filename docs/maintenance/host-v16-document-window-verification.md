@@ -1,7 +1,9 @@
 # V16 Document 浮窗关闭与新建位置：专用开发验证
 
+> 当前状态（2026-09-20）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260920.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
+
 > 用途：定义 V16 的本地自动化矩阵、原生桌面验收、门禁和证据要求。日期：2026-09-20。
-> 状态：实现与专项已落地；实际结果见[开发记录](../archive/records/host-v16/development-acceptance.md)，最终完整门禁见同目录非嵌入 JSON。原生桌面 M01–M08 未执行。目标规则见 [V16 实施方案](../roadmap/host-v16-document-floating-close-and-creation-target-plan.md)。
+> 状态：实现与专项已落地；实际结果见[开发记录](../archive/records/host-v16/development-acceptance.md)，最终完整门禁见同目录非嵌入 JSON。原阶段 M01–M08 未执行；当前 Host 人工验收见页首确认。目标规则见 [V16 实施方案](../archive/plans/host-v16-document-floating-close-and-creation-target-plan.md)。
 > 不使用 AIFLOW、Windows CI、`seal`、发布 Smoke、发布覆盖率或重复性门禁；不部署安装目录、不发布包。下文命令可复现本地验证，不授予发布资格。
 
 ## 1. 验证层次与通过规则

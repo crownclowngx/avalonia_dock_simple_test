@@ -1,8 +1,10 @@
 # Document 拖入已有浮窗崩溃修复方案
 
-> 用途：主项目实施与验收依据。日期：2026-09-17。状态：采用路线 B，源码与自动化已完成；完整 verify 结果见[修复证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)。故障证据见[专项诊断](../archive/records/dock-area-fill/cross-window-layout-crash-20260917.md)。真实桌面验收待完成；后续安装状态见[单文件部署说明](../maintenance/dock-cross-window-layout-deployment.md)。开发阶段未使用 AIFLOW、Windows CI、seal 或发布门禁。
+> 归档更新（2026-09-20）：本文保留原阶段方案、操作和验证快照；正文中的“本轮”“未执行”“待验收”指原记录时间。当前 Host 人工验收已由项目所有者确认通过，见[统一验收记录](../records/host/manual-acceptance-20260920.md)；后续候选与发布事项见[待办](../../roadmap/README.md)，现行操作从[文档导航](../../README.md)进入。
 
-实际实施决策：路线 A 在非重入时通过、Arrange 回调重入时仍报同一异常，候选已撤销。按本文切换条件完成路线 B，使用独立身份的 Host 运行时资产，保留 SDK UI `[12.1.2]` 及官方包。维护与覆盖对应关系见[专用指南](../maintenance/dock-cross-window-layout-verification.md)。下文 A 的细节保留为路线评估依据，不是当前生产实现。
+> 用途：主项目实施与验收依据。日期：2026-09-17。状态：采用路线 B，源码与自动化已完成；完整 verify 结果见[修复证据](../records/dock-area-fill/cross-window-layout-fix-evidence.json)。故障证据见[专项诊断](../records/dock-area-fill/cross-window-layout-crash-20260917.md)。真实桌面验收待完成；后续安装状态见[单文件部署说明](../records/dock-area-fill/cross-window-layout-deployment-guide.md)。开发阶段未使用 AIFLOW、Windows CI、seal 或发布门禁。
+
+实际实施决策：路线 A 在非重入时通过、Arrange 回调重入时仍报同一异常，候选已撤销。按本文切换条件完成路线 B，使用独立身份的 Host 运行时资产，保留 SDK UI `[12.1.2]` 及官方包。维护与覆盖对应关系见[专用指南](../../maintenance/dock-cross-window-layout-verification.md)。下文 A 的细节保留为路线评估依据，不是当前生产实现。
 
 ## 1. 修复目标与约束
 
@@ -16,7 +18,7 @@ Document 从主窗口拖入已经打开的浮窗后，两个窗口都能继续�
 
 | 项目 | 当前事实 |
 | --- | --- |
-| 故障发生时安装版源码 | `85749180218a94cade4e7157c61bb6997f25b770`，见[当时部署记录](../archive/records/dock-area-fill/local-deployment-20260917.json)；修复后的安装状态另见部署说明 |
+| 故障发生时安装版源码 | `85749180218a94cade4e7157c61bb6997f25b770`，见[当时部署记录](../records/dock-area-fill/local-deployment-20260917.json)；修复后的安装状态另见部署说明 |
 | Avalonia / Dock | Avalonia `12.1.2`；Dock 呈现补丁 `12.1.0.7-area.5`，其余 Dock 基座 `12.1.0.6` |
 | Avalonia 固定源码 | 当前包 nuspec 指向 `d3c867a9e2de379249b03dbeb3495bd7f076a81a` |
 | 实际异常 | 三次 Windows `.NET Runtime` 事件均为 `Attempt to call InvalidateArrange on wrong LayoutManager.` |
@@ -37,7 +39,7 @@ Avalonia 会为每个布局根维护待测量和待安排队列。旧队列中�
 选择 A 的原因：
 
 - 当前所有托管正文通过 `DocumentControlRecycling` 取得同一个 PreparedView，已有集中交接入口，无须在每个插件或拖动按钮上增加补丁。
-- [Plugin SDK UI 项目](../../Host/MyAvaloniaManagement.PluginSdk.UI/MyAvaloniaManagement.PluginSdk.UI.csproj) 对 Avalonia 使用 `[12.1.2]` 精确依赖。直接把 Host 改为自定义 Avalonia 预发布版本会产生依赖约束问题，不能通过关闭 NuGet 警告解决。
+- [Plugin SDK UI 项目](../../../Host/MyAvaloniaManagement.PluginSdk.UI/MyAvaloniaManagement.PluginSdk.UI.csproj) 对 Avalonia 使用 `[12.1.2]` 精确依赖。直接把 Host 改为自定义 Avalonia 预发布版本会产生依赖约束问题，不能通过关闭 NuGet 警告解决。
 - 固定版本的公开 `ILayoutManager` 没有可直接读取的“正在执行布局”状态，因此无条件增加 `UpdateLayout` 不是可靠证明；主路线必须通过下面的重入边界检查。
 
 **路线 A 的准入条件：** 跨窗正文迁移能在旧布局队列不再执行本次交接的安全边界完成；确定性回归必须覆盖模板延迟创建、布局回调和连续迁移。若 `UpdateLayout` 因旧管理器仍在执行而直接返回，不能把返回当作队列已处理完。
@@ -50,12 +52,12 @@ Avalonia 会为每个布局根维护待测量和待安排队列。旧队列中�
 
 | 文件 / 类型 | 计划职责或变化 |
 | --- | --- |
-| [DocumentControlRecycling.cs](../../Host/MyAvaloniaManagement/Business/Docking/DocumentControlRecycling.cs) | 唯一正文缓存及转交入口；区分同一正文、同窗转交、跨窗转交、最终释放 |
+| [DocumentControlRecycling.cs](../../../Host/MyAvaloniaManagement/Business/Docking/DocumentControlRecycling.cs) | 唯一正文缓存及转交入口；区分同一正文、同窗转交、跨窗转交、最终释放 |
 | 拟新增 `Business/Docking/DockViewTransfer.cs` | 必要时提取一个内部帮助类，封装父级摘除与跨窗布局交接；不缓存模型、不拥有 Scope |
-| [HostDockFactory.cs](../../Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs) | 保留现有移动与布局事务；仅在 P0 证明需要模型迁移之前的交接边界时接入帮助类 |
+| [HostDockFactory.cs](../../../Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs) | 保留现有移动与布局事务；仅在 P0 证明需要模型迁移之前的交接边界时接入帮助类 |
 | 拟新增 `DockCrossWindowLayoutUiTests.cs` | 正式主窗到已有浮窗、队列顺序、重入及资源生命周期回归 |
-| [DockAreaFillUiTests.cs](../../Host/MyAvaloniaManagement.UiTests/DockAreaFillUiTests.cs) | 补真实标签输入的主窗到浮窗方向，保留原反向用例 |
-| [HostDockAdapterUiTests.cs](../../Host/MyAvaloniaManagement.UiTests/HostDockAdapterUiTests.cs) | 同一 Presenter、同窗复用、最终关闭和晚到模板回调回归 |
+| [DockAreaFillUiTests.cs](../../../Host/MyAvaloniaManagement.UiTests/DockAreaFillUiTests.cs) | 补真实标签输入的主窗到浮窗方向，保留原反向用例 |
+| [HostDockAdapterUiTests.cs](../../../Host/MyAvaloniaManagement.UiTests/HostDockAdapterUiTests.cs) | 同一 Presenter、同窗复用、最终关闭和晚到模板回调回归 |
 | 文档与非嵌入证据 JSON | 更新实际行为、测试覆盖、源码和产物身份；不覆盖旧部署事实 |
 
 先在现有类的私有方法内验证最小改动，职责明显独立时再提取帮助类。不得为了套设计模式引入通用迁移框架、Service Locator、第二套 Document 集合或新的全局状态。
@@ -226,7 +228,7 @@ if ($LASTEXITCODE -ne 0) { throw '完整本地 verify 失败' }
 
 ## 8. 文档、验收记录与完成定义
 
-实施时同步本方案、[区域回停专项](../maintenance/dock-area-fill-verification.md)、[原实施计划](host-dock-area-fill-implementation-plan.md)、[待办列表](README.md)及相关 Host 设计说明。历史诊断和部署证据保留当时结论。
+实施时同步本方案、[区域回停专项](../../maintenance/dock-area-fill-verification.md)、[原实施计划](host-dock-area-fill-implementation-plan.md)、[待办列表](../../roadmap/README.md)及相关 Host 设计说明。历史诊断和部署证据保留当时结论。
 
 拟增加专用维护指南 `docs/maintenance/dock-cross-window-layout-verification.md`、实际修复记录及非嵌入 `cross-window-layout-fix-evidence.json`。证据至少包括：选择的技术路线、失败/修复后 TRX、源码提交和工作树指纹、测试清单、框架/Dock/Host DLL 摘要、Gate runId、真实桌面逐项结果及未执行原因。
 

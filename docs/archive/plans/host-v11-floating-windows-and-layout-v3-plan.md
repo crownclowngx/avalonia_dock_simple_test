@@ -1,6 +1,8 @@
 # MyAvaloniaManagement V11：浮动窗口恢复与 Layout V3 实施计划
 
-> 用途：约束主程序浮动窗口、工具布局保存恢复及配套验证的实施范围。状态：实现已接入，开发门禁结果独立记录，真实桌面验收待补；用户已授权从 master 新建分支并按阶段提交。编写日期：2026-09-16。实际结果见 [V11 开发记录](../archive/records/host-v11/development-acceptance.md)。
+> 归档更新（2026-09-20）：本文保留原阶段方案、操作和验证快照；正文中的“本轮”“未执行”“待验收”指原记录时间。当前 Host 人工验收已由项目所有者确认通过，见[统一验收记录](../records/host/manual-acceptance-20260920.md)；后续候选与发布事项见[待办](../../roadmap/README.md)，现行操作从[文档导航](../../README.md)进入。
+
+> 用途：约束主程序浮动窗口、工具布局保存恢复及配套验证的实施范围。状态：实现已接入，开发门禁结果独立记录，真实桌面验收待补；用户已授权从 master 新建分支并按阶段提交。编写日期：2026-09-16。实际结果见 [V11 开发记录](../records/host-v11/development-acceptance.md)。
 > 起始基线：`master` 的 `bbd4832`，含 V11 原计划及 `63baa97` 单 EXE 兼容身份修复；已结合 `9bceb07` 文档重组与 V10 后 Host 生命周期重新核查。实施变化与尚未完成的验收见第 8 节，不沿用旧文档目录或早期 Host 生命周期假设。
 > 用户已确定：工具浮窗恢复位置和分组；Document 支持运行时浮动，重启不自动重开。本文中的 V11 是改造顺序，Layout V3 是独立磁盘协议版本，均不代表产品或 NuGet 包升到相同版本。
 > 首要规定：满足 SOLID；朴素使用设计模式；新增及实质修改的核心代码使用详细中文注释，解释设计思路、所有权和失败语义；单元测试、集成测试、本地开发门禁及专项文档齐全。
@@ -42,21 +44,21 @@
 
 | 当前入口 | 已核查事实 | V11 必须处理 |
 | --- | --- | --- |
-| [HostDockFactory](../../Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs) | 四个 Float override 是空实现；根能力禁止 Float；已注册原生 HostWindow Locator；Tool 关闭默认隐藏 | 恢复框架协议，纳入浮窗创建、关闭和状态通知；不能只删除一个开关 |
-| [ManagedDocumentDockable](../../Host/MyAvaloniaManagement/Business/Docking/ManagedDocumentDockable.cs)、[ManagedToolDockable](../../Host/MyAvaloniaManagement/Business/Docking/ManagedToolDockable.cs) | 两个 Adapter 均设置 `CanFloat=false`；Document 有运行期 PageId，Tool 使用稳定贡献 ID | 同步能力策略，保留模型和 View 所有权；PageId 不转成跨启动身份 |
-| [DockWorkspaceBuilder](../../Host/MyAvaloniaManagement/Business/Layout/DockWorkspaceBuilder.cs) | 外层 Root 与内层 Workspace 均应用禁浮动策略 | 区分固定主布局骨架和可浮动内容；新浮窗根也要具有一致能力 |
-| [DockTreeNavigator](../../Host/MyAvaloniaManagement/Business/Layout/DockTreeNavigator.cs) | 主要沿 VisibleDockables 递归，不统一处理各 Root 的 Windows | 建立按窗口限定与整个工作区两种明确查询，覆盖隐藏、Pinned、浮窗根并防重复 |
-| [ToolDockCoordinator](../../Host/MyAvaloniaManagement/Business/Layout/ToolDockCoordinator.cs) | 恢复工具依赖原 Owner；Top/Bottom 归一化依赖稳定主布局节点 | 浮窗不能误走查找 WorkspaceRows/Columns 的主窗口分支；保留真实浮窗分组 |
-| [WorkspaceSession.Pages](../../Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.Pages.cs)、[ToolWorkspaceReadModel](../../Host/MyAvaloniaManagement/Business/Workspace/ToolWorkspaceReadModel.cs) | 页面存在性、激活、工具显隐依赖主树；现有工具状态只有 Hidden/Docked/AutoHidden | 更新跨窗定位与浮动状态，避免页面消失、误隐藏或重复创建 |
-| [MainWindow](../../Host/MyAvaloniaManagement/Views/MainWindow.axaml.cs) | 快捷键、命令面板、内容全屏与布局保存挂在主窗口；Opened 应用布局，Closing 保存 | 提取可复用窗口协作者，并在退出拆除浮窗前捕获布局 |
-| [DocumentCloseCoordinator](../../Host/MyAvaloniaManagement/Business/Documents/DocumentCloseCoordinator.cs) | 同步取消、异步保存、一次性关闭许可和命令排空已经存在；窗口确认按应用退出表达 | 增加有范围的浮窗关闭协调，不能直接把关闭子窗当作应用退出 |
-| [HostRuntimeShutdown](../../Host/MyAvaloniaManagement/Business/Composition/HostRuntimeShutdown.cs)、[HostShutdownParticipants](../../Host/MyAvaloniaManagement/Business/Composition/HostShutdownParticipants.cs) | 记录已创建参与者；先停止入口并等待 Command/Document/Workflow，再安全释放或保留资源 | 沿用重构后的唯一关闭所有者；不从浮窗直接 Dispose Runtime/Provider，也不在失败回滚时解析新服务 |
-| [DocumentControlRecycling](../../Host/MyAvaloniaManagement/Business/Docking/DocumentControlRecycling.cs)、[指针保护](../../Host/MyAvaloniaManagement/Behaviors/DockTabPointerCaptureGuard.cs) | 已处理正文单实例、同 Presenter 复用、捕获移交与残留状态 | 保留近期修复，补跨 TopLevel 迁移和释放回归，不删除保护层换取浮动 |
-| [布局生命周期](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutLifecycle.cs)、[Mapper](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutSnapshotMapper.cs)、[Store](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs) | V2 只保存四向 Pane 与 Tool；保存已有原子事务；未知或不可用工具会拒绝整份布局 | 引入严格 V3、只读 V2 转换、可用项恢复和自动保存；旧 Store.Load 具有隔离副作用，不能直接作为只读迁移入口 |
-| [Directory.Version.props](../../Directory.Version.props)、[VersionPolicyTests](../../Host/MyAvaloniaManagement.PluginTests/VersionPolicyTests.cs)、[GateChecks](../../tools/MyAvaloniaManagement.Gate/GateChecks.cs) | 含 V2 文件名及版本断言；发布 Smoke 也硬编码 V2 | 更新当前布局事实与开发契约测试；发布 Smoke 适配作为发布前待办，不在开发阶段运行 |
-| [Host 项目](../../Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj) | `docs/**/*.md` 和 Host 内部文档嵌入程序 | 文档改变也会改变 Host 产物；最终验证应在文档定稿后进行，V10 旧产物证据不自动适用于 V11 |
+| [HostDockFactory](../../../Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs) | 四个 Float override 是空实现；根能力禁止 Float；已注册原生 HostWindow Locator；Tool 关闭默认隐藏 | 恢复框架协议，纳入浮窗创建、关闭和状态通知；不能只删除一个开关 |
+| [ManagedDocumentDockable](../../../Host/MyAvaloniaManagement/Business/Docking/ManagedDocumentDockable.cs)、[ManagedToolDockable](../../../Host/MyAvaloniaManagement/Business/Docking/ManagedToolDockable.cs) | 两个 Adapter 均设置 `CanFloat=false`；Document 有运行期 PageId，Tool 使用稳定贡献 ID | 同步能力策略，保留模型和 View 所有权；PageId 不转成跨启动身份 |
+| [DockWorkspaceBuilder](../../../Host/MyAvaloniaManagement/Business/Layout/DockWorkspaceBuilder.cs) | 外层 Root 与内层 Workspace 均应用禁浮动策略 | 区分固定主布局骨架和可浮动内容；新浮窗根也要具有一致能力 |
+| [DockTreeNavigator](../../../Host/MyAvaloniaManagement/Business/Layout/DockTreeNavigator.cs) | 主要沿 VisibleDockables 递归，不统一处理各 Root 的 Windows | 建立按窗口限定与整个工作区两种明确查询，覆盖隐藏、Pinned、浮窗根并防重复 |
+| [ToolDockCoordinator](../../../Host/MyAvaloniaManagement/Business/Layout/ToolDockCoordinator.cs) | 恢复工具依赖原 Owner；Top/Bottom 归一化依赖稳定主布局节点 | 浮窗不能误走查找 WorkspaceRows/Columns 的主窗口分支；保留真实浮窗分组 |
+| [WorkspaceSession.Pages](../../../Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.Pages.cs)、[ToolWorkspaceReadModel](../../../Host/MyAvaloniaManagement/Business/Workspace/ToolWorkspaceReadModel.cs) | 页面存在性、激活、工具显隐依赖主树；现有工具状态只有 Hidden/Docked/AutoHidden | 更新跨窗定位与浮动状态，避免页面消失、误隐藏或重复创建 |
+| [MainWindow](../../../Host/MyAvaloniaManagement/Views/MainWindow.axaml.cs) | 快捷键、命令面板、内容全屏与布局保存挂在主窗口；Opened 应用布局，Closing 保存 | 提取可复用窗口协作者，并在退出拆除浮窗前捕获布局 |
+| [DocumentCloseCoordinator](../../../Host/MyAvaloniaManagement/Business/Documents/DocumentCloseCoordinator.cs) | 同步取消、异步保存、一次性关闭许可和命令排空已经存在；窗口确认按应用退出表达 | 增加有范围的浮窗关闭协调，不能直接把关闭子窗当作应用退出 |
+| [HostRuntimeShutdown](../../../Host/MyAvaloniaManagement/Business/Composition/HostRuntimeShutdown.cs)、[HostShutdownParticipants](../../../Host/MyAvaloniaManagement/Business/Composition/HostShutdownParticipants.cs) | 记录已创建参与者；先停止入口并等待 Command/Document/Workflow，再安全释放或保留资源 | 沿用重构后的唯一关闭所有者；不从浮窗直接 Dispose Runtime/Provider，也不在失败回滚时解析新服务 |
+| [DocumentControlRecycling](../../../Host/MyAvaloniaManagement/Business/Docking/DocumentControlRecycling.cs)、[指针保护](../../../Host/MyAvaloniaManagement/Behaviors/DockTabPointerCaptureGuard.cs) | 已处理正文单实例、同 Presenter 复用、捕获移交与残留状态 | 保留近期修复，补跨 TopLevel 迁移和释放回归，不删除保护层换取浮动 |
+| [布局生命周期](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutLifecycle.cs)、[Mapper](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutSnapshotMapper.cs)、[Store](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs) | V2 只保存四向 Pane 与 Tool；保存已有原子事务；未知或不可用工具会拒绝整份布局 | 引入严格 V3、只读 V2 转换、可用项恢复和自动保存；旧 Store.Load 具有隔离副作用，不能直接作为只读迁移入口 |
+| [Directory.Version.props](../../../Directory.Version.props)、[VersionPolicyTests](../../../Host/MyAvaloniaManagement.PluginTests/VersionPolicyTests.cs)、[GateChecks](../../../tools/MyAvaloniaManagement.Gate/GateChecks.cs) | 含 V2 文件名及版本断言；发布 Smoke 也硬编码 V2 | 更新当前布局事实与开发契约测试；发布 Smoke 适配作为发布前待办，不在开发阶段运行 |
+| [Host 项目](../../../Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj) | `docs/**/*.md` 和 Host 内部文档嵌入程序 | 文档改变也会改变 Host 产物；最终验证应在文档定稿后进行，V10 旧产物证据不自动适用于 V11 |
 
-上表描述起始基线。分支 `codex/host-v11-floating-layout` 已接入内容浮动、范围关闭、跨窗口交互、V3 恢复、保存与重置；当前生产契约见 [Layout V3](../reference/dock-layout-snapshot-v3.md)、[内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md) 和 [设计取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)。V2 文档保留旧格式和只读输入语义。
+上表描述起始基线。分支 `codex/host-v11-floating-layout` 已接入内容浮动、范围关闭、跨窗口交互、V3 恢复、保存与重置；当前生产契约见 [Layout V3](../../reference/dock-layout-snapshot-v3.md)、[内部架构](../../../Host/MyAvaloniaManagement/docs/design/architecture.md) 和 [设计取舍](../../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md)。V2 文档保留旧格式和只读输入语义。
 
 ## 3. SOLID 与实现规范
 
@@ -107,8 +109,8 @@ V11-P1 将 Top/Bottom 全宽归一化限定为 Tool 到主窗口 DocumentDock（
 - 点击工具中心或页面列表时，先还原并激活实际承载窗口，再设置该窗口根的活动项与焦点。工具获得焦点不擅自替换已有文档命令目标。
 - 主窗口和浮窗共用现有 Command Catalog/Context/State/Executor，每个窗口拥有独立 KeyBinding 实例和订阅；一次按键只能执行一次。
 - 命令面板在调用窗口显示，同一时刻只维持一个工作台面板会话；关闭后恢复该窗口焦点，避免并发面板共享交互状态。
-- [Host 文件选择](../../Host/MyAvaloniaManagement/Business/Storage/AvaloniaHostStorageService.cs)、[插件窗口交互](../../Host/MyAvaloniaManagement/Business/Presentation/AvaloniaPluginWindowInteraction.cs)、[关闭对话框](../../Host/MyAvaloniaManagement/Business/Documents/DocumentInteractionService.cs)统一采用 Host 内部 Owner 选择规则：有明确目标时使用目标窗口，否则使用当前活动工作台窗口，最后回退主窗口。开始异步交互时固定 Owner；目标关闭后不向失效窗口提交结果。
-- 浮窗接入既有 [内容全屏租约](../../Host/MyAvaloniaManagement/Business/Presentation/WindowContentFullscreenSession.cs)。有活动租约时暂不允许迁移该内容，先退出全屏再浮动/回停；最终关闭仍幂等释放。不能将独立窗口全屏和插件内容全屏混为同一状态。
+- [Host 文件选择](../../../Host/MyAvaloniaManagement/Business/Storage/AvaloniaHostStorageService.cs)、[插件窗口交互](../../../Host/MyAvaloniaManagement/Business/Presentation/AvaloniaPluginWindowInteraction.cs)、[关闭对话框](../../../Host/MyAvaloniaManagement/Business/Documents/DocumentInteractionService.cs)统一采用 Host 内部 Owner 选择规则：有明确目标时使用目标窗口，否则使用当前活动工作台窗口，最后回退主窗口。开始异步交互时固定 Owner；目标关闭后不向失效窗口提交结果。
+- 浮窗接入既有 [内容全屏租约](../../../Host/MyAvaloniaManagement/Business/Presentation/WindowContentFullscreenSession.cs)。有活动租约时暂不允许迁移该内容，先退出全屏再浮动/回停；最终关闭仍幂等释放。不能将独立窗口全屏和插件内容全屏混为同一状态。
 - 原生视频、WebView 等跨窗口迁移是单独验收场景。普通 View 测试不能证明原生句柄迁移正确；若发现问题，记录具体插件与控件边界，不默认强制重建业务模型规避。
 
 ### 4.3 有范围的关闭
@@ -191,7 +193,7 @@ V11-P1 将 Top/Bottom 全宽归一化限定为 Tool 到主窗口 DocumentDock（
 
 ### 6.3 文件事务与多实例
 
-复用 [AtomicFileTransaction](../../Host/MyAvaloniaManagement/Business/Storage/AtomicFileTransaction.cs) 的同目录写入、刷新与原子替换。备份更新、主文件提交和失败清理需有明确顺序，不把单文件原子写误称为跨文件事务；只用已验证的有效文件更新 `.bak`。任何写入失败至少保留上一份有效主文件或备份，首次迁移失败继续保留 V2。
+复用 [AtomicFileTransaction](../../../Host/MyAvaloniaManagement/Business/Storage/AtomicFileTransaction.cs) 的同目录写入、刷新与原子替换。备份更新、主文件提交和失败清理需有明确顺序，不把单文件原子写误称为跨文件事务；只用已验证的有效文件更新 `.bak`。任何写入失败至少保留上一份有效主文件或备份，首次迁移失败继续保留 V2。
 
 每个规范化数据根只允许一个布局写入者，可用该目录专用锁文件的独占句柄表达；锁仅约束布局，不限制第二个 Host 的业务运行。未取得锁的实例读取快照并保持本次会话布局，不自动接管，也不保存、迁移或隔离。进程退出释放句柄，遗留锁文件本身不代表仍被占用；同进程双实例、跨进程竞争与崩溃后释放均需验证。
 
@@ -231,7 +233,7 @@ V11-P1 将 Top/Bottom 全宽归一化限定为 Tool 到主窗口 DocumentDock（
 
 阶段按依赖顺序推进，普通类名、测试组织和内部拆分由实施者决定。不得跳过跨窗口与关闭保护而先交付裸 Float 开关。
 
-当前实现与专项测试已覆盖 G0–G6 的自动化部分。G4/G6 的真实鼠标、跨屏与外部原生资源观察仍待补；G7/G8 最终门禁输入及结果见 [非嵌入证据](../archive/records/host-v11/final-development-evidence.json)，阶段失败和修正见 [V11 开发记录](../archive/records/host-v11/development-acceptance.md)。未完真人验收保留在 roadmap，本计划暂不归档。
+当前实现与专项测试已覆盖 G0–G6 的自动化部分。G4/G6 的真实鼠标、跨屏与外部原生资源观察仍待补；G7/G8 最终门禁输入及结果见 [非嵌入证据](../records/host-v11/final-development-evidence.json)，阶段失败和修正见 [V11 开发记录](../records/host-v11/development-acceptance.md)。未完真人验收保留在 roadmap，本计划暂不归档。
 
 ### G0：核实框架与建立开发基线
 
@@ -297,7 +299,7 @@ V11-P1 将 Top/Bottom 全宽归一化限定为 Tool 到主窗口 DocumentDock（
 
 - [x] 更新现有禁止浮动测试和快照断言，增加第 9 节全部必要行为测试。
 - [x] 新增测试进入现有本仓工程和 verify 范围；更新 Gate 时独立运行工具自测。
-- 最终完整 verify（SDK、真实 ZIP、全部测试与 V10 回归）的完成状态、数量和输入身份从 [最终证据](../archive/records/host-v11/final-development-evidence.json) 读取，避免嵌入 MD 与最后构建身份循环变动。
+- 最终完整 verify（SDK、真实 ZIP、全部测试与 V10 回归）的完成状态、数量和输入身份从 [最终证据](../records/host-v11/final-development-evidence.json) 读取，避免嵌入 MD 与最后构建身份循环变动。
 
 通过条件：要求执行的自动验证无失败、无意外跳过或零测试，不降低已有断言、警告策略和发布阈值。
 
@@ -305,7 +307,7 @@ V11-P1 将 Top/Bottom 全宽归一化限定为 Tool 到主窗口 DocumentDock（
 
 - [x] 按第 10 节同步当前指南、专项契约、验证说明、Host 架构和 V11 实际记录。
 - [x] 检查改动文档的本地文件链接和标题锚点（194 项，无断链）；帮助嵌入由最终 verify 的 HelpContentTests 验证。
-- 文档定稿后运行最终验证，结果与产物身份写入 [非嵌入证据](../archive/records/host-v11/final-development-evidence.json)，避免修改嵌入 MD 后继续使用旧产物身份。
+- 文档定稿后运行最终验证，结果与产物身份写入 [非嵌入证据](../records/host-v11/final-development-evidence.json)，避免修改嵌入 MD 后继续使用旧产物身份。
 - [x] 在 roadmap 合并未完成真机/业务事项，并登记发布 Smoke 的 V3 适配及实际发布门禁待办；归档计划时重算链接。
 
 通过条件：实现、开发自动化、真实桌面、外部业务、部署、发布六类状态分别可追溯，没有预填通过或隐藏未验收项。
@@ -349,7 +351,7 @@ V11-P1 将 Top/Bottom 全宽归一化限定为 Tool 到主窗口 DocumentDock（
 dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 ```
 
-当前 verify 执行 locked restore、Release 零警告构建、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约及已发布 API 比较、MyPlugTest 打包与真实 ZIP 验收。API 比较是开发兼容检查，不是公共发布动作；它不启动 Windows Smoke，也不授予发布资格。完整语义见[主仓验证说明](../maintenance/verification.md)。
+当前 verify 执行 locked restore、Release 零警告构建、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约及已发布 API 比较、MyPlugTest 打包与真实 ZIP 验收。API 比较是开发兼容检查，不是公共发布动作；它不启动 Windows Smoke，也不授予发布资格。完整语义见[主仓验证说明](../../maintenance/verification.md)。
 
 阶段排错使用现有测试项目，不替代最终 verify：
 
@@ -380,7 +382,7 @@ dotnet test Host/MyAvaloniaManagement.Tests -c Release -m:1 -warnaserror --filte
 
 普通本地人工运行开发产物，使用隔离 `MYAVALONIA_DATA_DIRECTORY` 和测试文档，验证拖出/拖回、整组关闭取消、跨屏、DPI、Esc、失活、重启恢复与找回窗口；不触发 CI 或发布 Smoke，不覆盖日常用户布局。
 
-MyPlugTest 证明通用 Host 路径；原生视频、WebView、后台下载等由相应插件的真实场景补证，先确认实际产物身份和环境。外部产物需要兼容验证时沿用[V10 专项开发入口](../maintenance/plugin-compatibility-verification.md)，不把历史报告自动标为本轮通过。缺环境时记待验收，不虚构成功，也不扩大为全插件源码改造。
+MyPlugTest 证明通用 Host 路径；原生视频、WebView、后台下载等由相应插件的真实场景补证，先确认实际产物身份和环境。外部产物需要兼容验证时沿用[V10 专项开发入口](../../maintenance/plugin-compatibility-verification.md)，不把历史报告自动标为本轮通过。缺环境时记待验收，不虚构成功，也不扩大为全插件源码改造。
 
 ## 10. 文档同步与专用材料
 

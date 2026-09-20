@@ -6,7 +6,7 @@
 
 V17 的可读性整理遵守 SOLID，优先显露已经存在的变化原因：诊断策略与会话分文件，命令缓存、菜单、快捷键与展示组合分文件；资源仍由原类拥有。服务注册只把连续段提取为同类私有方法，入口统一选择共享所有者，辅助方法借用这些对象，不建立注册模块或第二容器。类型实现与原注册语句通过语法标记比对核对，运行期等价由实例身份、延迟创建、诊断、通知和关闭测试保护。
 
-主入口缩短不要求总文件行数减少：详细中文注释解释工厂交付前登记、接口别名、UI 解析时机和释放顺序。WorkspaceCatalog 的简单合并工厂仍在入口可见，紧密相关的投影小契约就近放置，避免为形式增加转调或一类一接口。原错误码映射表、Workspace 关闭和 Workflow 并发编排保持。设计与验证见 [V17 计划](../../../../docs/roadmap/host-v17-readability-refactor-plan.md)和[专用开发验证](../../../../docs/maintenance/host-v17-readability-verification.md)。
+主入口缩短不要求总文件行数减少：详细中文注释解释工厂交付前登记、接口别名、UI 解析时机和释放顺序。WorkspaceCatalog 的简单合并工厂仍在入口可见，紧密相关的投影小契约就近放置，避免为形式增加转调或一类一接口。原错误码映射表、Workspace 关闭和 Workflow 并发编排保持。设计与验证见 [V17 计划](../../../../docs/archive/plans/host-v17-readability-refactor-plan.md)和[专用开发验证](../../../../docs/maintenance/host-v17-readability-verification.md)。
 
 先区分内部重构、外部契约变更和新功能。内部类名、文件组织和协作者可以调整；稳定身份、public API、严格 JSON、取消与释放、工具显隐和诊断边界必须由测试保护。
 
@@ -62,7 +62,7 @@ SOLID 优先：Session 保持唯一业务所有权，Factory 适配框架，窗�
 
 原生 Float/FloatAll 与 HostWindow 保留框架协议；实际核查后补上原生取消保护和同模型窗口复用。布局只记工具，不承担文档会话恢复；缺插件的记录保留，业务 View/Scope 在移动和重置时复用。最终保存队列不捕获 Dispatcher，干净窗口可同步排空，其余关闭仍异步准备；这一调整保留既有原生关闭语义，日常保存仍后台执行。
 
-接口只用于已有替换边界，新增具体类不为形式拆出单实现接口。详细协议集中在 [Layout V3](../../../../docs/reference/dock-layout-snapshot-v3.md)，实际开发证据与真实桌面待办分别记录。
+接口只用于已有替换边界，新增具体类不为形式拆出单实现接口。详细协议集中在 [Layout V3](../../../../docs/reference/dock-layout-snapshot-v3.md)，自动化证据与[所有者人工验收确认](../../../../docs/archive/records/host/manual-acceptance-20260920.md)分别记录。
 
 ### V11-P1：分割完成事实与停靠策略
 
@@ -108,4 +108,4 @@ Registry 以防御性声明快照隔离可变收集与纯校验；局部 Validat
 
 V16 文档窗口修复仍以 SOLID 为首要约束：Factory 只接续框架关闭；Coordinator 只准备确认与许可；WindowInteraction 管来源和焦点；目标解析器只接受布局数据；Session 唯一拥有发布与释放。使用普通不可变记录、具体解析器和现有回调，避免为每个浮窗建立 Runtime、服务容器或窗口管理框架。来源与组必须同时按引用验证，原组迁走不能改变请求所属窗口；弱最近组记录不延长旧组寿命。
 
-只给命令面板新建传入显式目标，其他入口继续默认主组，这是控制行为变更范围的产品取舍。纯工具浮窗回退主窗，避免自动改造工具布局。关闭先确认再拆除；同步回调首次拒绝只是等待，不能当作已经关闭。中文注释解释这些时序和所有权，不用背景颜色或定时清扫掩盖空壳。详见 [V16 方案](../../../../docs/roadmap/host-v16-document-floating-close-and-creation-target-plan.md)及[验证](../../../../docs/maintenance/host-v16-document-window-verification.md)。
+只给命令面板新建传入显式目标，其他入口继续默认主组，这是控制行为变更范围的产品取舍。纯工具浮窗回退主窗，避免自动改造工具布局。关闭先确认再拆除；同步回调首次拒绝只是等待，不能当作已经关闭。中文注释解释这些时序和所有权，不用背景颜色或定时清扫掩盖空壳。详见 [V16 方案](../../../../docs/archive/plans/host-v16-document-floating-close-and-creation-target-plan.md)及[验证](../../../../docs/maintenance/host-v16-document-window-verification.md)。

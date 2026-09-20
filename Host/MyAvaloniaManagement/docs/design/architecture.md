@@ -125,7 +125,7 @@ V15 先由 Program 初始化唯一轻量 App 和 Splash，再从首帧调度启�
 [`HostRuntime`](../../Business/Composition/HostRuntime.cs) 随后按以下顺序组合：
 
 1. 创建 `PluginRegistryBuilder`，注册宿主核心服务、ViewModel 和宿主显式贡献；
-2. 读取全部 manifest v2，检查单一 Core/UI SDK 区间与全局身份；
+2. 读取启动设置及全部 manifest v2，先检查单一 Core/UI SDK 区间与全局身份，再按本次启用快照过滤禁用项；禁用项不创建 ALC、不加载 DLL；
 3. 验证精确入口 `.deps.json`，建立 ALC 并按大小写敏感完整名称取得清单入口类型；
 4. 预检该 `IPluginModule` 并保存延迟构造入口；不扫描或执行程序集中的其他模块，身份只取自 manifest；
 5. 以 `ValidateScopes`、`ValidateOnBuild` 构建 Host Provider；
@@ -172,7 +172,7 @@ Workflow 管理器；回滚不重新解析 Workspace 或关闭参与者。初始
 - 用绝对、规范化且不区分大小写的插件根目录作为缓存键；
 - 通过 `Lazy<PluginDiscoverySnapshot>` 保证并发调用只执行一次扫描；
 - 第一阶段只读严格 `plugin.manifest.json`，检查单一 SDK 区间和全局 `pluginId`；
-- 第二阶段只为通过预检的候选创建加载上下文，清单声明是唯一入口来源；
+- 身份预检完成后应用本次启动的禁用设置，保留候选元数据；第二阶段只为通过预检且启用的候选创建加载上下文，清单声明是唯一入口来源；
 - 入口必须携带同名 `.deps.json`，托管和原生依赖只按 deps/RID 图解析；
 - 类型预检后只要求清单精确指定的类型具体、public、实现 `IPluginModule` 且具有 public 无参构造；
 - 每个插件目录拥有自己的 `PluginLoadContext`；
@@ -379,7 +379,7 @@ Closed 把基类通知放在 `try`、Session 最终释放放在 `finally`。多�
 各自订阅和解除定向通知。Tool 管理在布局前后都读取 `ToolWorkspaceReadModel` 的纯数据快照，Pinned Tool
 视为可见，不获得 Root Dock、Dock Tool、Factory 字典或服务容器。
 
-V11-P1 的 `SplitToDock` 在基类完成且节点挂接后调用内部 `OnDockSplitCompleted(originalTarget, insertedDock, operation)`。Factory 保留原目标并补齐同方向分割新增分隔条的 Owner；Session 按不进入 Windows 的主树遍历确认归属；Coordinator 仅对主文档区和稳定全局目标进行全宽整理。普通 Docked 只更新状态。工具局部分割和浮窗分割复用基类结果，布局保存仍通过原批量通知、Dispatcher 延后捕获和串行队列执行。详见 [P1 计划](../../../../docs/roadmap/host-v11-p1-tool-split-fix-plan.md)。
+V11-P1 的 `SplitToDock` 在基类完成且节点挂接后调用内部 `OnDockSplitCompleted(originalTarget, insertedDock, operation)`。Factory 保留原目标并补齐同方向分割新增分隔条的 Owner；Session 按不进入 Windows 的主树遍历确认归属；Coordinator 仅对主文档区和稳定全局目标进行全宽整理。普通 Docked 只更新状态。工具局部分割和浮窗分割复用基类结果，布局保存仍通过原批量通知、Dispatcher 延后捕获和串行队列执行。详见 [P1 计划](../../../../docs/archive/plans/host-v11-p1-tool-split-fix-plan.md)。
 
 ### 5.1 全屏会话
 
@@ -498,7 +498,7 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 
 浮窗关闭先经 `DockWindowCloseCoordinator` 固定范围，再由 `DocumentCloseCoordinator` 统一询问、保存与排空命令。原生取消必须在框架 Root.Close 之前检查。主窗最终保存早于浮窗拆除；`HostShutdownParticipants` 只记录实际创建的布局生命周期，Runtime 在释放工作区前停止其调度，不在回滚时解析新服务。
 
-V11-P2 在 `HostFloatingWindow` 的按钮 Click 冒泡阶段阻止最后一个 Tool 的重复 Command：Dock 已先请求窗口关闭，不能在异步重试之前隐藏内容。`HostDockFactory` 将最后 Tool 的命令/隐藏也转入现有原生关闭协议；在仍可取消的 Closing 中检查 Tool 能力和 DockableClosing，短期许可只用于框架后续清理，消费或结束后撤销。`CloseWindow` 合并逐项隐藏，避免注销位置跟踪之后重新捕获默认 bounds。Session 仍唯一拥有工具，取消隐藏时不更新活动项、不报告成功；保存队列和关闭范围协调器不承担按钮适配。详见 [P2 计划](../../../../docs/roadmap/host-v11-p2-tool-window-close-fix-plan.md)。
+V11-P2 在 `HostFloatingWindow` 的按钮 Click 冒泡阶段阻止最后一个 Tool 的重复 Command：Dock 已先请求窗口关闭，不能在异步重试之前隐藏内容。`HostDockFactory` 将最后 Tool 的命令/隐藏也转入现有原生关闭协议；在仍可取消的 Closing 中检查 Tool 能力和 DockableClosing，短期许可只用于框架后续清理，消费或结束后撤销。`CloseWindow` 合并逐项隐藏，避免注销位置跟踪之后重新捕获默认 bounds。Session 仍唯一拥有工具，取消隐藏时不更新活动项、不报告成功；保存队列和关闭范围协调器不承担按钮适配。详见 [P2 计划](../../../../docs/archive/plans/host-v11-p2-tool-window-close-fix-plan.md)。
 
 最终文件队列不依赖 UI Dispatcher，因此无在途文档操作时同步排空以保留原生一次关闭；其他关闭异步准备并重试。文件失败显示提示并恢复入口。业务文档与 Layout 保存结果分别判断。
 
@@ -554,7 +554,7 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 | Managed-only 拒绝、显式贡献所有权与 ID 碰撞诊断 | `ManagedOnlyPluginLoadingTests`、`ExplicitContributionAndPluginRegistryTests`、内部注册表测试 |
 | Host Catalog / Plugin Registry 分离、双激活边界与规范 Locator | `HostCatalogPluginRegistryTests`、Gate Host 验证 |
 | 诊断正文、凭据、URL、路径泄漏与敏感开关误开 | `HostDiagnosticsTests`、生命周期/UI/Document 错误测试、Gate 契约阶段 |
-| 插件私有 Provider、Host Port 与失败隔离 | `PluginContainerIsolationTests`、`PluginProviderOwnerTests` |
+| 插件私有 Provider、Host Port 与失败隔离 | `PluginContainerIsolationTests`、`HostLifecycleOwnershipTests` |
 | 严格六字段信封、原生 JSON、资源边界、所有权与失败不发布 | `DocumentEnvelopeV2Tests` |
 | 异步创建、并发打开、保存提交点、关闭重入与坏文件恢复 | `DocumentPersistenceTests`、`DocumentCloseTests` |
 | 四向 Dock、Pinned/Hidden、内容浮动与固定骨架保护 | PluginTests |

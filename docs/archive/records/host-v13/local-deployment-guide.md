@@ -1,13 +1,15 @@
 # V13 桌面工作台单文件自包含部署
 
+> 归档更新（2026-09-20）：本文保留原阶段方案、操作和验证快照；正文中的“本轮”“未执行”“待验收”指原记录时间。当前 Host 人工验收已由项目所有者确认通过，见[统一验收记录](../host/manual-acceptance-20260920.md)；后续候选与发布事项见[待办](../../../roadmap/README.md)，现行操作从[文档导航](../../../README.md)进入。
+
 > 日期：2026-09-19。用户授权提交 Git，并部署至 `C:\Users\admin\Desktop\工作台`。
-> 构建源码、最终 EXE 摘要、备份路径和完成状态以[本次部署证据](../archive/records/host-v13/local-deployment-20260919.json)为准；本文先于最终产物构建定稿。
+> 构建源码、最终 EXE 摘要、备份路径和完成状态以[本次部署证据](local-deployment-20260919.json)为准；本文先于最终产物构建定稿。
 
 ## 交付范围
 
 使用 `Release`、`win-x64`、`SelfContained=true`、`PublishSingleFile=true`、`IncludeNativeLibrariesForSelfExtract=true`、`EnableCompressionInSingleFile=true`、`PublishTrimmed=false`。Host 与 .NET 运行时、原生绘制库打入主 EXE；`HelpWeb` 是外置帮助资源，`Controls` 保持独立插件目录。无需安装 .NET 运行时；插件自身的外部依赖仍按原要求提供。
 
-交付包含 V13 插件看板开关：**工具 → 插件看板 → 选择插件 → 概览 → 下次启动启用**，保存后完整退出并重启生效。原子设置、错误恢复和当前/下次状态规则见[插件开关契约](../reference/plugin-enablement.md)。
+交付包含 V13 插件看板开关：**工具 → 插件看板 → 选择插件 → 概览 → 下次启动启用**，保存后完整退出并重启生效。原子设置、错误恢复和当前/下次状态规则见[插件开关契约](../../../reference/plugin-enablement.md)。
 
 ## 构建与本机检查
 
@@ -18,7 +20,7 @@
 5. 确认目标实例未运行，记录目录文件摘要。把被替换文件备份至桌面 `工作台-host-backups` 的本次目录，然后原子替换改变的交付文件。逐项核验 EXE/帮助资源与暂存一致，Controls 和其他保留文件字节不变。
 6. 仅回填非嵌入 JSON 部署证据并提交，不再改变已打包代码和 Markdown。
 
-前一阶段本地开发 verify 已通过 1143 项、零失败/跳过，构建零警告/错误，详见[开发证据](../archive/records/host-v13/final-development-evidence.json)。本次无生产代码变化，针对最终发布格式重新编译和检查。
+前一阶段本地开发 verify 已通过 1143 项、零失败/跳过，构建零警告/错误，详见[开发证据](final-development-evidence.json)。本次无生产代码变化，针对最终发布格式重新编译和检查。
 
 ## 使用与回退
 

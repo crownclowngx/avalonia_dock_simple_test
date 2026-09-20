@@ -1,8 +1,10 @@
 # V14 一键自动重启：专用开发验证
 
+> 当前状态（2026-09-20）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260920.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
+
 > 用途：定义 V14 的自动化测试、真实进程交接、桌面检查、本地开发门禁和证据规范。
-> 状态：实现和自动化已接入；矩阵到实际测试的映射见第 10 节，最终判定/计数见[开发证据](../archive/records/host-v14/final-development-evidence.json)。原生桌面和单文件样本未执行。日期：2026-09-19。
-> 关联：[V14 执行方案](../roadmap/host-v14-automatic-restart-plan.md)、[当前主仓验证](verification.md)、[插件开关契约](../reference/plugin-enablement.md)。
+> 状态：实现和自动化已接入；矩阵到实际测试的映射见第 10 节，最终判定/计数见[开发证据](../archive/records/host-v14/final-development-evidence.json)。原阶段原生桌面和单文件样本未执行；后续人工结论与交付见页首入口。核对日期：2026-09-20。
+> 关联：[V14 执行方案](../archive/plans/host-v14-automatic-restart-plan.md)、[当前主仓验证](verification.md)、[插件开关契约](../reference/plugin-enablement.md)。
 
 ## 1. 范围与证据原则
 
@@ -196,12 +198,12 @@ Markdown 嵌入 Host，先定稿再跑最终完整 verify；最终计数和产�
 | L01–L05 | `HostRestartTests.启动参数逐项保留_助手参数不污染普通启动`，含缺可执行/入口 DLL/目录；`HostRestartProcessTests` 两种启动形式完整往返；操作系统创建失败在协议测试注入，真实单文件仅实现路径规则，X09 未执行 |
 | H01–H05、H08、H09、H11 | `HostRestartHandoffTests` 许可/退出/取消/未知助手/重复许可；`HostRestartProcessTests.无许可或未成功退出不能产生后继Host` 覆盖 ordinary、cancel、crash、kill、bad-exit；`最终许可已确认但旧进程仍存活时不能提前拉起`；DI 借用与早分流经代码审查 |
 | H06、H07 | `HostRestartHandoffTests.父进程身份不符或指向自身时在连接前拒绝`；`HostRestartTests` 截断/不匹配身份及固定字节读取；真实会话使用 PID+启动时间及保留句柄，未强造系统 PID 复用 |
-| H10、X06 | `HostRestartHandoffTests.父进程等待取消不启动也不强杀`、`新进程创建失败不重试`；真实进程延迟退出及取消断管。90 秒超时用确定性取消验证；创建失败采用系统副作用替身，原生错误窗口待 M06 |
+| H10、X06 | `HostRestartHandoffTests.父进程等待取消不启动也不强杀`、`新进程创建失败不重试`；真实进程延迟退出及取消断管。90 秒超时用确定性取消验证；创建失败采用系统副作用替身，原生错误窗口不在该自动化范围，回归检查见 M06 |
 | R01–R05、R07 | `HostRestartLifecycleTests` 的有/无释放异常、幂等、Scope 失败保留；`HostLifecycleOwnershipTests` 正常关闭、挂起/取消/排空及启动回滚；`PluginLifecycleCoordinatorTests`；真实进程失败退出无后继 |
 | R06 | Program 顺序审查：Shutdown 后关闭诊断并检查新增记录，再发送最终结果；`HostDiagnosticsTests` 诊断容错与脱敏、`HostLifecycleOwnershipTests` 关闭诊断/迟到异常及 `bad-exit` 回归。未通过真实磁盘故障强制注入日志 Dispose 失败 |
-| U01、U06 | `HostRestartUiTests` 真实菜单投影；进程 Harness 点击看板实际 XAML 按钮 Command；`WorkbenchCommandProjectionTests`、`WorkbenchCommandPresentationUiTests` 精确命令集合和无默认快捷键；既有看板窄窗主题回归。原生键盘/可读性待 M 项 |
+| U01、U06 | `HostRestartUiTests` 真实菜单投影；进程 Harness 点击看板实际 XAML 按钮 Command；`WorkbenchCommandProjectionTests`、`WorkbenchCommandPresentationUiTests` 精确命令集合和无默认快捷键；既有看板窄窗主题回归。原生键盘/可读性属于 M 项回归范围 |
 | X01–X04、X07、X08 | `HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式`：三个 Host、两个助手、实际 MyPlugTest 启动策略、独占布局锁、额外页面不重开、参数/目录/数据根；`PluginEnablementLoadingTests` 验证禁用前置过滤无加载，`PluginEnablementRetentionTests` 验证工具/偏好保留 |
 | X05 | `无许可或未成功退出不能产生后继Host` 的 crash、kill 与普通退出；身份限定的进程清理 |
-| X09、M01–M07 | 未执行，分别保留单文件/自包含和原生桌面检查；不作为已通过的自动化计数 |
+| X09、M01–M07 | 原开发阶段未执行，自动化计数不变；后续本机交付见部署索引，Host 整体人工验收见页首确认。矩阵保留作回归清单 |
 
 测试输出目录 `TestResults/v14-restart/<随机标识>` 保留测试进程收据；最终 JSON 只汇总测试标识、进程角色/身份、结果和报告哈希，不收录会话令牌、原始参数或用户数据路径。旧安装版和本轮工作树结果不能混用。
