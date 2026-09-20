@@ -5,6 +5,7 @@ using System.Runtime.ExceptionServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using MyAvaloniaManagement.Business.Docking;
+using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Storage;
 using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.PluginSdk;
@@ -16,6 +17,8 @@ internal readonly record struct DocumentOperationResult(
     bool ShouldUpdateError,
     string Error)
 {
+    /// <summary>本次成功新建的页面身份；展示层据此交还焦点，不借用可能已变化的全局活动页。</summary>
+    internal WorkspacePageId? CreatedPageId { get; init; }
     internal static DocumentOperationResult NoChange => new(false, string.Empty);
     internal static DocumentOperationResult ClearError => new(true, string.Empty);
     internal static DocumentOperationResult Failure(string error) => new(true, error);
@@ -39,7 +42,8 @@ internal sealed class DocumentPersistenceCoordinator(
 {
     internal async Task<DocumentOperationResult> CreateDocumentAsync(
         DocumentTypeId documentTypeId,
-        CreationIntentId? creationIntentId = null)
+        CreationIntentId? creationIntentId = null,
+        DocumentCreationTarget? target = null)
     {
         // 关闭期间串行门可能拒绝尚未开始的请求。把门外拒绝与插件初始化失败都映射为
         // 本次结果，保证旧 Tool、新树和功能中心不会向 UI 抛出未观察的异步异常。
@@ -47,12 +51,12 @@ internal sealed class DocumentPersistenceCoordinator(
         {
             return await operationGate.RunAsync(async () =>
             {
-                await workspace.CreateAndPublishDocumentAsync(
+                var page = await workspace.CreateAndPublishDocumentAsync(
                     documentTypeId,
                     new NewDocumentActivation(
                         title: string.Empty,
-                        creationIntentId));
-                return DocumentOperationResult.ClearError;
+                        creationIntentId), target);
+                return DocumentOperationResult.ClearError with { CreatedPageId = page.PageId };
             });
         }
         catch (Exception exception)

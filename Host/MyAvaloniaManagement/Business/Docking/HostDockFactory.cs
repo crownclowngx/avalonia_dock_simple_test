@@ -45,7 +45,7 @@ internal interface IWorkspaceDockCallbacks
     /// <summary>Tool 已隐藏后，提交只读状态与布局变化通知。</summary>
     void OnDockableHidden(IDockable? dockable);
 
-    /// <summary>Dock 的活动对象变化后，重新计算语义上的活动 Document。</summary>
+    /// <summary>Dock 的选择或焦点变化后，重新计算语义上的活动 Document 与最近文档组。</summary>
     void OnActiveDockableChanged(IDockable? dockable);
 
     /// <summary>在 Dock 执行可取消关闭前完成脏 Document 保护。</summary>
@@ -258,6 +258,16 @@ internal sealed class HostDockFactory : Factory, IDockDropGuard, IDockPreviewPro
     public override void OnActiveDockableChanged(IDockable? dockable)
     {
         base.OnActiveDockableChanged(dockable);
+        GetCallbacks().OnActiveDockableChanged(dockable);
+    }
+
+    /// <summary>
+    /// 点击另一分组中已选中的页面只产生焦点事件，不能仅监听标签选择事件。
+    /// 两条框架通知进入同一语义端口；Session 按引用去重，Tool 焦点保留最近文档。
+    /// </summary>
+    public override void OnFocusedDockableChanged(IDockable? dockable)
+    {
+        base.OnFocusedDockableChanged(dockable);
         GetCallbacks().OnActiveDockableChanged(dockable);
     }
 

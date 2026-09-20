@@ -95,6 +95,7 @@ internal sealed class WorkbenchCommandPresentationDesignData :
         IWorkbenchPresentationCommandBinding open,
         IWorkbenchPresentationCommandBinding save) : IWorkbenchCommandPaletteProjection
     {
+        public MyAvaloniaManagement.Business.Layout.DocumentCreationTarget? CaptureCreationTarget(Dock.Model.Controls.IRootDock? source) => null;
         private readonly IReadOnlyList<WorkbenchCommandPaletteProjectionEntry> _items =
         [
             new WorkbenchCommandPaletteProjectionEntry(

@@ -166,13 +166,18 @@ internal sealed class WorkbenchWindowInteraction : IDisposable
         }
 
         if (!_context.TryOpenPalette(this)) return;
+        // 必须在显示遮罩前捕获。IsVisible 也可能触发布局/选择通知，先显示再读取
+        // 最近组会把模板初始化期间的选择误认为用户本次操作的来源。
+        var creationTarget = _bindings?.Palette.CaptureCreationTarget(_context.GetLayout(_window));
         _palettePreviousFocus = _window.FocusManager?.GetFocusedElement();
         _paletteOpen = true;
         CommandPaletteLayer.IsVisible = true;
         // Palette 是模态窗口层。会话期间移除工作台生成快捷键，防止搜索框中的按键
         // 同时触发保存或插件命令；关闭后从同一投影重建，不保存第二份绑定状态。
         RemoveGeneratedKeyBindings();
-        CommandPaletteHost.BeginSession();
+        // 首次显示时隐藏面板可能尚未挂到视觉树，必须通过已绑定的窗口投影捕获目标，
+        // 不能依赖 View 的 AttachedToVisualTree 已经建立查询订阅。
+        CommandPaletteHost.BeginSession(creationTarget, _context);
     }
 
     private void OnCommandPaletteCloseRequested(object? sender, PaletteCloseRequestedEventArgs args) =>

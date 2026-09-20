@@ -25,6 +25,9 @@ internal sealed class DockWindowCloseCoordinator(
     private readonly Dictionary<IDockWindow, Request> _requests = new(ReferenceEqualityComparer.Instance);
     private bool _disposed;
 
+    /// <summary>创建提交必须避开正在确认或等待最终关闭的窗口，不能在旧关闭范围内插入新页。</summary>
+    internal bool IsClosing(IDockWindow window) => _requests.ContainsKey(window);
+
     /// <summary>首次请求先取消；重试只对仍然相同的窗口内容集合开放。</summary>
     internal bool TryBeginClose(IDockWindow window, Action retry)
     {

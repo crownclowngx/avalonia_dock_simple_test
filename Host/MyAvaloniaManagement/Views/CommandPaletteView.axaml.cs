@@ -6,6 +6,8 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
+using MyAvaloniaManagement.Business.Layout;
+using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.Business.Presentation.Commands;
 using MyAvaloniaManagement.ViewModels.Bindings;
 
@@ -25,6 +27,8 @@ internal sealed partial class CommandPaletteView : UserControl
     // 会话状态只控制查询刷新与延迟焦点，不复制命令是否可执行等业务事实。
     private bool _sessionActive;
     private int _sessionVersion;
+    private DocumentCreationTarget? _creationTarget;
+    private WorkbenchWindowContext? _windows;
     internal bool IsBusy { get; private set; }
     internal Task CurrentExecution { get; private set; } = Task.CompletedTask;
 
@@ -46,8 +50,12 @@ internal sealed partial class CommandPaletteView : UserControl
     internal event EventHandler<PaletteCloseRequestedEventArgs>? CloseRequested;
 
     /// <summary>开始一个全新会话，清空查询并选择当前第一个结果。</summary>
-    internal void BeginSession()
+    internal void BeginSession(DocumentCreationTarget? target = null, WorkbenchWindowContext? windows = null)
     {
+        // 此时搜索框尚未获取焦点。目标归属于本窗口面板会话，执行时复制给异步调用，
+        // 不写入共享投影命令，也不在插件初始化完成后重新读取当前活动窗口。
+        _creationTarget = target;
+        _windows = windows;
         _sessionActive = true;
         _sessionVersion++;
         SetBusy(false);
@@ -63,6 +71,8 @@ internal sealed partial class CommandPaletteView : UserControl
     /// <summary>结束当前会话；投影订阅继续由视觉树和 DataContext 的真实所有权控制。</summary>
     internal void EndSession()
     {
+        _creationTarget = null;
+        _windows = null;
         _sessionActive = false;
         _sessionVersion++;
         SetBusy(false);
@@ -238,28 +248,35 @@ internal sealed partial class CommandPaletteView : UserControl
             return;
         }
         var version = _sessionVersion;
+        var target = _creationTarget;
+        var windows = _windows;
+        var activationVersion = windows?.ActivationVersion;
         SetBusy(true);
         SetStatus(item.Identity is FunctionPaletteIdentity ? "正在打开功能…" : "正在处理…");
-        string error;
+        WorkspacePaletteResult result;
         try
         {
-            error = item.Command is WorkspacePaletteCommand action
-                ? await action.ExecuteAsync() : "该结果暂时无法执行，请重新选择。";
+            result = item.Command is WorkspacePaletteCommand action
+                ? await action.ExecuteWithTargetAsync(target) : new("该结果暂时无法执行，请重新选择。");
         }
         catch (Exception exception)
         {
             Console.Error.WriteLine($"Palette errorCode=PALETTE_ACTION_FAILED type={exception.GetType().Name}");
-            error = "操作未完成，请重试。";
+            result = new("操作未完成，请重试。");
         }
         if (!_sessionActive || version != _sessionVersion) return;
         SetBusy(false);
-        SetStatus(error);
-        if (error.Length == 0)
+        SetStatus(result.Error);
+        if (result.Error.Length == 0)
         {
+            // 页面定位/工具定位主动切换窗口属于动作本身；只有新建要防止等待期间的窗口切换
+            // 被迟到焦点恢复撤销。关闭会使会话号加一，再次打开或离树则使旧恢复自动失效。
             CloseRequested?.Invoke(this, new(false));
             // 新标签的内容可能尚未挂到视觉树，先提交窗口布局，再将焦点交给其输入控件。
             TopLevel.GetTopLevel(this)?.UpdateLayout();
-            (item.Command as WorkspacePaletteCommand)?.FocusResult();
+            (item.Command as WorkspacePaletteCommand)?.FocusResult(result.PageId,
+                () => !_sessionActive && _sessionVersion == version + 1 &&
+                    (item.Identity is not FunctionPaletteIdentity || windows?.ActivationVersion == activationVersion));
         }
         else
         {

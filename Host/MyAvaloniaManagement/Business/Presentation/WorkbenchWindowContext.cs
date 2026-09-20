@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using MyAvaloniaManagement.ViewModels.Bindings;
 using MyAvaloniaManagement.Business.Presentation.Commands;
 using MyAvaloniaManagement.Business.Layout;
+using Dock.Model.Controls;
 
 namespace MyAvaloniaManagement.Business.Presentation;
 
@@ -20,6 +21,16 @@ internal sealed class WorkbenchWindowContext : IDisposable
     private Window? _active;
     private readonly AsyncLocal<Window?> _interactionOwner = new();
     private WorkbenchWindowInteraction? _palette;
+    /// <summary>只记录工作台激活切换，用于拒绝异步操作结束后的迟到焦点抢夺。</summary>
+    internal long ActivationVersion { get; private set; }
+
+    /// <summary>从明确的已登记工作台窗口读取布局；辅助对话框和未登记窗口不提供插入来源。</summary>
+    internal IRootDock? GetLayout(Window window) => _windows.ContainsKey(window) ? window switch
+    {
+        HostFloatingWindow floating => floating.Window?.Layout,
+        MainWindow main => (main.DataContext as IMainWindowViewBindings)?.Layout,
+        _ => null,
+    } : null;
     internal bool HasFullscreenContent => _windows.Keys.Any(window => window switch
     {
         MainWindow main => main.HasFullscreenContent,
@@ -107,14 +118,18 @@ internal sealed class WorkbenchWindowContext : IDisposable
         if (ReferenceEquals(_palette, requester)) _palette = null;
     }
 
-    private void OnActivated(object? sender, EventArgs args) => _active = sender as Window;
+    private void OnActivated(object? sender, EventArgs args)
+    {
+        if (!ReferenceEquals(_active, sender)) ActivationVersion++;
+        _active = sender as Window;
+    }
     private void OnClosed(object? sender, EventArgs args)
     {
         if (sender is not Window window) return;
         window.Activated -= OnActivated;
         window.Closed -= OnClosed;
         if (_windows.Remove(window, out var placement)) placement.Dispose();
-        if (ReferenceEquals(_active, window)) _active = null;
+        if (ReferenceEquals(_active, window)) { _active = null; ActivationVersion++; }
         if (ReferenceEquals(MainWindow, window)) MainWindow = null;
     }
     public void Dispose()

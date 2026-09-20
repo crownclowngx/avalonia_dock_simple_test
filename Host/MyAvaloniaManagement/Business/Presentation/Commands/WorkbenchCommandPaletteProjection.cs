@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Dock.Model.Controls;
+using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Commands.Catalog;
 using MyAvaloniaManagement.Business.Commands.State;
 using MyAvaloniaManagement.Business.Diagnostics;
@@ -17,8 +19,8 @@ namespace MyAvaloniaManagement.Business.Presentation.Commands;
 
 /// <summary>定义 Command Palette View 消费的只读查询投影。</summary>
 /// <remarks>
-/// 该端口只接受用户查询文本并返回 Host-owned 展示快照，不暴露 Catalog、Context、Target、
-/// Provider 或 Executor。生产投影与设计器样例是两个真实实现，因此这是一条实际替换边界。
+/// 该端口提供 Host-owned 展示快照，以及面板打开前借用的布局插入上下文；不暴露 Catalog、
+/// 插件命令 Context/Target、Provider 或 Executor。生产投影与设计器样例是两个真实实现。
 /// </remarks>
 internal interface IWorkbenchCommandPaletteProjection
 {
@@ -29,6 +31,9 @@ internal interface IWorkbenchCommandPaletteProjection
     /// <param name="query">允许为 null 的普通子串查询；首尾空白会被忽略。</param>
     /// <returns>按匹配等级、结果类型、名称与稳定身份确定性排序的快照。</returns>
     IReadOnlyList<WorkbenchCommandPaletteProjectionEntry> GetItems(string? query);
+
+    /// <summary>读取本次面板的文档插入位置；不改变活动页或拥有布局，设计器返回 null。</summary>
+    DocumentCreationTarget? CaptureCreationTarget(IRootDock? source);
 }
 
 /// <summary>只保存展示快照、明确身份与 Host 操作绑定，不引用插件页面实例。</summary>
@@ -71,6 +76,9 @@ internal sealed class WorkbenchCommandPaletteProjection :
     private readonly HostIconRenderer? _icons;
     // Dispose 后拒绝同步读取，并让已经排队的迟到回调安全退出。
     private bool _disposed;
+
+    public DocumentCreationTarget? CaptureCreationTarget(IRootDock? source) =>
+        !_disposed && source is not null ? _workspace?.CaptureDocumentCreationTarget(source) : null;
 
     internal WorkbenchCommandPaletteProjection(
         HostWorkbenchCommandProjectionCatalog host,

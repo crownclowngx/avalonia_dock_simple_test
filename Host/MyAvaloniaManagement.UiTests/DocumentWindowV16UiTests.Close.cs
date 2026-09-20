@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Constants;
 using MyAvaloniaManagement.Business.Documents;
+using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Layout;
 using Xunit;
 
@@ -265,5 +266,35 @@ public sealed partial class DocumentWindowV16UiTests
         Assert.Same(page.Owner, added.Owner);
         Assert.All(test.State.Models, model => Assert.Equal(0, model.DisposeCount));
         Assert.False(coordinator.IsClosing(page));
+    }
+
+    [AvaloniaFact]
+    public async Task C11整窗关闭混合内容后工具原实例可恢复而文档只释放一次()
+    {
+        await using var test = new DocumentWindowTestContext();
+        var page = await test.Create();
+        var model = Assert.IsType<DocumentWindowTestContext.Model>(page.Model);
+        var view = Assert.IsType<DocumentWindowTestContext.EditorView>(page.PreparedView);
+        var host = await test.Float(page);
+        var factory = test.Workspace.DockFactory;
+        test.Workspace.ShowTool(HostExtensionIds.FileSystemTree);
+        var tool = Assert.IsType<ManagedToolDockable>(test.Workspace.CreatedTools[HostExtensionIds.FileSystemTree.Value]);
+        var toolView = tool.PreparedView;
+        var group = new ToolDock { VisibleDockables = factory.CreateList<IDockable>() };
+        factory.MoveDockable((IDock)tool.Owner!, group, tool, null);
+        factory.SplitToDock((IDock)page.Owner!, group, DockOperation.Bottom);
+        host.Close();
+        await DocumentWindowTestContext.Flush();
+        Assert.False(host.IsVisible);
+        Assert.Empty(factory.HostWindows);
+        Assert.Equal(1, model.DisposeCount);
+        Assert.Equal(1, view.DisposeCount);
+        Assert.DoesNotContain(page, test.Workspace.GetDocuments());
+        test.Workspace.ShowTool(HostExtensionIds.FileSystemTree);
+        await DocumentWindowTestContext.Flush();
+        Assert.Same(tool, test.Workspace.CreatedTools[HostExtensionIds.FileSystemTree.Value]);
+        Assert.Same(toolView, tool.PreparedView);
+        Assert.NotNull(DockTreeNavigator.FindWindow(test.Workspace.RootDock!, tool));
+        Assert.Single(factory.HostWindows);
     }
 }

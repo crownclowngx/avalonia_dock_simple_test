@@ -50,6 +50,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
     private readonly ToolDockCoordinator _toolDockCoordinator;
     private IRootDock? _rootDock;
     private DocumentDock? _documentDock;
+    private readonly DocumentCreationTargetResolver _creationTargets = new();
     private ManagedDocumentDockable? _publishedActiveDocument;
     private bool _acceptingCreations = true;
     private bool _suppressToolHiddenNotification;
@@ -284,12 +285,13 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
     /// <summary>创建并在全部初始化成功后原子发布 Document。</summary>
     internal async ValueTask<ManagedDocumentDockable> CreateAndPublishDocumentAsync(
         DocumentTypeId documentTypeId,
-        DocumentActivation activation)
+        DocumentActivation activation,
+        DocumentCreationTarget? target = null)
     {
         ManagedDocumentDockable? pending = await CreateDocumentAsync(documentTypeId, activation);
         try
         {
-            PublishDocument(pending);
+            PublishDocument(pending, target);
             var published = pending;
             pending = null;
             return published;
@@ -303,13 +305,32 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         }
     }
 
-    /// <summary>将候选 Document 提交到当前主文档 Dock，失败时撤销部分 Dock 写入。</summary>
-    internal void PublishDocument(Document document)
+    /// <summary>捕获来源窗口的文档组；只借用布局身份，面板结束后不保留这一请求。</summary>
+    internal DocumentCreationTarget CaptureDocumentCreationTarget(IRootDock source) => _creationTargets.Capture(source);
+
+    /// <summary>确认目标根仍属于当前会话且未开始整窗关闭，不以全局活动文档推断窗口归属。</summary>
+    private bool IsCreationRootAvailable(IRootDock root)
+    {
+        if (!CanCreateDocuments) return false;
+        if (ReferenceEquals(root, _rootDock)) return true;
+        var window = _rootDock is null ? null : DockTreeNavigator.EnumerateWindows(_rootDock)
+            .FirstOrDefault(candidate => ReferenceEquals(candidate.Layout, root));
+        return window is not null && !_windowCloseCoordinator.IsClosing(window) &&
+            window.Host?.IsTracked == true;
+    }
+
+    /// <summary>
+    /// 初始化完成后在 UI 调用链重验并直接发布到最终组。null 保留既有入口的主默认组语义；
+    /// 带来源的请求按窗口内回退规则解析。失败只撤销本次插入，不能先在主窗发布再搬运。
+    /// </summary>
+    internal void PublishDocument(Document document, DocumentCreationTarget? target = null)
     {
         ArgumentNullException.ThrowIfNull(document);
-        var documentDock = _documentDock ??
-            throw new InvalidOperationException("主文档 Dock 尚未初始化，无法发布 Document。");
-        if (ContainsDocument(documentDock, document))
+        EnsureAcceptingCreations();
+        var documentDock = _rootDock is { } root && _documentDock is { } main
+            ? _creationTargets.Resolve(root, main, target, IsCreationRootAvailable) : null;
+        if (documentDock is null) throw new InvalidOperationException("没有可接收新文档的工作区分组。");
+        if (DockTreeNavigator.FindDocumentDock(_rootDock!, document) is not null)
         {
             throw new InvalidOperationException("同一个 Document 实例不能重复发布到 Dock。");
         }
@@ -319,9 +340,9 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
             documentDock.AddDocument(document);
             if (!ContainsDocument(documentDock, document))
             {
-                throw new InvalidOperationException("主文档 Dock 未接受待发布的 Document。");
+                throw new InvalidOperationException("目标文档 Dock 未接受待发布的 Document。");
             }
-            PublishActiveDocumentIfChanged();
+            PublishActiveDocumentIfChanged(document as ManagedDocumentDockable);
         }
         catch
         {
@@ -657,6 +678,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
 
     void IWorkspaceDockCallbacks.OnActiveDockableChanged(IDockable? dockable)
     {
+        if (_rootDock is { } root) _creationTargets.Remember(root, dockable);
         // 分割后的页面属于其他 DocumentDock；直接使用真实激活通知，不能只读取最初的主 Dock。
         // 工具获得焦点不会替换文档命令的活动目标，沿用已有活动页面引用。
         PublishActiveDocumentIfChanged(dockable is null ? null : dockable as ManagedDocumentDockable ?? _publishedActiveDocument);
@@ -812,7 +834,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
 
     private void EnsureAcceptingCreations()
     {
-        if (!_acceptingCreations)
+        if (_disposed || !_acceptingCreations)
         {
             throw new ObjectDisposedException(
                 nameof(WorkspaceSession),
@@ -820,7 +842,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         }
     }
 
-    private static bool ContainsDocument(DocumentDock dock, Document document) =>
+    private static bool ContainsDocument(IDocumentDock dock, Document document) =>
         dock.VisibleDockables?.Any(candidate => ReferenceEquals(candidate, document)) == true;
 
     private static void TryRelease(Action release, ref List<Exception>? failures)
