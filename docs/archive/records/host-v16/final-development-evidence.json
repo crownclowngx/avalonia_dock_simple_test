@@ -1,0 +1,380 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "date": "2026-09-20",
+  "scope": "V16 document floating close and source-window creation; local development validation only",
+  "branch": "codex/host-v16-document-windows",
+  "sourceIdentity": {
+    "baseline": "61ff50cf077b39b6f41debd25a4ec255e60bb7d4",
+    "gateInput": {
+      "revision": "398e012364427bb6e5672c3abb04a6d32d6036b0",
+      "tree": "d7d440d8d38f42a615e02d491b02dcb36f81180f",
+      "clean": true,
+      "files": 1032,
+      "sha256": "DE6870E34C6AD1FDCF104BA0381BFA8C0DE1E8F65BA250DFBF71712CCE3E5E1F"
+    },
+    "workingTreeCleanBeforeEvidence": true,
+    "diffCheckExitCode": 0,
+    "postGateChange": "Only this non-embedded JSON is added after verify; executable sources, tests, dependencies and embedded Markdown remain identical to gateInput.revision.",
+    "evidenceFile": "docs/archive/records/host-v16/final-development-evidence.json"
+  },
+  "finalGate": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "exitCode": 0,
+    "runId": "20260920-014833-398e01236442",
+    "summary": {
+      "path": "artifacts/gate/20260920-014833-398e01236442/summary.json",
+      "sha256": "4d7d2393c947bdf20b8ce3c3be748bafce4959f913bc66a7c0902fc6da6adf2c"
+    },
+    "startedAtUtc": "2026-09-20T01:48:33.2691109+00:00",
+    "finishedAtUtc": "2026-09-20T01:52:18.999051+00:00",
+    "stages": [
+      {
+        "id": "avalonia-layout-patch",
+        "status": "passed",
+        "durationMilliseconds": 607
+      },
+      {
+        "id": "dock-patch",
+        "status": "passed",
+        "durationMilliseconds": 566
+      },
+      {
+        "id": "restore",
+        "status": "passed",
+        "durationMilliseconds": 4248
+      },
+      {
+        "id": "build",
+        "status": "passed",
+        "durationMilliseconds": 13756
+      },
+      {
+        "id": "tests",
+        "status": "passed",
+        "durationMilliseconds": 200355
+      },
+      {
+        "id": "contracts",
+        "status": "passed",
+        "durationMilliseconds": 4211
+      },
+      {
+        "id": "packages",
+        "status": "passed",
+        "durationMilliseconds": 27
+      },
+      {
+        "id": "package-acceptance",
+        "status": "passed",
+        "durationMilliseconds": 1507
+      }
+    ],
+    "build": {
+      "configuration": "Release",
+      "warningsAsErrors": true,
+      "warnings": 0,
+      "errors": 0,
+      "log": {
+        "path": "artifacts/gate/20260920-014833-398e01236442/pass-1/logs/build-main.log",
+        "sha256": "443173b7e8fd5cac35041bf0ebb1051925f9cf2c60737e820f37e5aca17a39f4"
+      }
+    },
+    "tests": [
+      {
+        "path": "artifacts/gate/20260920-014833-398e01236442/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "3bdc4d8cf88ea14c878f8eaf18d6d453c30018b509eee5118d485ffee8f5b640",
+        "total": 292,
+        "executed": 292,
+        "passed": 292,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T09:49:01.1474411+08:00",
+        "finishedAt": "2026-09-20T09:50:11.4637740+08:00"
+      },
+      {
+        "path": "artifacts/gate/20260920-014833-398e01236442/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "b3e7e719f43879ca501b79a9717d2cd19e595891a027174283c302c14b23115c",
+        "total": 277,
+        "executed": 277,
+        "passed": 277,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T09:50:12.2450902+08:00",
+        "finishedAt": "2026-09-20T09:52:11.8347872+08:00"
+      },
+      {
+        "path": "artifacts/gate/20260920-014833-398e01236442/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "a3974f560ed8a70b587ded86c95b6d5e46931ed91292db7124c1ebb614c442a2",
+        "total": 608,
+        "executed": 608,
+        "passed": 608,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T09:48:58.3062010+08:00",
+        "finishedAt": "2026-09-20T09:49:00.2521408+08:00"
+      },
+      {
+        "path": "artifacts/gate/20260920-014833-398e01236442/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+        "sha256": "b7e47784115fea2d4b1de4aacb131ababc2cc23e58e03f96516fae9b4bac97bd",
+        "total": 1,
+        "executed": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T09:52:18.2128557+08:00",
+        "finishedAt": "2026-09-20T09:52:18.9131226+08:00"
+      },
+      {
+        "path": "artifacts/gate/20260920-014833-398e01236442/pass-1/tests/my-plug-test/my-plug-test.trx",
+        "sha256": "7278b0b6cc68c41ecf4a81f2513b1fcf9c0c655699c1ee08fb39bca748fced74",
+        "total": 11,
+        "executed": 11,
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T09:52:12.6665606+08:00",
+        "finishedAt": "2026-09-20T09:52:13.1639227+08:00"
+      },
+      {
+        "path": "artifacts/gate/20260920-014833-398e01236442/pass-1/tests/sdk/sdk.trx",
+        "sha256": "8081faf19f514402208f0c4274c535328a3fb72b6f6ed59b34b7d647a7765893",
+        "total": 91,
+        "executed": 91,
+        "passed": 91,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T09:48:53.5817884+08:00",
+        "finishedAt": "2026-09-20T09:48:57.4446668+08:00"
+      }
+    ],
+    "total": 1280,
+    "packages": {
+      "my-plug-test": {
+        "pluginId": "myavalonia.plugin.my-plug-test",
+        "archivePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-014833-398e01236442\\pass-1\\packages\\my-plug-test\\build-1\\MyPlugTest-win-x64.zip",
+        "sha256": "DA952F87DFDECBDCE9D08508E1A2B2F107AF33F0F40B9B7735188B42A4E16CB9",
+        "files": 8,
+        "manifestSha256": "93B4006555E65634300C0E1AF204CCC345A1739B432AD6FD9CDC384E2A567AE1",
+        "deterministic": false
+      }
+    },
+    "host": {
+      "releaseEligible": false,
+      "publishable": false
+    },
+    "repeatability": {
+      "requested": false,
+      "verified": false
+    }
+  },
+  "focusedRuns": [
+    {
+      "scope": "P0 two expected failures",
+      "exitCode": 1,
+      "evidence": {
+        "path": "docs/archive/records/host-v16/p0-red-evidence.json",
+        "sha256": "bcaf376f552a3fa76566f36c5db0318ab8bfe9ccda00df1d9da6b6d05fad48c8"
+      },
+      "trx": {
+        "path": "artifacts/v16/tests/red/v16-p0-red.trx",
+        "sha256": "7fa7cfa334fd7ab1ae0a9ecfc186026295abc26a062acee88fee913ce0bc276f",
+        "total": 2,
+        "executed": 2,
+        "passed": 0,
+        "failed": 2,
+        "skipped": 0,
+        "startedAt": "2026-09-20T09:08:39.6750871+08:00",
+        "finishedAt": "2026-09-20T09:08:43.3287902+08:00"
+      }
+    },
+    {
+      "scope": "P1 close UI and Tool regression",
+      "exitCode": 0,
+      "trx": {
+        "path": "artifacts/v16/tests/p1/v16-p1-close.trx",
+        "sha256": "c7f9b784b10dd7c2c6edbcdeb13983302ca996b943386e4b0509c69a6783a422",
+        "total": 48,
+        "executed": 48,
+        "passed": 48,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T09:18:03.8986184+08:00",
+        "finishedAt": "2026-09-20T09:18:21.6934894+08:00"
+      }
+    },
+    {
+      "scope": "P1 close protocol unit",
+      "exitCode": 0,
+      "trx": {
+        "path": "artifacts/v16/tests/p1/v16-p1-unit.trx",
+        "sha256": "bebb2b4d7a8ea8393a5eb543198f00bd0b65e195bc3dceb69a2da0d973eeaa1b",
+        "total": 20,
+        "executed": 20,
+        "passed": 20,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T09:15:26.7748736+08:00",
+        "finishedAt": "2026-09-20T09:15:27.5501247+08:00"
+      }
+    },
+    {
+      "scope": "P2 integrated UI final",
+      "command": "dotnet test Host/MyAvaloniaManagement.UiTests -c Release -m:1 --no-restore --filter 'FullyQualifiedName~DocumentWindowV16UiTests|FullyQualifiedName~CognitiveUxV8UiTests|FullyQualifiedName~DockToolWindowCloseUiTests' --logger 'trx;LogFileName=v16-p2-integrated-final.trx' --results-directory artifacts/v16/tests/p2",
+      "exitCode": 0,
+      "trx": {
+        "path": "artifacts/v16/tests/p2/v16-p2-integrated-final.trx",
+        "sha256": "73976e53dbaff31660945b8a262c2ad4830469cfa78b6fe2ab8e94c17aec99d9",
+        "total": 79,
+        "executed": 79,
+        "passed": 79,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T09:39:58.2485838+08:00",
+        "finishedAt": "2026-09-20T09:40:28.4869613+08:00"
+      }
+    },
+    {
+      "scope": "Host Unit all",
+      "command": "dotnet test Host/MyAvaloniaManagement.Tests -c Release -m:1 --no-restore --logger 'trx;LogFileName=v16-host-unit.trx' --results-directory artifacts/v16/tests/unit",
+      "exitCode": 0,
+      "trx": {
+        "path": "artifacts/v16/tests/unit/v16-host-unit.trx",
+        "sha256": "c8355a613861300305e216e422871c3aefbd6716fb66d4c18fcd2dd598485d22",
+        "total": 608,
+        "executed": 608,
+        "passed": 608,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T09:41:00.5507948+08:00",
+        "finishedAt": "2026-09-20T09:41:02.4168622+08:00"
+      }
+    },
+    {
+      "scope": "Gate tools all",
+      "command": "dotnet test tools/MyAvaloniaManagement.Gate.Tests -c Release -m:1 --logger 'trx;LogFileName=v16-gate-tool.trx' --results-directory artifacts/v16/tests/gate-tool",
+      "exitCode": 0,
+      "trx": {
+        "path": "artifacts/v16/tests/gate-tool/v16-gate-tool.trx",
+        "sha256": "861521d5428e0fcacfa631bdac327fe3c4316e7b96946d918df07b2f28cf5f19",
+        "total": 68,
+        "executed": 68,
+        "passed": 68,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T09:42:45.8152926+08:00",
+        "finishedAt": "2026-09-20T09:42:47.6269018+08:00"
+      }
+    }
+  ],
+  "retainedIntermediateFailure": {
+    "scope": "P2 test observation of released PreparedView, corrected before final run",
+    "exitCode": 1,
+    "trx": {
+      "path": "artifacts/v16/tests/p2/v16-p2-integrated.trx",
+      "sha256": "0c107830b435e2a49dfaf9abd23b4e919460d0fe5868a28c1f80ea59c940ee9c",
+      "total": 78,
+      "executed": 78,
+      "passed": 77,
+      "failed": 1,
+      "skipped": 0,
+      "startedAt": "2026-09-20T09:38:42.0856842+08:00",
+      "finishedAt": "2026-09-20T09:39:12.3045643+08:00"
+    }
+  },
+  "patchBaselines": [
+    {
+      "file": {
+        "path": "patches/dock-area-fill/baseline.json",
+        "sha256": "7bf091807efc9a3338fd37594e62952cc2b7c8fe337589b1d0208621130e43b7"
+      },
+      "value": {
+        "repository": "https://github.com/wieslawsoltes/Dock.git",
+        "commit": "cc08602d02fde1b85067cec064da29f34785e505",
+        "upstreamVersion": "12.1.0.6",
+        "packageVersion": "12.1.0.7-area.5",
+        "minimumTests": 67,
+        "sdkVersion": "10.0.302",
+        "assemblyVersion": "12.1.0.6",
+        "packageTimestampUtc": "2026-09-17T00:00:00Z",
+        "packageSha256": "f697cff4f1411c6b437db3803671b761b441ab75cd7bed11e6ac0787389b33c9"
+      }
+    },
+    {
+      "file": {
+        "path": "patches/avalonia-cross-window-layout/baseline.json",
+        "sha256": "ba2489f4b98c7764cabfe1359d4412d1403d041beca5562a7e911886a22b2284"
+      },
+      "value": {
+        "repository": "https://github.com/AvaloniaUI/Avalonia.git",
+        "commit": "d3c867a9e2de379249b03dbeb3495bd7f076a81a",
+        "identity": "avalonia-12.1.2-host-layout.1",
+        "sdkVersion": "10.0.302",
+        "assemblyVersion": "12.1.2.0",
+        "informationalVersion": "12.1.2-host-layout.1",
+        "publicKeyToken": "c8d484a7012f9a8b",
+        "minimumTests": 7,
+        "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+        "pdbSha256": "6AFB032E58490DFB8176C69FB9F6395655AD72CD59E18CE3E0A521C55B22DC67"
+      }
+    }
+  ],
+  "documentation": {
+    "changedMarkdownFiles": 14,
+    "checkedLocalLinks": 297,
+    "brokenLocalLinks": 0,
+    "diffCheck": "passed",
+    "record": "docs/archive/records/host-v16/development-acceptance.md",
+    "matrix": "docs/maintenance/host-v16-document-window-verification.md"
+  },
+  "nativeDesktop": {
+    "status": "not-run",
+    "reason": "No native desktop automation surface was available in this task. Headless results do not certify native black-frame, dialog ownership, DPI or multi-monitor focus behavior.",
+    "cases": [
+      {
+        "id": "V16-M01",
+        "status": "not-run"
+      },
+      {
+        "id": "V16-M02",
+        "status": "not-run"
+      },
+      {
+        "id": "V16-M03",
+        "status": "not-run"
+      },
+      {
+        "id": "V16-M04",
+        "status": "not-run"
+      },
+      {
+        "id": "V16-M05",
+        "status": "not-run"
+      },
+      {
+        "id": "V16-M06",
+        "status": "not-run"
+      },
+      {
+        "id": "V16-M07",
+        "status": "not-run"
+      },
+      {
+        "id": "V16-M08",
+        "status": "not-run"
+      }
+    ]
+  },
+  "constraints": {
+    "aiflowUsed": false,
+    "windowsCiRun": false,
+    "sealRun": false,
+    "releaseCoverageRun": false,
+    "windowsSmokeRun": false,
+    "deploymentRun": false,
+    "publicationRun": false,
+    "sdkApiChanged": false,
+    "schemaChanged": false,
+    "gateThresholdChanged": false
+  }
+}
