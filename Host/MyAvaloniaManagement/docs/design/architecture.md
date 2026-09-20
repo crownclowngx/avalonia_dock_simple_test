@@ -10,6 +10,8 @@
 
 ## 1. 目标与边界
 
+诊断代码按已有职责分别放入 `Business/Diagnostics`：`HostDiagnosticContracts` 保存草稿、记录与端口，`HostDiagnosticCodes` 保存稳定错误码，`HostDiagnosticRedactionPolicy` 和 `HostDiagnosticFailurePolicy` 分别负责脱敏与分类，`HostDiagnosticSession` 继续独占记录、锁和写入器。敏感调试旁路与加载异常映射各有独立文件；文件拆分没有增加运行期协作者或改变输出政策。
+
 V14 自动重启在 Program 入口先分流无插件助手；正常 Host 由 `HostRestartCoordinator` 协调单次请求，复用 MainWindow、工作区关闭许可和最终布局保存。`PluginEnablementService` 持有设置冻结门，`RestartHandoffSession` 由 Program 持有并借给 DI，避免 Runtime 释放时丢失交接。Program 检查 Shutdown 结构化结果及诊断关闭后才发送最终许可；助手确认许可并等旧进程实际退出后创建一次新 Host。职责、取消和诊断详见[自动重启契约](../../../../docs/reference/host-restart.md)。
 
 `MyAvaloniaManagement` 是 Avalonia 桌面宿主，负责：

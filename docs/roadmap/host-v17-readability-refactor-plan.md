@@ -1,7 +1,7 @@
 # V17：Host 面向人和 AI 的可读性重构计划
 
 > 用途：以行为等价为前提，改善 Host 的文件定位、主流程阅读和设计意图表达。
-> 状态：计划已编写，重构与开发验证均未开始。日期：2026-09-20。
+> 状态：实施中，P0 基线与行为补测、P1 诊断拆分已完成；后续阶段与最终开发验证继续执行。日期：2026-09-20。
 > 调研基线：`1d9ad9e8e55603165ebf22e75f1dbd914900e013`；实施前重新记录 HEAD 和工作树状态。
 > V17 是 Host 改造序号，不代表产品、程序集、SDK、NuGet 或磁盘格式版本升级。
 > 测试矩阵、开发命令和结果记录规则统一见 [V17 专用开发验证](../maintenance/host-v17-readability-verification.md)。
@@ -22,7 +22,7 @@
 
 ### 1.1 本次文档交付与后续实施
 
-当前任务只创建计划、专用验证说明并同步导航；不修改生产代码、测试代码、项目配置或覆盖率基线，不执行构建、测试及开发 Gate。文档链接与差异检查属于本次交付验证。
+初始文档任务已完成。现已进入用户授权的实施阶段，按 P0–P4 修改代码、补齐行为测试、同步文档并执行本地开发验证；Git 按阶段提交。
 
 后续实施按本计划逐阶段进行，实际测试结果在执行后记录。当前测试矩阵表示要求与已有回归入口，不表示这些测试已经在本轮通过。
 
@@ -96,7 +96,7 @@ SOLID 是方案、实现与审查的首要规定。优先显露现有职责；�
 
 ## 4. V17-P1：诊断文件按现有职责拆分
 
-源文件：[HostDiagnostics.cs](../../Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs)。
+原文件为 `HostDiagnostics.cs`；当前入口为[诊断契约](../../Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnosticContracts.cs)、[脱敏策略](../../Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnosticRedactionPolicy.cs)与[诊断会话](../../Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnosticSession.cs)。
 
 建议在现有 `Business/Diagnostics` 目录内组织为下列文件；名称以现有类型为依据，实施时可微调小契约归组，但不得改变类型身份。
 
