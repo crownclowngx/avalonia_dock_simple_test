@@ -5,6 +5,9 @@ using System.Linq;
 using Avalonia.Input;
 using MyAvaloniaManagement.Business.Commands.Catalog;
 using MyAvaloniaManagement.Business.Presentation.Commands;
+using MyAvaloniaManagement.Business.Constants;
+using MyAvaloniaManagement.Business.Workspace;
+using MyAvaloniaManagement.Business.Search;
 using MyAvaloniaManagement.PluginSdk.UI;
 
 namespace MyAvaloniaManagement.ViewModels.Design;
@@ -98,6 +101,16 @@ internal sealed class WorkbenchCommandPresentationDesignData :
         public MyAvaloniaManagement.Business.Layout.DocumentCreationTarget? CaptureCreationTarget(Dock.Model.Controls.IRootDock? source) => null;
         private readonly IReadOnlyList<WorkbenchCommandPaletteProjectionEntry> _items =
         [
+            new(new PagePaletteIdentity(new WorkspacePageId(Guid.Parse("00000000-0000-0000-0000-000000000001"))),
+                "欢迎", "开始使用工作台", "", true, open)
+                { SourceText = "主程序", InstanceText = "页面 1 · 当前", ExecuteHint = "回到“欢迎”（页面 1）" },
+            new(new PagePaletteIdentity(new WorkspacePageId(Guid.Parse("00000000-0000-0000-0000-000000000002"))),
+                "欢迎", "第二个独立实例", "", true, open)
+                { SourceText = "主程序", InstanceText = "页面 2", ExecuteHint = "回到“欢迎”（页面 2）" },
+            new(new FunctionPaletteIdentity(HostExtensionIds.WelcomeDocument, null), "欢迎主程序", "在新标签中开始使用", "", true, open)
+                { SourceText = "主程序", ExecuteHint = "新开“欢迎主程序”" },
+            new(new ToolPaletteIdentity(HostExtensionIds.FileSystemTree), "文件系统浏览器", "已隐藏", "", true, open)
+                { SourceText = "主程序", ActionText = "显示", ExecuteHint = "显示“文件系统浏览器”" },
             new WorkbenchCommandPaletteProjectionEntry(
                 new CommandPaletteIdentity(HostWorkbenchCommandIds.OpenDocument),
                 "打开…",
@@ -110,8 +123,8 @@ internal sealed class WorkbenchCommandPresentationDesignData :
                 "保存",
                 "保存当前文档",
                 "Ctrl+S",
-                true,
-                save),
+                false,
+                save) { SourceText = "主程序", UnavailableReason = "当前页面不支持保存" },
         ];
 
         public event EventHandler? Changed
@@ -123,12 +136,9 @@ internal sealed class WorkbenchCommandPresentationDesignData :
         public IReadOnlyList<WorkbenchCommandPaletteProjectionEntry> GetItems(string? query)
         {
             var normalized = query?.Trim() ?? string.Empty;
-            return normalized.Length == 0
-                ? _items
-                : _items.Where(item =>
-                        item.DisplayName.Contains(normalized, StringComparison.OrdinalIgnoreCase) ||
-                        item.Description.Contains(normalized, StringComparison.OrdinalIgnoreCase))
-                    .ToArray();
+            return WorkbenchPaletteOrdering.Sort(_items.Select(item => item with
+                { MatchRank = WorkbenchTextMatch.Rank(item.SearchName, normalized, item.Description, item.SourceText) })
+                .Where(item => item.MatchRank < int.MaxValue));
         }
     }
 

@@ -139,7 +139,8 @@ public sealed class WorkbenchCommandPresentationUiTests
             Assert.IsNotType<WorkbenchPresentationCommand>(item.Command));
         Assert.Single(design.WorkbenchCommands.KeyBindings.Items);
         var designPalette = design.WorkbenchCommands.Palette.GetItems(string.Empty);
-        Assert.Equal(2, designPalette.Count);
+        Assert.Equal(6, designPalette.Count);
+        Assert.Equal(4, designPalette.Count(item => item.StartsGroup));
         Assert.All(designPalette, item =>
             Assert.IsNotType<WorkbenchPresentationCommand>(item.Command));
 

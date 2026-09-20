@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using Dock.Model.Controls;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Commands.Catalog;
+using MyAvaloniaManagement.Business.Commands.Context;
 using MyAvaloniaManagement.Business.Commands.State;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Plugins.Registration;
@@ -14,6 +15,7 @@ using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.Business.Search;
 using MyAvaloniaManagement.Business.Presentation.Icons;
 using MyAvaloniaManagement.PluginSdk;
+using MyAvaloniaManagement.Models.Tools;
 
 namespace MyAvaloniaManagement.Business.Presentation.Commands;
 
@@ -29,26 +31,11 @@ internal interface IWorkbenchCommandPaletteProjection
 
     /// <summary>按名称及辅助说明查询功能、已有页面、工具与可发现命令。</summary>
     /// <param name="query">允许为 null 的普通子串查询；首尾空白会被忽略。</param>
-    /// <returns>按匹配等级、结果类型、名称与稳定身份确定性排序的快照。</returns>
+    /// <returns>按组相关性及组内匹配等级确定性排序的快照；组首带展示标记，标题不是额外候选。</returns>
     IReadOnlyList<WorkbenchCommandPaletteProjectionEntry> GetItems(string? query);
 
     /// <summary>读取本次面板的文档插入位置；不改变活动页或拥有布局，设计器返回 null。</summary>
     DocumentCreationTarget? CaptureCreationTarget(IRootDock? source);
-}
-
-/// <summary>只保存展示快照、明确身份与 Host 操作绑定，不引用插件页面实例。</summary>
-internal sealed record WorkbenchCommandPaletteProjectionEntry(
-    WorkbenchPaletteIdentity Identity, string DisplayName, string Description,
-    string ShortcutText, bool IsEnabled, IWorkbenchPresentationCommandBinding Command)
-{
-    public string StableKey => Identity.StableKey;
-    public CommandId? CommandId => (Identity as CommandPaletteIdentity)?.Id;
-    public ToolTypeId? ToolTypeId => (Identity as ToolPaletteIdentity)?.Id;
-    public string ActionText { get; init; } = "执行命令";
-    public string SearchName { get; init; } = DisplayName;
-    public int MatchRank { get; init; }
-    public HostIconRequest IconRequest { get; init; } = new(null, string.Empty);
-    public HostIconRenderer? IconRenderer { get; init; }
 }
 
 /// <summary>汇合四类只读候选，普通命令仍以既有菜单声明为发现许可。</summary>
@@ -137,6 +124,8 @@ internal sealed class WorkbenchCommandPaletteProjection :
 
         var normalizedQuery = query?.Trim() ?? string.Empty;
         var shortcuts = BuildShortcutTextByCommand();
+        var pages = _workspace?.GetOpenPages() ?? [];
+        var activePageId = _workspace?.GetActiveDocument()?.PageId;
         var result = new List<WorkbenchCommandPaletteProjectionEntry>();
         foreach (var commandId in _candidateCommandIds)
         {
@@ -145,7 +134,10 @@ internal sealed class WorkbenchCommandPaletteProjection :
                 continue;
             }
 
-            var state = _states.Query(commandId).Status;
+            // 状态、目标提示和预期身份使用同一次路由捕获；CanExecute 可重入，返回后必须再次确认上下文。
+            var route = _states.Resolve(commandId);
+            var state = _states.Evaluate(route).Status;
+            if (!_states.IsCurrent(route)) continue;
             if (state is WorkbenchCommandStateStatus.CommandNotFound or
                 WorkbenchCommandStateStatus.OwnerUnavailable or
                 WorkbenchCommandStateStatus.TargetUnavailable)
@@ -154,11 +146,23 @@ internal sealed class WorkbenchCommandPaletteProjection :
             }
 
             var descriptor = entry.Descriptor;
-            var rank = WorkbenchTextMatch.Rank(descriptor.DisplayName, normalizedQuery, descriptor.Description, commandId.Value);
+            var source = entry is PluginWorkbenchCommandCatalogEntry plugin ? plugin.OwnerId.Value : "主程序";
+            var rank = WorkbenchTextMatch.Rank(descriptor.DisplayName, normalizedQuery, descriptor.Description, commandId.Value, source);
             if (rank == int.MaxValue) continue;
+            var pageCommand = entry is PluginWorkbenchCommandCatalogEntry || commandId == HostWorkbenchCommandIds.SaveDocument;
+            var targetPage = pageCommand ? pages.FirstOrDefault(page => page.Id == route.Capture.Document?.PageId) : null;
+            var targetText = targetPage is null ? string.Empty : $"作用于：{targetPage.Title} · 页面 {targetPage.Sequence}";
+            var expected = pageCommand && route.Capture.Document is { } document
+                ? new WorkbenchCommandTargetExpectation(document.PageId, route.Capture.Snapshot.Revision) : null;
+            var reason = state != WorkbenchCommandStateStatus.Enabled && commandId == HostWorkbenchCommandIds.SaveDocument
+                ? !route.Capture.Snapshot.HasActiveDocument ? "当前没有可保存的页面"
+                    : !route.Capture.Snapshot.IsActiveDocumentPersistable ? "当前页面不支持保存" : string.Empty
+                : string.Empty;
             result.Add(new(new CommandPaletteIdentity(commandId), descriptor.DisplayName, descriptor.Description,
                 shortcuts.GetValueOrDefault(commandId, string.Empty), state == WorkbenchCommandStateStatus.Enabled,
-                _presentationCommands.Get(commandId)) { MatchRank = rank, IconRenderer = _icons });
+                _presentationCommands.Get(commandId)) { MatchRank = rank, IconRenderer = _icons,
+                    SourceText = source, TargetText = targetText, ExpectedTarget = expected, UnavailableReason = reason,
+                    ExecuteHint = HostExecuteHint(commandId, descriptor.DisplayName, targetPage) });
         }
 
         if (_tools is not null && _workspaceActions is not null)
@@ -169,9 +173,12 @@ internal sealed class WorkbenchCommandPaletteProjection :
                 if (rank == int.MaxValue) continue;
                 var identity = new ToolPaletteIdentity(new ToolTypeId(tool.ToolId));
                 var binding = new WorkspacePaletteCommand(identity, _workspaceActions);
-                result.Add(new(identity, $"工具 · {tool.DisplayName}", $"{tool.SourceName} · {tool.StatusText}", string.Empty,
+                var action = tool.LayoutState == ToolLayoutState.AutoHidden ? "展开" : tool.IsVisible ? "定位" : "显示";
+                result.Add(new(identity, tool.DisplayName, tool.StatusText, string.Empty,
                     tool.CanOpen, binding) { SearchName = tool.DisplayName, MatchRank = rank,
-                    ActionText = tool.IsVisible ? "定位" : "显示", IconRequest = tool.IconRequest, IconRenderer = _icons });
+                    ActionText = action, IconRequest = tool.IconRequest, IconRenderer = _icons,
+                    SourceText = SourceName(tool.SourceName), UnavailableReason = tool.UnavailableReason,
+                    ExecuteHint = $"{action}“{tool.DisplayName}”" });
             }
         }
         if (_functions is not null && _workspaceActions is not null)
@@ -184,24 +191,40 @@ internal sealed class WorkbenchCommandPaletteProjection :
                 result.Add(new(identity, function.DisplayName,
                     $"{function.Description} · {function.CategoryPath} · {function.Entry.OwnerId?.Value ?? "内置"}", string.Empty,
                     _workspace?.CanCreateDocuments == true, new WorkspacePaletteCommand(identity, _workspaceActions))
-                    { MatchRank = rank, ActionText = "打开新标签", IconRequest = function.IconRequest, IconRenderer = _icons });
+                    { MatchRank = rank, ActionText = "打开新标签", IconRequest = function.IconRequest, IconRenderer = _icons,
+                        SourceText = function.Entry.OwnerId?.Value ?? "主程序", ExecuteHint = $"新开“{function.DisplayName}”" });
             }
         }
         if (_workspace is not null && _workspaceActions is not null)
         {
-            foreach (var page in _workspace.GetOpenPages())
+            foreach (var page in pages)
             {
                 var rank = WorkbenchTextMatch.Rank(page.Title, normalizedQuery, page.FunctionName, page.SourceName);
                 if (rank == int.MaxValue) continue;
                 var identity = new PagePaletteIdentity(page.Id);
                 result.Add(new(identity, page.Title, page.Description, string.Empty, page.CanActivate,
                     new WorkspacePaletteCommand(identity, _workspaceActions)) { MatchRank = rank,
-                    ActionText = "切换到页面", IconRequest = page.IconRequest, IconRenderer = _icons });
+                    ActionText = "切换到页面", IconRequest = page.IconRequest, IconRenderer = _icons,
+                    SourceText = SourceName(page.SourceName),
+                    InstanceText = $"页面 {page.Sequence}" + (page.Id == activePageId ? " · 当前" : string.Empty),
+                    ExecuteHint = $"回到“{page.Title}”（页面 {page.Sequence}）" });
             }
         }
-        return result.OrderBy(item => item.MatchRank).ThenBy(item => item.Identity.Order)
-            .ThenBy(item => item.SearchName, StringComparer.Ordinal)
-            .ThenBy(item => item.StableKey, StringComparer.Ordinal).ToArray();
+        return WorkbenchPaletteOrdering.Sort(result);
+    }
+
+    private static string SourceName(string source) => source == "内置" ? "主程序" : source;
+
+    /// <summary>只解释 Host 确知的入口；插件命令保留声明名称，不从动词猜测新建、导出完成或异步结果。</summary>
+    private static string HostExecuteHint(CommandId id, string name, OpenWorkspacePage? target)
+    {
+        if (id == HostWorkbenchCommandIds.OpenDocument) return "选择文件…";
+        if (id == HostWorkbenchCommandIds.NewDocument) return "打开功能中心";
+        if (id == HostWorkbenchCommandIds.OpenToolCenter) return "显示工具中心";
+        if (id == HostWorkbenchCommandIds.OpenPluginStatus) return "显示插件看板";
+        if (id == HostWorkbenchCommandIds.OpenHelp) return "显示帮助中心";
+        if (id == HostWorkbenchCommandIds.SaveDocument && target is not null) return $"保存“{target.Title}”（页面 {target.Sequence}）";
+        return "执行：" + name;
     }
 
     private void OnFunctionsChanged(object? sender, Business.Lifecycle.PluginAvailabilityChangedEventArgs args) => QueueChanged();

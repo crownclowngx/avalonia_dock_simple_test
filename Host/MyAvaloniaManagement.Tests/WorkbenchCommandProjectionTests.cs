@@ -163,13 +163,6 @@ public sealed class WorkbenchCommandProjectionTests
 
         Assert.Collection(
             items,
-            save =>
-            {
-                Assert.Equal(HostWorkbenchCommandIds.SaveDocument, save.CommandId);
-                Assert.Equal("保存", save.DisplayName);
-                Assert.False(save.IsEnabled);
-                Assert.Equal("Ctrl+S", save.ShortcutText);
-            },
             create =>
             {
                 Assert.Equal(HostWorkbenchCommandIds.NewDocument, create.CommandId);
@@ -189,6 +182,14 @@ public sealed class WorkbenchCommandProjectionTests
                 Assert.Equal("打开…", open.DisplayName);
                 Assert.True(open.IsEnabled);
                 Assert.Equal(string.Empty, open.ShortcutText);
+            },
+            save =>
+            {
+                // V18 同等级可执行项优先；保留禁用保存和有效快捷键的原语义断言。
+                Assert.Equal(HostWorkbenchCommandIds.SaveDocument, save.CommandId);
+                Assert.Equal("保存", save.DisplayName);
+                Assert.False(save.IsEnabled);
+                Assert.Equal("Ctrl+S", save.ShortcutText);
             },
             restart =>
             {
