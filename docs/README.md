@@ -1,5 +1,7 @@
 # 项目文档导航
 
+V16 Document 浮窗关闭与命令面板新建位置已形成[实施方案](roadmap/host-v16-document-floating-close-and-creation-target-plan.md)及[专用开发验证计划](maintenance/host-v16-document-window-verification.md)。当前仅文档，待实施、未验证；不使用 AIFLOW、Windows CI 或发布门禁。
+
 V15 羽毛启动窗口与真实插件进度已接入；本次 `D:\data\avalonia` 单文件自包含交付见[专用部署说明](maintenance/host-v15-local-deployment.md)和[实际部署证据](archive/records/host-v15/local-deployment-20260920.json)。
 
 V14 一键自动重启已接入文件菜单和插件看板，见[使用指南](quick-start/restart-host.md)、[行为契约](reference/host-restart.md)、[执行方案](roadmap/host-v14-automatic-restart-plan.md)及[专用开发验证](maintenance/host-v14-automatic-restart-verification.md)。最终本地 verify 结果见[开发记录与证据](archive/records/host-v14/development-acceptance.md)；单文件、自包含安装交付见[桌面工作台部署](maintenance/host-v14-local-deployment.md)，原生桌面体验仍独立验收。本轮不使用 AIFLOW、Windows CI 或正式发布门禁。
