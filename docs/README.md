@@ -1,5 +1,7 @@
 # 项目文档导航
 
+V17 Host 面向人和 AI 的可读性重构已形成[实施计划](roadmap/host-v17-readability-refactor-plan.md)与[专用开发验证](maintenance/host-v17-readability-verification.md)，尚未开始实现。首批整理诊断、命令展示与服务注册；SOLID 为首要约束，仅使用本地开发验证，不使用 AIFLOW、Windows CI 或发布门禁。
+
 V16 Document 浮窗关闭与命令面板新建位置已实现，见[实施方案](roadmap/host-v16-document-floating-close-and-creation-target-plan.md)、[专用开发验证](maintenance/host-v16-document-window-verification.md)及[开发记录](archive/records/host-v16/development-acceptance.md)。本地自动化与原生桌面状态分别记录；不使用 AIFLOW、Windows CI 或发布门禁。
 
 V15 羽毛启动窗口与真实插件进度已接入；本次 `D:\data\avalonia` 单文件自包含交付见[专用部署说明](maintenance/host-v15-local-deployment.md)和[实际部署证据](archive/records/host-v15/local-deployment-20260920.json)。
@@ -8,7 +10,7 @@ V14 一键自动重启已接入文件菜单和插件看板，见[使用指南](q
 
 V13 插件开关已实现：在[插件看板](quick-start/plugin-status.md)保存下次启动设置，重启生效。见[行为契约](reference/plugin-enablement.md)、[实施计划](roadmap/host-v13-plugin-enablement-plan.md)、[专用验证](maintenance/host-v13-plugin-enablement-verification.md)及[开发记录](archive/records/host-v13/development-acceptance.md)；最终 verify 结果以记录内 JSON 为准，原生桌面待验收。本机单文件、自包含交付见[桌面工作台部署](maintenance/host-v13-local-deployment.md)。
 
-> 用途：主项目唯一总导航。状态：当前；核对日期：2026-09-19。技术基线见[版本与交付边界](reference/platform-baseline.md)。
+> 用途：主项目唯一总导航。状态：当前；核对日期：2026-09-20。技术基线见[版本与交付边界](reference/platform-baseline.md)。
 
 ## 使用工作台
 
@@ -39,6 +41,7 @@ V13 插件开关已实现：在[插件看板](quick-start/plugin-status.md)保�
 | 任务 | 权威说明 |
 | --- | --- |
 | 理解当前 Host 实现与取舍 | [内部架构入口](../Host/MyAvaloniaManagement/docs/README.md) |
+| 按 V17 改善 Host 可读性与表达 | [实施计划](roadmap/host-v17-readability-refactor-plan.md)、[专用开发验证](maintenance/host-v17-readability-verification.md)；计划阶段，尚未实现 |
 | 按 V12 重构 Host 内部职责 | [重构方案](roadmap/host-v12-internal-refactor-plan.md)、[专用开发验证](maintenance/host-v12-refactor-verification.md)、[开发记录](archive/records/host-v12/development-acceptance.md)、[本机部署与手工影响范围](maintenance/host-v12-local-deployment.md) |
 | 修改外部可观察行为 | [兼容约束](../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md) |
 | 修改保存与恢复 | [Document 持久化](reference/document-persistence.md) |

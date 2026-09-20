@@ -1,5 +1,7 @@
 # 待办与验收
 
+V17 Host 可读性重构处于计划阶段，见[实施计划](host-v17-readability-refactor-plan.md)与[专用开发验证](../maintenance/host-v17-readability-verification.md)。首批限定诊断文件、命令展示文件和服务注册方法整理；实现与测试均未开始。
+
 V16 Document 浮窗关闭与新建位置已实现，见[实施方案](host-v16-document-floating-close-and-creation-target-plan.md)、[专用开发验证](../maintenance/host-v16-document-window-verification.md)及[开发记录](../archive/records/host-v16/development-acceptance.md)。原生桌面 M01–M08 仍待验收。
 
 V15 启动引导与插件加载进度已接入；见[实施方案](host-v15-startup-splash-plan.md)、[专用验证](../maintenance/host-v15-startup-verification.md)及[开发记录与最终证据](../archive/records/host-v15/development-acceptance.md)。
@@ -8,10 +10,11 @@ V14 一键自动重启已接入，开发结果见[开发记录与最终证据](.
 
 V13 插件开关的实现与专项已完成，原生桌面检查待验收。入口：[计划与阶段](host-v13-plugin-enablement-plan.md)、[专用开发验证](../maintenance/host-v13-plugin-enablement-verification.md)、[开发记录与最终证据](../archive/records/host-v13/development-acceptance.md)。本轮只运行本地开发 verify，不使用 AIFLOW、Windows CI 或发布门禁。
 
-> 用途：集中保留尚未完成的工作。状态：按下表分别跟踪；核对日期：2026-09-19。依据为现有源码与历史验收记录；本页不把未来候选视为已授权实施任务。
+> 用途：集中保留尚未完成的工作。状态：按下表分别跟踪；核对日期：2026-09-20。依据为现有源码与历史验收记录；本页不把未来候选视为已授权实施任务。
 
 | 工作名称 | 状态 / 所属范围 | 事实依据 | 完成条件 |
 | --- | --- | --- | --- |
+| V17 Host 面向人和 AI 的可读性重构 | 计划已编写，未实现 / Host 内部表达与组织 | [计划](host-v17-readability-refactor-plan.md)、[专用验证](../maintenance/host-v17-readability-verification.md) | 三项首批整理保持行为等价；SOLID 与详细中文设计注释审查、D/C/S 测试矩阵及最终本地 verify 完成，文档同步；不使用 AIFLOW、Windows CI 或发布门禁 |
 | V16 Document 浮窗关闭与新建位置 | 已实现、原生桌面待验收 / Host 工作区交互 | [方案](host-v16-document-floating-close-and-creation-target-plan.md)、[专用验证](../maintenance/host-v16-document-window-verification.md)、[记录](../archive/records/host-v16/development-acceptance.md) | C/N 专项及最终本地 verify 证据单列；M01–M08 未执行。原生黑框、DPI、多屏、对话框和输入焦点继续验收；本轮不使用 Windows CI 或发布门禁 |
 | V15 启动引导与插件加载进度 | 实现与专项已接入，原生桌面待验收 / Host 启动 | [方案](host-v15-startup-splash-plan.md)、[专用验证](../maintenance/host-v15-startup-verification.md)、[开发证据](../archive/records/host-v15/final-development-evidence.json) | 最终本地 verify 见 JSON；原生 M01–M07、外部业务、单文件与部署分别记录，不以 Headless 代替 |
 | V14 Host 一键自动重启 | 实现与自动化已接入，原生重启/桌面体验待验收 | [执行方案](host-v14-automatic-restart-plan.md)、[专用验证](../maintenance/host-v14-automatic-restart-verification.md)、[开发证据](../archive/records/host-v14/final-development-evidence.json)、[本机交付](../maintenance/host-v14-local-deployment.md) | 本机单文件产物和启动检查按部署 JSON 记录，不能替代 M01–M07 原生交互及单文件菜单/看板重启往返。不使用 AIFLOW、Windows CI 或本轮正式发布门禁 |

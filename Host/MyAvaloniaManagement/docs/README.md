@@ -1,5 +1,7 @@
 # Host 内部文档
 
+V17 面向人和 AI 的可读性重构已形成[计划](../../../docs/roadmap/host-v17-readability-refactor-plan.md)与[专用开发验证](../../../docs/maintenance/host-v17-readability-verification.md)，尚未实现。首批按现有职责拆分诊断和命令展示文件，并分组服务注册长方法；SOLID、详细中文设计注释与行为等价为实施约束。
+
 V16 Document 浮窗关闭与新建位置已实现，见[实施方案](../../../docs/roadmap/host-v16-document-floating-close-and-creation-target-plan.md)、[专用开发验证](../../../docs/maintenance/host-v16-document-window-verification.md)和[开发记录](../../../docs/archive/records/host-v16/development-acceptance.md)。SOLID 为首要约束；自动化与原生桌面验收分别记载。
 
 V15 通过唯一 App 提前显示矢量羽毛启动窗口，后台插件组合报告真实进度，UI 线程完成工作台交接；见[现行契约](../../../docs/reference/host-startup.md)、[专用验证](../../../docs/maintenance/host-v15-startup-verification.md)及[开发记录](../../../docs/archive/records/host-v15/development-acceptance.md)。
@@ -8,7 +10,7 @@ V14 一键自动重启已接入，见[现行契约](../../../docs/reference/host
 
 V13 插件开关已接入：在看板保存下次启动设置，在 DLL 加载前过滤。见[行为契约](../../../docs/reference/plugin-enablement.md)、[实施计划](../../../docs/roadmap/host-v13-plugin-enablement-plan.md)、[专用验证](../../../docs/maintenance/host-v13-plugin-enablement-verification.md)及[开发记录](../../../docs/archive/records/host-v13/development-acceptance.md)。
 
-> 用途：维护 Host 实现及外部可观察行为。状态：当前；核对日期：2026-09-19。总导航在[项目文档](../../../docs/README.md)。
+> 用途：维护 Host 实现及外部可观察行为。状态：当前；核对日期：2026-09-20。总导航在[项目文档](../../../docs/README.md)。
 
 按修改目的阅读：
 
