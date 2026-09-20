@@ -1,0 +1,652 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-20",
+  "status": "pending-final-verify",
+  "scope": "V17 Host readability: diagnostics and command presentation file organization, DI registration extraction; local development only",
+  "branch": "codex/host-v17-readability-refactor",
+  "sourceIdentity": {
+    "preRefactorTestsCommit": "6b73b67",
+    "postGateChange": "Only this non-embedded JSON is updated after final verify; executable code, tests, dependencies and embedded Markdown remain identical to finalGate.source.revision.",
+    "implementationCommits": [
+      "389c1d3",
+      "07de721",
+      "ac5a245"
+    ],
+    "investigationBaseline": "1d9ad9e8e55603165ebf22e75f1dbd914900e013"
+  },
+  "baselineGate": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "exitCode": 0,
+    "runId": "20260920-042714-791c85191b16",
+    "summary": {
+      "sha256": "0ff965dc1b23a4cffbb8e2f23ce79d4358011e32c24ac394ae8d71007cfc5eb3",
+      "path": "artifacts/gate/20260920-042714-791c85191b16/summary.json"
+    },
+    "startedAtUtc": "2026-09-20T12:27:14.3318111+08:00",
+    "finishedAtUtc": "2026-09-20T12:30:10.40298+08:00",
+    "source": {
+      "revision": "791c85191b16a826d1cf6c008c131f765fddb51d",
+      "tree": "d3971ecce55b131c0cc127c0c5d40336b97ffbc1",
+      "clean": true,
+      "files": 1036,
+      "sha256": "99563140F142F3E511A9E67C4DA5C4B175269BD293C18D11385798C4234201C8"
+    },
+    "stages": [
+      {
+        "id": "avalonia-layout-patch",
+        "status": "passed",
+        "durationMilliseconds": 625
+      },
+      {
+        "id": "dock-patch",
+        "status": "passed",
+        "durationMilliseconds": 838
+      },
+      {
+        "id": "restore",
+        "status": "passed",
+        "durationMilliseconds": 2639
+      },
+      {
+        "id": "build",
+        "status": "passed",
+        "durationMilliseconds": 15340
+      },
+      {
+        "id": "tests",
+        "status": "passed",
+        "durationMilliseconds": 150213
+      },
+      {
+        "id": "contracts",
+        "status": "passed",
+        "durationMilliseconds": 4256
+      },
+      {
+        "id": "packages",
+        "status": "passed",
+        "durationMilliseconds": 14
+      },
+      {
+        "id": "package-acceptance",
+        "status": "passed",
+        "durationMilliseconds": 1528
+      }
+    ],
+    "tests": [
+      {
+        "file": {
+          "sha256": "74eddc1d9d25fdf5af32d3b785d96660722dd73660e9efb79f7fdf904df7688f",
+          "path": "artifacts/gate/20260920-042714-791c85191b16/pass-1/tests/host-plugin/host-plugin.trx"
+        },
+        "total": 292,
+        "executed": 292,
+        "passed": 292,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:27:44.8152241+08:00",
+        "finishedAt": "2026-09-20T12:28:49.3094685+08:00",
+        "v17Cases": []
+      },
+      {
+        "file": {
+          "sha256": "6371ded699224270417bed546a46f0e1b711015d97722f574de64fb3439c94fc",
+          "path": "artifacts/gate/20260920-042714-791c85191b16/pass-1/tests/host-ui/host-ui.trx"
+        },
+        "total": 277,
+        "executed": 277,
+        "passed": 277,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:28:50.0669598+08:00",
+        "finishedAt": "2026-09-20T12:30:02.9620086+08:00",
+        "v17Cases": []
+      },
+      {
+        "file": {
+          "sha256": "fe264e127904f78ffff51e3f25d71faa3c1d8975216b1d8cda359bf00c5580ca",
+          "path": "artifacts/gate/20260920-042714-791c85191b16/pass-1/tests/host-unit/host-unit.trx"
+        },
+        "total": 608,
+        "executed": 608,
+        "passed": 608,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:27:42.2297643+08:00",
+        "finishedAt": "2026-09-20T12:27:43.9554635+08:00",
+        "v17Cases": []
+      },
+      {
+        "file": {
+          "sha256": "e1d76b7b3cb01d9e7d5c28eac175e8d7f2fcad125f1bf1a403923d6194da709c",
+          "path": "artifacts/gate/20260920-042714-791c85191b16/pass-1/tests/my-plug-test-package/my-plug-test-package.trx"
+        },
+        "total": 1,
+        "executed": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:30:09.6007604+08:00",
+        "finishedAt": "2026-09-20T12:30:10.3325201+08:00",
+        "v17Cases": []
+      },
+      {
+        "file": {
+          "sha256": "45ea971dddad0d9e88d9b5400afd50364dbb77b289a35dbc6fa2a45af3edb9e7",
+          "path": "artifacts/gate/20260920-042714-791c85191b16/pass-1/tests/my-plug-test/my-plug-test.trx"
+        },
+        "total": 11,
+        "executed": 11,
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:30:04.0250881+08:00",
+        "finishedAt": "2026-09-20T12:30:04.5308452+08:00",
+        "v17Cases": []
+      },
+      {
+        "file": {
+          "sha256": "0d3f25d0c5a40eade81b6ba99716c1eb4287db7972a4f524b617fa5622c349fc",
+          "path": "artifacts/gate/20260920-042714-791c85191b16/pass-1/tests/sdk/sdk.trx"
+        },
+        "total": 91,
+        "executed": 91,
+        "passed": 91,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:27:35.1016576+08:00",
+        "finishedAt": "2026-09-20T12:27:41.4954333+08:00",
+        "v17Cases": []
+      }
+    ],
+    "totalPassed": null,
+    "buildLog": {
+      "sha256": "d8dfc2d22fec883462f1f65790fd518ff52c374b0ab6bbe0c44972a5cd4060f8",
+      "path": "artifacts/gate/20260920-042714-791c85191b16/pass-1/logs/build-main.log"
+    },
+    "releaseEligible": false,
+    "publishable": false
+  },
+  "behaviorProtection": {
+    "initial": {
+      "command": "dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~V17' --logger 'trx;LogFileName=p0-behavior.trx' --results-directory artifacts/host-v17/p0-behavior",
+      "exitCode": 1,
+      "reason": "Three new fixture cases used Layout diagnostics; existing query admits unregistered candidates only for discovery phases.",
+      "test": {
+        "file": {
+          "sha256": "41c25b03daaf9a3d9fe54c2f65b7d80b61a25aac40b701fe69f0c3af15a96da1",
+          "path": "artifacts/host-v17/p0-behavior/p0-behavior.trx"
+        },
+        "total": 8,
+        "executed": 8,
+        "passed": 5,
+        "failed": 3,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:31:45.5036880+08:00",
+        "finishedAt": "2026-09-20T12:31:48.5822311+08:00",
+        "v17Cases": [
+          {
+            "name": "MyAvaloniaManagement.Tests.ServiceAndModelTests.V17注册和容器验证保持共享输入身份且不提前创建关闭参与者(supplyOwners: False)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: True, registerSink: True)",
+            "outcome": "Failed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.ServiceAndModelTests.V17注册和容器验证保持共享输入身份且不提前创建关闭参与者(supplyOwners: True)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.ServiceAndModelTests.V17关闭端口和工作区Factory复用实际登记实例",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17会话序号与文件顺序一致且释放后拒绝新增记录",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: False, registerSink: True)",
+            "outcome": "Failed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: True, registerSink: False)",
+            "outcome": "Failed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: False, registerSink: False)",
+            "outcome": "Passed"
+          }
+        ]
+      }
+    },
+    "corrected": {
+      "command": "dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~V17' --logger 'trx;LogFileName=p0-behavior.trx' --results-directory artifacts/host-v17/p0-behavior-corrected",
+      "exitCode": 0,
+      "correction": "Use PluginAssemblyLoad in fixture; production query and assertions unchanged; all eight cases passed before refactoring.",
+      "test": {
+        "file": {
+          "sha256": "275701518456983ccf8e2461c76cc5f15b196ceb2710279817b93531fc5dadb1",
+          "path": "artifacts/host-v17/p0-behavior-corrected/p0-behavior.trx"
+        },
+        "total": 8,
+        "executed": 8,
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:32:16.1683062+08:00",
+        "finishedAt": "2026-09-20T12:32:16.8448151+08:00",
+        "v17Cases": [
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: True, registerSink: True)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17会话序号与文件顺序一致且释放后拒绝新增记录",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.ServiceAndModelTests.V17关闭端口和工作区Factory复用实际登记实例",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.ServiceAndModelTests.V17注册和容器验证保持共享输入身份且不提前创建关闭参与者(supplyOwners: True)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: False, registerSink: True)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: False, registerSink: False)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: True, registerSink: False)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.ServiceAndModelTests.V17注册和容器验证保持共享输入身份且不提前创建关闭参与者(supplyOwners: False)",
+            "outcome": "Passed"
+          }
+        ]
+      }
+    }
+  },
+  "phaseTests": [
+    {
+      "exitCode": 0,
+      "command": "dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~HostDiagnosticsTests|FullyQualifiedName~WorkbenchCommandDiagnosticTests' --logger 'trx;LogFileName=p1-unit.trx' --results-directory artifacts/host-v17/p1-unit",
+      "id": "p1-unit",
+      "test": {
+        "file": {
+          "sha256": "721f995c20e347f8902b0ca9329cae2832362fe906c06e23676cdbd8da2f187b",
+          "path": "artifacts/host-v17/p1-unit/p1-unit.trx"
+        },
+        "total": 33,
+        "executed": 33,
+        "passed": 33,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:32:39.9787024+08:00",
+        "finishedAt": "2026-09-20T12:32:40.8845446+08:00",
+        "v17Cases": [
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: True, registerSink: False)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17会话序号与文件顺序一致且释放后拒绝新增记录",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: False, registerSink: False)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: True, registerSink: True)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: False, registerSink: True)",
+            "outcome": "Passed"
+          }
+        ]
+      }
+    },
+    {
+      "exitCode": 0,
+      "command": "dotnet test Host/MyAvaloniaManagement.PluginTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~HostLifecycleOwnershipTests&Category!=PackageAcceptance' --logger 'trx;LogFileName=p1-plugin.trx' --results-directory artifacts/host-v17/p1-plugin",
+      "id": "p1-plugin",
+      "test": {
+        "file": {
+          "sha256": "51bd2e99efcba797c778722a792427975bfe2bba85a85b7e80b5ec418b3ad393",
+          "path": "artifacts/host-v17/p1-plugin/p1-plugin.trx"
+        },
+        "total": 25,
+        "executed": 25,
+        "passed": 25,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:32:46.7535994+08:00",
+        "finishedAt": "2026-09-20T12:32:47.3829144+08:00",
+        "v17Cases": []
+      }
+    },
+    {
+      "exitCode": 0,
+      "command": "dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~WorkbenchCommandProjectionTests|FullyQualifiedName~WorkbenchCommandPresentationTests|FullyQualifiedName~WorkbenchCommandDocumentTargetTests|FullyQualifiedName~WorkbenchCommandDiagnosticTests' --logger 'trx;LogFileName=p2-unit.trx' --results-directory artifacts/host-v17/p2-unit",
+      "id": "p2-unit",
+      "test": {
+        "file": {
+          "sha256": "6ade0005a113f7c431acfd39e452d2a82b8f2a27745a4e4e8d2557e285cd3f28",
+          "path": "artifacts/host-v17/p2-unit/p2-unit.trx"
+        },
+        "total": 27,
+        "executed": 27,
+        "passed": 27,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:34:33.8696212+08:00",
+        "finishedAt": "2026-09-20T12:34:34.6206648+08:00",
+        "v17Cases": []
+      }
+    },
+    {
+      "exitCode": 0,
+      "command": "dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~WorkbenchCommandPresentationUiTests|FullyQualifiedName~UiRefreshSchedulerTests' --logger 'trx;LogFileName=p2-ui.trx' --results-directory artifacts/host-v17/p2-ui",
+      "id": "p2-ui",
+      "test": {
+        "file": {
+          "sha256": "fc2b8d599ea7c7ef6e0c5d307406a014db6781d5ed987b343bc8d867c049dd26",
+          "path": "artifacts/host-v17/p2-ui/p2-ui.trx"
+        },
+        "total": 28,
+        "executed": 28,
+        "passed": 28,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:34:39.0975211+08:00",
+        "finishedAt": "2026-09-20T12:34:45.4735684+08:00",
+        "v17Cases": []
+      }
+    },
+    {
+      "exitCode": 0,
+      "command": "dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~ServiceAndModelTests|FullyQualifiedName~HostCatalogPluginRegistryTests|FullyQualifiedName~WorkspaceSessionAndDockFactoryTests|FullyQualifiedName~DocumentOperationShutdownTests|FullyQualifiedName~WorkbenchCommandShutdownGateTests|FullyQualifiedName~WorkflowActionShutdownGateTests|FullyQualifiedName~StartupCoordinatorTests|FullyQualifiedName~HostRestartTests|FullyQualifiedName~HostApiBoundaryTests|FullyQualifiedName~PublicApiContractTests|FullyQualifiedName~V17' --logger 'trx;LogFileName=p3-unit.trx' --results-directory artifacts/host-v17/p3-unit",
+      "id": "p3-unit",
+      "test": {
+        "file": {
+          "sha256": "60c2498c99a6e6da7f5580e0aa605e97148fb2beb9c680e54e1e6caeff32b977",
+          "path": "artifacts/host-v17/p3-unit/p3-unit.trx"
+        },
+        "total": 102,
+        "executed": 102,
+        "passed": 102,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:37:58.4509536+08:00",
+        "finishedAt": "2026-09-20T12:37:59.1739884+08:00",
+        "v17Cases": [
+          {
+            "name": "MyAvaloniaManagement.Tests.ServiceAndModelTests.V17注册和容器验证保持共享输入身份且不提前创建关闭参与者(supplyOwners: False)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: True, registerSink: False)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.ServiceAndModelTests.V17注册和容器验证保持共享输入身份且不提前创建关闭参与者(supplyOwners: True)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: False, registerSink: True)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: False, registerSink: False)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.ServiceAndModelTests.V17关闭端口和工作区Factory复用实际登记实例",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退(registerSession: True, registerSink: True)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.HostDiagnosticsTests.V17会话序号与文件顺序一致且释放后拒绝新增记录",
+            "outcome": "Passed"
+          }
+        ]
+      }
+    },
+    {
+      "exitCode": 0,
+      "command": "dotnet test Host/MyAvaloniaManagement.PluginTests -c Release --no-restore -m:1 -warnaserror --filter '(FullyQualifiedName~HostLifecycleOwnershipTests|FullyQualifiedName~DocumentScopeManagerTests|FullyQualifiedName~PluginContainerIsolationTests|FullyQualifiedName~StartupPluginProgressTests|FullyQualifiedName~HostRestartLifecycleTests|FullyQualifiedName~PluginHostBoundaryTests)&Category!=PackageAcceptance' --logger 'trx;LogFileName=p3-plugin.trx' --results-directory artifacts/host-v17/p3-plugin",
+      "id": "p3-plugin",
+      "test": {
+        "file": {
+          "sha256": "0535147bd794978934ba1ac224fcceff6abb1ac79f30790b636f0d0b0421b77e",
+          "path": "artifacts/host-v17/p3-plugin/p3-plugin.trx"
+        },
+        "total": 56,
+        "executed": 56,
+        "passed": 56,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:38:04.7795126+08:00",
+        "finishedAt": "2026-09-20T12:38:05.8094127+08:00",
+        "v17Cases": []
+      }
+    },
+    {
+      "exitCode": 0,
+      "command": "dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~StartupSplashUiTests|FullyQualifiedName~HostRestartUiTests|FullyQualifiedName~WorkbenchCommandPresentationUiTests' --logger 'trx;LogFileName=p3-ui.trx' --results-directory artifacts/host-v17/p3-ui",
+      "id": "p3-ui",
+      "test": {
+        "file": {
+          "sha256": "4053e0e3b955ef666df8a3fd70e8ac1cb4d11a2f64c722811b63e078e4965ac6",
+          "path": "artifacts/host-v17/p3-ui/p3-ui.trx"
+        },
+        "total": 24,
+        "executed": 24,
+        "passed": 24,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-20T12:38:09.7614077+08:00",
+        "finishedAt": "2026-09-20T12:38:16.6767372+08:00",
+        "v17Cases": []
+      }
+    }
+  ],
+  "structureReview": {
+    "Baseline": "6b73b67",
+    "MovedTypes": [
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs",
+        "Type": "HostDiagnosticPhase",
+        "Target": "HostDiagnosticContracts.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs",
+        "Type": "HostDiagnosticSeverity",
+        "Target": "HostDiagnosticContracts.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs",
+        "Type": "HostDiagnosticDisposition",
+        "Target": "HostDiagnosticContracts.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs",
+        "Type": "HostDiagnosticDraft",
+        "Target": "HostDiagnosticContracts.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs",
+        "Type": "HostDiagnosticRecord",
+        "Target": "HostDiagnosticContracts.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs",
+        "Type": "IHostDiagnosticSink",
+        "Target": "HostDiagnosticContracts.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs",
+        "Type": "HostDiagnosticCodes",
+        "Target": "HostDiagnosticCodes.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs",
+        "Type": "HostDiagnosticRedactionPolicy",
+        "Target": "HostDiagnosticRedactionPolicy.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs",
+        "Type": "HostSensitiveDiagnosticDebugOutput",
+        "Target": "HostSensitiveDiagnosticDebugOutput.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs",
+        "Type": "HostDiagnosticFailurePolicy",
+        "Target": "HostDiagnosticFailurePolicy.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs",
+        "Type": "HostDiagnosticSession",
+        "Target": "HostDiagnosticSession.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnostics.cs",
+        "Type": "PluginLoadExceptionMapper",
+        "Target": "PluginLoadExceptionMapper.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandProjection.cs",
+        "Type": "IWorkbenchMenuProjection",
+        "Target": "WorkbenchMenuProjection.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandProjection.cs",
+        "Type": "IWorkbenchKeyBindingProjection",
+        "Target": "WorkbenchKeyBindingProjection.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandProjection.cs",
+        "Type": "WorkbenchMenuProjectionEntry",
+        "Target": "WorkbenchMenuProjection.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandProjection.cs",
+        "Type": "WorkbenchMenuCommandProjectionEntry",
+        "Target": "WorkbenchMenuProjection.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandProjection.cs",
+        "Type": "WorkbenchMenuSeparatorProjectionEntry",
+        "Target": "WorkbenchMenuProjection.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandProjection.cs",
+        "Type": "WorkbenchKeyBindingProjectionEntry",
+        "Target": "WorkbenchKeyBindingProjection.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandProjection.cs",
+        "Type": "WorkbenchPresentationCommandStore",
+        "Target": "WorkbenchPresentationCommandStore.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandProjection.cs",
+        "Type": "WorkbenchMenuProjection",
+        "Target": "WorkbenchMenuProjection.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandProjection.cs",
+        "Type": "WorkbenchKeyBindingProjection",
+        "Target": "WorkbenchKeyBindingProjection.cs"
+      },
+      {
+        "SyntaxTokensIdentical": true,
+        "Source": "Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandProjection.cs",
+        "Type": "WorkbenchCommandPresentation",
+        "Target": "WorkbenchCommandPresentation.cs"
+      }
+    ],
+    "Registration": {
+      "ExpandedStatements": 89,
+      "SyntaxTokensAndOrderIdentical": true,
+      "ExistingOtherMembersIdentical": true,
+      "EntryLines": 39,
+      "OriginalStatements": 89,
+      "PrivateHelpers": 11
+    },
+    "Coverage": {
+      "CollectionExecuted": false,
+      "TargetsExist": true,
+      "OldFile": "Business/Presentation/Commands/WorkbenchCommandProjection.cs",
+      "Threshold": 90.0,
+      "OtherThresholdsUnchanged": true,
+      "NewExecutableFiles": 4
+    }
+  },
+  "finalGate": null,
+  "excluded": {
+    "gateToolSelfTests": "not rerun: Gate implementation and configuration consumer unchanged",
+    "windowsSmoke": "not run",
+    "coverageCollection": "not run",
+    "nativeDesktop": "not run: no new UI behavior claim, existing desktop acceptance remains independent",
+    "publishing": "not run",
+    "repeatability": "not run",
+    "aiflow": "not used",
+    "deployment": "not run",
+    "seal": "not run",
+    "windowsCI": "not run"
+  },
+  "documentCheck": {
+    "documents": [
+      "docs/archive/README.md",
+      "docs/archive/records/host-v17/development-acceptance.md",
+      "docs/maintenance/host-v17-readability-verification.md",
+      "docs/maintenance/verification.md",
+      "docs/README.md",
+      "docs/roadmap/host-v12-internal-refactor-plan.md",
+      "docs/roadmap/host-v17-readability-refactor-plan.md",
+      "docs/roadmap/README.md",
+      "Host/MyAvaloniaManagement/docs/design/architecture.md",
+      "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+      "Host/MyAvaloniaManagement/docs/README.md"
+    ],
+    "localLinksChecked": 431,
+    "externalLinksSkipped": 4,
+    "namedMethodReferencesChecked": 31,
+    "classFilterReferencesChecked": 28,
+    "diffCheckExitCode": 0,
+    "failures": []
+  }
+}

@@ -1,7 +1,7 @@
 # V17：Host 面向人和 AI 的可读性重构计划
 
 > 用途：以行为等价为前提，改善 Host 的文件定位、主流程阅读和设计意图表达。
-> 状态：实施中，P0 基线与行为补测、P1 诊断拆分已完成；后续阶段与最终开发验证继续执行。日期：2026-09-20。
+> 状态：P0–P3 实现与专项已完成，P4 文档和结构审查已收口；最终完整本地 verify 结果以[开发记录](../archive/records/host-v17/development-acceptance.md)关联的非嵌入 JSON 为准。日期：2026-09-20。
 > 调研基线：`1d9ad9e8e55603165ebf22e75f1dbd914900e013`；实施前重新记录 HEAD 和工作树状态。
 > V17 是 Host 改造序号，不代表产品、程序集、SDK、NuGet 或磁盘格式版本升级。
 > 测试矩阵、开发命令和结果记录规则统一见 [V17 专用开发验证](../maintenance/host-v17-readability-verification.md)。
@@ -24,7 +24,7 @@
 
 初始文档任务已完成。现已进入用户授权的实施阶段，按 P0–P4 修改代码、补齐行为测试、同步文档并执行本地开发验证；Git 按阶段提交。
 
-后续实施按本计划逐阶段进行，实际测试结果在执行后记录。当前测试矩阵表示要求与已有回归入口，不表示这些测试已经在本轮通过。
+实施已按阶段完成，实际文件映射、测试结果与审查记录见[开发记录](../archive/records/host-v17/development-acceptance.md)。下文保留设计要求；专项通过与最终完整门禁结果分别记录。
 
 ### 1.2 后续候选与排除范围
 
@@ -98,7 +98,7 @@ SOLID 是方案、实现与审查的首要规定。优先显露现有职责；�
 
 原文件为 `HostDiagnostics.cs`；当前入口为[诊断契约](../../Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnosticContracts.cs)、[脱敏策略](../../Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnosticRedactionPolicy.cs)与[诊断会话](../../Host/MyAvaloniaManagement/Business/Diagnostics/HostDiagnosticSession.cs)。
 
-建议在现有 `Business/Diagnostics` 目录内组织为下列文件；名称以现有类型为依据，实施时可微调小契约归组，但不得改变类型身份。
+已在现有 `Business/Diagnostics` 目录内组织为下列七个文件，12 个既有类型的名称、命名空间和实现保持。语法标记比对排除注释及 using 组织后完全一致。
 
 | 目标文件 | 放入的既有职责 |
 | --- | --- |
@@ -131,7 +131,7 @@ SOLID 是方案、实现与审查的首要规定。优先显露现有职责；�
 
 保持命名空间、internal 边界、构造函数参数、事件订阅点和锁范围。不得把菜单与快捷键的通知逻辑抽成通用投影基类，不统一两者不同的诊断处理，也不改变 Palette 的排队行为。
 
-同步核对 [覆盖率基线清单](../../Host/MyAvaloniaManagement.Tests/coverage-baseline.json) 中旧文件路径：实施时将旧实现的可执行代码对应到新文件，保留原门槛，不删除受保护逻辑来规避要求。纯契约文件无可执行行时明确说明映射方式。
+已同步 [覆盖率基线清单](../../Host/MyAvaloniaManagement.Tests/coverage-baseline.json)：原条目映射到四个包含可执行实现的新文件，均保留 `90.0`，相关小契约跟随投影文件保留。10 个既有类型的语法标记与原实现一致，没有新增契约文件的覆盖率豁免。
 
 当前开发 `verify` 不采集覆盖率；路径清单同步不等于完成覆盖率验证，也不意味着本轮执行发布覆盖率门禁。具体检查见专用验证文档。
 
@@ -143,15 +143,17 @@ SOLID 是方案、实现与审查的首要规定。优先显露现有职责；�
 
 设计思路：外层保留唯一组合入口与共享输入，私有方法描述连续的登记步骤。优先在同一静态类、同一文件内完成，读者可以顺序阅读；仅当实施后出现明确独立主题时再评估文件拆分，不预先引入 partial 或注册模块对象。
 
-适合优先提取的连续段如下；名称是候选，不是新 API：
+实际提取了 11 个同类私有方法，入口由 232 行变为 39 行（按方法声明至结束计数）。原 89 条顶层语句按辅助方法展开后，内容与顺序完全一致；`WorkspaceCatalog` 的简单合并工厂保留在入口，避免再加一层短转调。原有 `RegisterHostWorkspace`、`AddDocumentScopeManagement` 和 `AddViewModels` 未改动。设计分组如下：
 
-| 候选方法/段 | 责任与约束 |
+| 实际方法/段 | 责任与约束 |
 | --- | --- |
 | `RegisterLayoutServices` | 布局存储与布局生命周期；保留解析时登记实际实例的方式 |
-| 工具中心、插件状态、帮助各自的注册段 | 各自服务与命令处理器；只提取足够完整的组，避免每行一个方法 |
+| `RegisterNavigationAndTools`、`RegisterPluginStatus`、`RegisterHostInteraction` | 导航工具、插件看板和 Host 交互各自服务与命令处理器；保留设置、诊断回退与窄端口 |
 | `RegisterWorkflowActions` | TimeProvider、动作目录、限制、授权、运行管理器和关闭端口；保留原实例别名及登记 |
-| 文档、重启及 Host 命令的连续段 | 按现有相邻边界提取，跨段依赖通过 DI 延迟解析；不为了分组把注册移到另一位置 |
+| `RegisterDocumentOperations` | 文档、重启及 Host 命令的原连续段，跨段依赖通过 DI 延迟解析 |
+| `RegisterPluginRegistry`、`RegisterPluginLifecycle` | 冻结贡献与可用性、插件生命周期协调器；保留实际对象登记时机 |
 | `RegisterWorkbenchCommands` | 目录、上下文、状态、执行器、关闭门及展示；保留工作台对象的解析线程与时机 |
+| `RegisterWorkspaceActivation` | 图标、精确模型与 View 激活器、窗口上下文；复用原 Provider 所有者 |
 | `RegisterWorkspaceSession` | 工厂与 Session 创建、回调挂接、退出参与者登记及 Factory 别名；保留一个实际工厂实例 |
 
 实施顺序：
@@ -173,11 +175,11 @@ SOLID 是方案、实现与审查的首要规定。优先显露现有职责；�
 
 | 阶段 | 工作 | 退出条件 | 当前状态 |
 | --- | --- | --- | --- |
-| P0 | 核对实施基线、运行完整本地 verify、将矩阵映射到真实测试；仅针对行为缺口先补测试 | 记录输入身份与基线结果；受影响既有失败未解决前不宣称等价 | 未开始 |
-| P1 | 诊断类型搬移与必要中文设计注释 | D 矩阵及对应回归通过，文档定位同步 | 未开始 |
-| P2 | 四个展示实现搬移、契约就近组织、路径清单同步 | C 矩阵通过，覆盖率清单无孤立旧路径或门槛降低 | 未开始 |
-| P3 | 逐段提取服务注册方法 | S 矩阵通过，注册/解析/所有权约束均保留 | 未开始 |
-| P4 | SOLID 与可读性审查、文档收口、最终完整本地 verify、证据记录 | 必需项无失败、无未解释跳过、无零发现，最终输入有完整开发证据 | 未开始 |
+| P0 | 核对基线、完整本地 verify、补齐行为缺口 | 新增测试先在原实现上成立 | 已完成；测试夹具修正过程保留在记录中 |
+| P1 | 诊断类型搬移与中文设计注释 | D 矩阵及对应回归通过，文档定位同步 | 已完成 |
+| P2 | 四个展示实现搬移、契约就近组织、路径清单同步 | C 矩阵通过，旧覆盖率逻辑有完整映射且门槛不降低 | 已完成 |
+| P3 | 逐段提取服务注册方法 | S 矩阵通过，注册/解析/所有权约束保留 | 已完成 |
+| P4 | SOLID、可读性和文档审查，最终完整 verify | 最终输入有完整开发证据 | 文档与审查完成；最终运行结果见开发记录关联 JSON |
 
 开发验证遵循“已有行为测试优先，存在缺口才补测试”。不为纯文件搬移编写断言文件名、私有方法名或固定行数的单元测试。新增测试必须观察实例身份、寿命、通知、输出或失败边界，并先在原行为上成立。
 
@@ -194,7 +196,7 @@ SOLID 是方案、实现与审查的首要规定。优先显露现有职责；�
 | [总导航](../README.md)、[待办](README.md)、[Host 文档入口](../../Host/MyAvaloniaManagement/docs/README.md)、[主仓验证](../maintenance/verification.md) | 添加 V17 计划和验证入口，明确尚未实现 | 更新真实阶段状态与证据链接 |
 | [内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md) | 保持当前实现事实，不提前描述新文件为已存在 | 更新源码定位与注册职责，补详细中文设计思路，保留原所有权说明 |
 | 当前契约和使用指南 | 行为不变，无需新增用户流程 | 核对路径引用；确有文字过时时定向修正，不复制第二套契约 |
-| 开发记录与非嵌入 JSON | 本次不创建虚构结果 | 首次实施后创建 `docs/archive/records/host-v17/development-acceptance.md` 与 `final-development-evidence.json`，再接入历史导航 |
+| 开发记录与非嵌入 JSON | 计划阶段不创建虚构结果 | 已建立[开发记录](../archive/records/host-v17/development-acceptance.md)及关联证据；真实结果与最终 verify 单独保存 |
 
 实施完成前核对新增文档、拆分源码相关引用和覆盖率路径清单。历史验收记录保留当时事实，不批量改写为新路径；新记录说明旧文件到新文件的对应关系。
 

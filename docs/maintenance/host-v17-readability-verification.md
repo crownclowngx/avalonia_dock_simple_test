@@ -1,12 +1,12 @@
 # V17：Host 可读性重构专用开发验证
 
 > 用途：验证诊断文件拆分、命令展示文件拆分和服务注册方法提取保持原行为。
-> 状态：验证计划；所有命令与 D/C/S 矩阵均未在 V17 执行。日期：2026-09-20。
+> 状态：P0 基线、行为补测及 P1–P3 专项已执行；实际结果见[开发记录](../archive/records/host-v17/development-acceptance.md)，最终完整 verify 以该记录关联 JSON 为准。日期：2026-09-20。
 > 范围和设计依据见 [V17 重构计划](../roadmap/host-v17-readability-refactor-plan.md)。本页只定义开发验证，不授予发布资格。
 
 ## 1. 执行边界
 
-当前交付只编辑 Markdown 并核对链接、命令引用和差异；以下构建、测试及门禁命令供后续实施使用，本次不执行。
+当前已完成代码实施与阶段验证。以下命令保留为维护入口，实际运行目录、数量及修正过程由开发记录和非嵌入 JSON 保存；示例目录不冒充实际运行路径。
 
 实施时从仓库根目录运行本地测试与既有 `verify`。不使用 AIFLOW、Windows CI、`seal`、发布 Windows Smoke、发布覆盖率或发布重复性门禁，不部署安装目录或发布包。不删除、绕过或放宽已有发布条件。
 
@@ -76,7 +76,7 @@ D 系列不得把生成时间、随机 SessionId 或真实路径写死成脆弱�
 
 ### 6.1 覆盖率基线文件的路径维护
 
-现有 [coverage-baseline.json](../../Host/MyAvaloniaManagement.Tests/coverage-baseline.json) 将 `Business/Presentation/Commands/WorkbenchCommandProjection.cs` 列为关键文件，值为 `90.0`。P2 搬移时维护旧可执行代码到新文件的映射，各有可执行代码的目标文件保留该门槛，不能只删旧条目或降低值。
+[coverage-baseline.json](../../Host/MyAvaloniaManagement.Tests/coverage-baseline.json) 原先将 `Business/Presentation/Commands/WorkbenchCommandProjection.cs` 列为关键文件，值为 `90.0`。现已映射到 `WorkbenchPresentationCommandStore.cs`、`WorkbenchMenuProjection.cs`、`WorkbenchKeyBindingProjection.cs`、`WorkbenchCommandPresentation.cs`，四项均保持 `90.0`；其他条目与整体阈值未改动。
 
 检查 JSON 可解析、新路径真实存在、旧逻辑全部有对应目标、无无故删除或降低门槛。纯接口/记录文件是否具有可执行行应按实际代码说明，不为了填表制造不可执行的覆盖率条目。
 
@@ -120,7 +120,7 @@ dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warn
 ### 7.4 P3 组合专项
 
 ```powershell
-dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~ServiceAndModelTests|FullyQualifiedName~HostCatalogPluginRegistryTests|FullyQualifiedName~WorkspaceSessionAndDockFactoryTests|FullyQualifiedName~DocumentOperationShutdownTests|FullyQualifiedName~WorkbenchCommandShutdownGateTests|FullyQualifiedName~WorkflowActionShutdownGateTests|FullyQualifiedName~StartupCoordinatorTests|FullyQualifiedName~HostRestartTests|FullyQualifiedName~HostApiBoundaryTests|FullyQualifiedName~PublicApiContractTests' --logger 'trx;LogFileName=p3-unit.trx' --results-directory "$v17Results/p3-unit"
+dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~ServiceAndModelTests|FullyQualifiedName~HostCatalogPluginRegistryTests|FullyQualifiedName~WorkspaceSessionAndDockFactoryTests|FullyQualifiedName~DocumentOperationShutdownTests|FullyQualifiedName~WorkbenchCommandShutdownGateTests|FullyQualifiedName~WorkflowActionShutdownGateTests|FullyQualifiedName~StartupCoordinatorTests|FullyQualifiedName~HostRestartTests|FullyQualifiedName~HostApiBoundaryTests|FullyQualifiedName~PublicApiContractTests|FullyQualifiedName~V17' --logger 'trx;LogFileName=p3-unit.trx' --results-directory "$v17Results/p3-unit"
 
 dotnet test Host/MyAvaloniaManagement.PluginTests -c Release --no-restore -m:1 -warnaserror --filter '(FullyQualifiedName~HostLifecycleOwnershipTests|FullyQualifiedName~DocumentScopeManagerTests|FullyQualifiedName~PluginContainerIsolationTests|FullyQualifiedName~StartupPluginProgressTests|FullyQualifiedName~HostRestartLifecycleTests|FullyQualifiedName~PluginHostBoundaryTests)&Category!=PackageAcceptance' --logger 'trx;LogFileName=p3-plugin.trx' --results-directory "$v17Results/p3-plugin"
 
@@ -150,7 +150,7 @@ Gate 主程序与工具自测不得并行运行。专项已通过后，不在没
 5. 记录源码 HEAD、工作树差异身份、实际命令、时间、退出码、TRX 发现/通过/失败/跳过数、Gate run-id 与 summary 路径；多次结果分别保存，不拼接成一次完整通过。
 6. 本地开发结果与部署、发布分开记录。未执行的覆盖率、Windows CI、发布门禁和安装部署明确为未执行。
 
-实施阶段创建 `docs/archive/records/host-v17/development-acceptance.md`，记录实际拆分映射、SOLID 取舍、中文注释和文档审查；创建非嵌入的 `final-development-evidence.json` 保存最终运行事实。当前计划不创建空结果文件，也不预填测试数或通过结论。
+已创建[开发记录](../archive/records/host-v17/development-acceptance.md)，记录实际拆分映射、SOLID 取舍、测试和文档审查；关联的非嵌入 `final-development-evidence.json` 保存基线、专项和最终运行事实。最终结果只在运行结束后写入，不预填通过结论。
 
 ## 9. 文档检查与收口顺序
 
@@ -160,4 +160,32 @@ Gate 主程序与工具自测不得并行运行。专项已通过后，不在没
 4. Gate 内置链接检查范围有限，本次新增的计划与专用验证正文须额外检查，不能只依赖三个 README 的门禁检查。
 5. 先定稿嵌入帮助的 Markdown，再执行最终完整 verify，最后写非嵌入 JSON。最终 verify 后若再次修改 Markdown 或源码，应重新取得对应输入的验证。
 
-本页当前状态为计划，不能作为 V17 开发自动化已经通过的证据。
+## 10. 实际测试映射
+
+下表列出关键方法；各专项仍执行第 7 节完整类过滤器及所有参数组合。结构比对使用 Roslyn 语法标记，忽略注释与格式，不替代运行期行为测试。
+
+| 编号 | 实际测试方法或结构证据 | 执行组 |
+| --- | --- | --- |
+| D01 | `HostDiagnosticsTests.V17会话序号与文件顺序一致且释放后拒绝新增记录`、`会话记录写入内存和可逐条解析的JsonLines日志` | P0 补测、P1 Unit |
+| D02 | `HostDiagnosticsTests.默认诊断的内存JsonLines和镜像均不包含异常敏感正文`、`白名单转换丢弃路径和非法结构字段并保留受控阶段耗时`；`WorkbenchCommandDiagnosticTests` 全类 | P1 Unit |
+| D03 | `HostDiagnosticsTests.显式敏感开关只把异常原文写入临时输出`、`非精确开关值不会开启敏感输出` | P1 Unit |
+| D04 | `HostDiagnosticsTests.启动时只保留包含当前文件在内的最近二十次会话`、`日志目录不可用时退化为内存诊断且继续接收记录` | P1 Unit |
+| D05 | `HostDiagnosticsTests.失败策略按阶段和错误码给出稳定启动决策`、`加载异常映射优先识别共享契约版本冲突` | P1 Unit |
+| D06 | `HostLifecycleOwnershipTests.关闭诊断出口等待正在报告的调用_关闭后不访问已结束会话`、`迟到取消异常在出口关闭后只被观察_不再写入日志` | P1 Plugin |
+| C01 | `WorkbenchCommandProjectionTests.四个共享位置按组顺序稳定投影且分隔符没有悬空`、`Hide和Disable随当前Target与CanExecute使用同一状态事实` | P2 Unit |
+| C02 | `WorkbenchCommandProjectionTests.Host快捷键优先且跨插件冲突双禁用但菜单命令保留` | P2 Unit |
+| C03 | `WorkbenchCommandProjectionTests.CommandStore拒绝未知和释放后访问且唯一缓存只释放一次`；`WorkbenchCommandPresentationUiTests.文件菜单和CtrlS绑定同一稳定保存命令且设计数据保持纯内存` | P2 Unit/UI |
+| C04 | `WorkbenchCommandPresentationUiTests.菜单与命令同步刷新而面板始终排队并合并`；`UiRefreshSchedulerTests.后台连续请求合并且回调在UI线程并在锁外执行`、`发布期间的新失效保留各自重入顺序` | P2 UI |
+| C05 | `WorkbenchCommandPresentationUiTests.观察者中释放仍完成本轮事件快照但后续失效不再发布`、`定向非相关全量通知正确且异常观察者不阻断后续刷新`；`WorkbenchCommandProjectionTests.三种Projection重复释放后拒绝读取且迟到可用性通知安全` | P2 Unit/UI |
+| C06 | `WorkbenchCommandProjectionTests.Owner不可用时菜单和快捷键同步移除并在恢复后重建` 及 Palette 方法；`WorkbenchCommandDocumentTargetTests.同类型多个Document只执行当前活动实例` | P2 Unit/UI |
+| C07 | 10 个类型语法标记一致，包含组合对象构造与 Dispose；C03–C06 的行为回归 | P2 结构、Unit/UI |
+| S01 | `ServiceAndModelTests.V17注册和容器验证保持共享输入身份且不提前创建关闭参与者`；`HostLifecycleOwnershipTests.插件组合间接创建Workflow管理器_回滚使用已登记实例而不创建Workspace` | P0 补测、P3 Unit/Plugin |
+| S02 | `ServiceAndModelTests.宿主服务可在作用域和构建验证开启时解析`、`V17关闭端口和工作区Factory复用实际登记实例` | P3 Unit |
+| S03 | `ServiceAndModelTests.V17注册和容器验证保持共享输入身份且不提前创建关闭参与者` 的两组参数；`HostDiagnosticsTests.V17看板诊断解析保持具体会话优先和接口回退` 的四组参数 | P0 补测、P3 Unit |
+| S04 | `ServiceAndModelTests.V17关闭端口和工作区Factory复用实际登记实例`；`WorkspaceSessionAndDockFactoryTests.DockFactory未绑定和重复绑定均快速失败`、`DockFactory仅转发框架协议并建立规范Locator`；原挂接语句顺序比对 | P3 Unit/结构 |
+| S05 | `HostLifecycleOwnershipTests.初始化部分成功后解析下一项失败_回滚只关闭已成功项`、`启动后半程失败_真实Runtime回滚调用已启动项并保留原始异常`、`回滚Shutdown及诊断再次失败_不得覆盖启动异常或释放容器` | P3 Plugin |
+| S06 | `DocumentScopeManagerTests.每个Document拥有独立Scope且Lease释放幂等`；`PluginContainerIsolationTests.每插件DocumentScope使用本插件服务并可独立关闭`；`WorkspaceSessionAndDockFactoryTests.多个主窗口ViewModel共享唯一Session布局且不重复创建Tool`；`HostCatalogPluginRegistryTests` 全类 | P3 Unit/Plugin |
+| S07 | `HostLifecycleOwnershipTests.正常关闭先停生命周期再释放两个真实容器_并发请求共用结果`、`业务调用未排空时不关闭生命周期也不释放Provider`、`Shutdown持续挂起_宽限后保留且迟到成功不自动释放`；三类关闭 Gate 单测 | P3 Unit/Plugin |
+| S08 | `StartupCoordinatorTests.工作线程隔离同步阻塞并在Windows保留STA入口`、`首帧之前取消不执行任何插件工厂`；`StartupPluginProgressTests`、`HostRestartTests`、`HostRestartLifecycleTests`、`StartupSplashUiTests`、`HostRestartUiTests` 全类；工厂未提前调用的结构比对 | P3 Unit/Plugin/UI |
+
+本页提供方法定位；通过数量、失败修正和最终输入身份统一查阅开发记录及实际 JSON/TRX。

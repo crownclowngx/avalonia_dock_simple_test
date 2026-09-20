@@ -1,6 +1,6 @@
 # 主仓验证与封板
 
-V17 可读性重构的[实施计划](../roadmap/host-v17-readability-refactor-plan.md)与[专用开发验证](host-v17-readability-verification.md)已编写，代码与测试尚未开始。本轮实施只使用本地专项和完整 verify，不执行 AIFLOW、Windows CI 或下文正式发布门禁；拆文件时同步覆盖率路径清单不代表已经运行覆盖率验证。
+V17 可读性重构的实现与专项已完成，见[实际方案](../roadmap/host-v17-readability-refactor-plan.md)、[专用开发验证](host-v17-readability-verification.md)及[开发记录与最终证据](../archive/records/host-v17/development-acceptance.md)。本轮只使用本地专项和完整 verify，不执行 AIFLOW、Windows CI 或下文正式发布门禁；拆文件时同步覆盖率路径清单不代表已经运行覆盖率验证。
 
 V16 Document 浮窗关闭与新建位置已实现，专项与测试映射见[专用开发验证](host-v16-document-window-verification.md)，实际命令和最终证据见[开发记录](../archive/records/host-v16/development-acceptance.md)。本轮使用本地专项、Gate 自测和完整 verify；不使用 AIFLOW、Windows CI 或本页正式发布门禁。原生桌面 M01–M08 待验收。
 

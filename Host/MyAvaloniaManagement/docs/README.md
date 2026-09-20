@@ -1,6 +1,6 @@
 # Host 内部文档
 
-V17 面向人和 AI 的可读性重构已形成[计划](../../../docs/roadmap/host-v17-readability-refactor-plan.md)与[专用开发验证](../../../docs/maintenance/host-v17-readability-verification.md)，尚未实现。首批按现有职责拆分诊断和命令展示文件，并分组服务注册长方法；SOLID、详细中文设计注释与行为等价为实施约束。
+V17 面向人和 AI 的可读性重构已实现，见[实际方案](../../../docs/roadmap/host-v17-readability-refactor-plan.md)、[专用开发验证](../../../docs/maintenance/host-v17-readability-verification.md)及[开发记录与最终证据](../../../docs/archive/records/host-v17/development-acceptance.md)。诊断和命令展示按现有职责分文件，服务注册按原顺序分组；保留 SOLID、中文设计注释与行为等价边界。
 
 V16 Document 浮窗关闭与新建位置已实现，见[实施方案](../../../docs/roadmap/host-v16-document-floating-close-and-creation-target-plan.md)、[专用开发验证](../../../docs/maintenance/host-v16-document-window-verification.md)和[开发记录](../../../docs/archive/records/host-v16/development-acceptance.md)。SOLID 为首要约束；自动化与原生桌面验收分别记载。
 
