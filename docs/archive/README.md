@@ -53,12 +53,18 @@
 - [2026-09-20 文档整理、漂移修正及处置清单](records/documentation/reorganization-20260920.md)
 - [2026-09-16 文档重组与原始处置清单](records/documentation/reorganization-20260916.md)
 
+### host-v19
+
+- [复杂度收敛开发记录](records/host-v19/development-acceptance.md)、[最终开发证据](records/host-v19/development-evidence.json)
+- [逐项测试映射](records/host-v19/test-matrix.md)
+- [单文件自包含交付说明](records/host-v19/local-deployment-guide.md)、[2026-09-21 本机部署证据](records/host-v19/local-deployment-20260921.json)
+
 ### host-v18
 
 - [命令面板交互开发记录](records/host-v18/development-acceptance.md)
 - [最终本地开发证据](records/host-v18/final-development-evidence.json)
 - [本机单文件部署证据](records/host-v18/local-deployment-20260921.json)
-- [V18 实现及 V19 方案文档的后续部署](records/host-v18/local-deployment-with-v19-plan-20260921.json)：按实际代码阶段归位，V19 重构仍待实施。
+- [V18 实现及 V19 方案文档的后续部署](records/host-v18/local-deployment-with-v19-plan-20260921.json)：按实际代码阶段归位，该次部署时 V19 重构尚未实施。
 
 ### host-v17
 

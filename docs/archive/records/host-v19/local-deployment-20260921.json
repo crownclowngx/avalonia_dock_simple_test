@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "recordType": "host-v19-local-single-exe-deployment",
+  "status": "awaiting-deployment",
+  "target": "D:\\data\\avalonia",
+  "evidenceNote": "实际编译、验证、安装和清理完成后，仅更新此非嵌入 JSON，不修改已经打包的源码和 Markdown。"
+}

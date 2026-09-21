@@ -2,13 +2,13 @@
 
 > 用途：验证关闭规则、待发布回滚、命令目录、实时查询和工具入口收敛的行为与结构。
 > 状态：实现与阶段专项完成，作为当前可复用回归矩阵维护。日期：2026-09-21。[逐项测试映射](../archive/records/host-v19/test-matrix.md)和[开发记录](../archive/records/host-v19/development-acceptance.md)记录实际证据；最终完整门禁结果以非嵌入 JSON 为准。
-> 设计范围与分阶段要求见 [V19 归档方案](../archive/plans/host-v19-complexity-reduction-plan.md)。本文只定义本地开发验证，不授予发布资格；本轮未执行新的人工验收或部署。
+> 设计范围与分阶段要求见 [V19 归档方案](../archive/plans/host-v19-complexity-reduction-plan.md)。本文只定义本地开发验证，不授予发布资格；开发阶段未执行新的人工验收或部署。后续用户授权的本机交付另见[部署记录](../archive/records/host-v19/local-deployment-20260921.json)。
 
 ## 1. 执行边界
 
 SOLID 优先，设计模式朴素使用；中文注释与设计思路属于必须审查的交付。测试覆盖可观察行为、实际依赖和资源释放，不用方法名、文件数或行数阈值代替设计判断。
 
-不使用 AIFLOW、Windows CI、seal、发布 Windows Smoke、发布覆盖率或发布重复性门禁；不部署安装目录或发布包。发布阶段再执行原发布政策，不降低阈值或删除发布检查。
+本开发验证流程不使用 AIFLOW、Windows CI、seal、发布 Windows Smoke、发布覆盖率或发布重复性门禁；不部署安装目录或发布包。后续本机交付按[本机部署流程](local-deployment.md)单独记录，正式发布仍执行原发布政策，不降低阈值或删除发布检查。
 
 本地完整 `verify` 的事实源为 [Gate 执行图](../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs)及[主仓验证](verification.md)：固定补丁准备、locked restore、Release 零警告构建、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约和已发布 API 比较、MyPlugTest 打包及真实 ZIP 验收。开发打包和本地包验收不等于公开发布。verify 不执行 coverage/windows-smoke。
 

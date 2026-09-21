@@ -2,7 +2,7 @@
 
 > 用途：主项目唯一总导航。状态：当前；核对日期：2026-09-21。版本事实见[集中基线](reference/platform-baseline.md)，分类与维护规则见[文档维护](maintenance/documentation.md)。
 
-最近一次本机交付仍为 V18，见[本机部署](maintenance/local-deployment.md)及项目所有者 2026-09-21 的[手工验收确认](archive/records/host/manual-acceptance-20260921.md)。当前源码已实施 V19 复杂度收敛，见[开发记录](archive/records/host-v19/development-acceptance.md)。V19 自动验证与既有人工验收、部署及公开发布分别留证。
+当前源码已实施 V19 复杂度收敛，见[开发记录](archive/records/host-v19/development-acceptance.md)。V19 单文件自包含交付见[本机部署](maintenance/local-deployment.md)及其部署证据；自动验证、既有[人工验收](archive/records/host/manual-acceptance-20260921.md)、本机交付和公开发布分别留证。
 
 ## 使用工作台
 
