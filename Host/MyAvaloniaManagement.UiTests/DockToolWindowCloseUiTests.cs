@@ -309,6 +309,15 @@ public sealed class DockToolWindowCloseUiTests
         await Flush();
         var window = Assert.Single(DockTreeNavigator.EnumerateWindows(session.RootDock!));
         var host = Assert.IsType<HostFloatingWindow>(window.Host);
+        // 从磁盘布局恢复后，显示与两个组的模板/布局就绪是不同阶段。
+        // 在初始化仍可能调整内容范围时关闭会使范围许可失效；等待实际两个组可见后只发送一次关闭。
+        await UiTestWait.UntilAsync(() => host.IsVisible, "恢复的多组浮窗显示完成");
+        await UiTestWait.UntilAsync(() =>
+        {
+            host.UpdateLayout();
+            return host.GetVisualDescendants().OfType<ToolChromeControl>().Count(control => control.Bounds.Width > 0) == 2;
+        }, "恢复的两个工具组完成布局");
+        await UiTestWait.DrainAsync();
         var before = Assert.Single(session.LayoutState.Capture(session).FloatingWindows);
         EventHandler<WindowClosingEventArgs> cancellation = (_, args) => args.Cancel = cancel;
         host.Closing += cancellation;
@@ -316,6 +325,9 @@ public sealed class DockToolWindowCloseUiTests
         {
             host.Close();
             await Flush();
+            // 原生关闭会先否决第一次请求，再等待范围确认后重入；渲染推进不代表这条异步链完成。
+            // 动作只发出一次。取消分支保持立即检查，成功分支等待真实窗口退出后核对布局与所有权。
+            if (!cancel) await UiTestWait.UntilAsync(() => !host.IsVisible, "多组浮窗关闭完成");
             Assert.Equal(cancel, host.IsVisible);
             var snapshot = session.LayoutState.Capture(session);
             var saved = Assert.Single(snapshot.FloatingWindows);
@@ -397,26 +409,20 @@ public sealed class DockToolWindowCloseUiTests
         return null;
     }
 
-    private static async Task Flush()
-    {
-        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-        // 按钮坐标依赖模板完成测量；此处等待 Headless 软件渲染的下一帧，不模拟真实桌面验收。
-        await Task.Delay(30);
-    }
+    private static Task Flush() => UiTestWait.RenderAsync();
 
     private static async Task<ToolChromeControl> WaitForChrome(HostFloatingWindow window)
     {
         // ToolChrome 使用延后模板，测试必须等待可点击控件完成布局，不能假定一次 Dispatcher
         // Background 或固定一帧就足够。这里只等待就绪，关闭动作本身不重试，避免掩盖生产错误。
-        for (var attempt = 0; attempt < 100; attempt++)
+        ToolChromeControl? chrome = null;
+        await UiTestWait.UntilAsync(() =>
         {
             window.UpdateLayout();
-            var chrome = window.GetVisualDescendants().OfType<ToolChromeControl>().SingleOrDefault();
-            if (chrome?.GetVisualDescendants().OfType<Button>().Any(button =>
-                    button.Name == "PART_CloseButton" && button.Bounds.Width > 0 && button.Bounds.Height > 0) == true)
-                return chrome;
-            await Task.Delay(10);
-        }
-        throw new TimeoutException("ToolChrome 关闭按钮未在 Headless 布局中就绪。");
+            chrome = window.GetVisualDescendants().OfType<ToolChromeControl>().SingleOrDefault();
+            return chrome?.GetVisualDescendants().OfType<Button>().Any(button =>
+                button.Name == "PART_CloseButton" && button.Bounds.Width > 0 && button.Bounds.Height > 0) == true;
+        }, "ToolChrome 关闭按钮完成布局");
+        return chrome!;
     }
 }

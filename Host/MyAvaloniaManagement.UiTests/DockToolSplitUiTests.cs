@@ -302,7 +302,7 @@ public sealed class DockToolSplitUiTests
         return new(3, new("main", DockWindowBounds.Default, DockLayoutNode.Split("restored", "horizontal", nodes)), [],
             new[] { First, Second, Third.Value }.Select(id => new DockLayoutTool(id, "visible", DockLayoutIds.RightTools, 0)).ToArray());
     }
-    private static Task Flush() => Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background).GetTask();
+    private static Task Flush() => UiTestWait.DrainAsync();
     private sealed class Module : IPluginModule
     {
         public void Configure(IPluginRegistration registration) => registration.AddTool<ProbeTool, ProbeView>(

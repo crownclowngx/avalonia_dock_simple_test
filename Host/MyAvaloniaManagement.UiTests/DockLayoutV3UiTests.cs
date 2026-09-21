@@ -234,7 +234,7 @@ public sealed class DockLayoutV3UiTests
         Assert.False(document.ClosingToken.IsCancellationRequested);
         Assert.False(context.Workspace.CanCreateDocuments);
         pending!.Dispose();
-        for (var index = 0; index < 100 && calls < 2; index++) await Task.Delay(10);
+        await UiTestWait.UntilAsync(() => calls >= 2, "等待在途命令结束后的第二次关闭回调");
         Assert.Equal(2, calls);
         Assert.True(main.IsVisible);
         Assert.True(context.Workspace.CanCreateDocuments);
@@ -340,7 +340,7 @@ public sealed class DockLayoutV3UiTests
         [new(HostExtensionIds.FileSystemTree.Value, visible ? "visible" : "hidden", DockLayoutIds.LeftTools, 0),
          new(HostExtensionIds.PluginMenu.Value, "hidden", DockLayoutIds.LeftTools, 1)]);
 
-    private static Task Flush() => Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background).GetTask();
+    private static Task Flush() => UiTestWait.DrainAsync();
     private static async Task CloseWindows(UiTestContext context, MainWindow main)
     {
         foreach (var window in DockTreeNavigator.EnumerateWindows(context.Workspace.RootDock!).ToArray())

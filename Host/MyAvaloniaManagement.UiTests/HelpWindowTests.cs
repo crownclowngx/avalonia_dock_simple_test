@@ -46,11 +46,12 @@ public sealed class HelpWindowTests
     [AvaloniaFact]
     public async Task ClosingAndFastNavigationIgnoreStaleRendererCompletion()
     {
-        var reader = new FakeReader { Delay = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously) };
+        var reader = new FakeReader { Delay = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously), WaitForPageId = "forkable" };
         var window = new HelpWindow(new(), new(), reader); window.Show();
         window.Navigate("activity");
         window.Navigate("forkable");
-        await Task.Delay(40);
+        // 明确等到最后一次导航进入 reader，再释放阻塞；机器快慢不改变竞态的安排。
+        await reader.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
         reader.Delay.SetResult(); await window.CurrentLoad;
         Assert.Equal("forkable", window.ReadingState.ArticleId);
         Assert.Equal("forkable", reader.Page?.Id);
@@ -69,8 +70,7 @@ public sealed class HelpWindowTests
         try
         {
             for (var i = 0; i < 20; i++) await OpenClose(service, weak);
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Background);
-            await Task.Delay(100);
+            await UiTestWait.RenderAsync();
             GC.Collect(); GC.WaitForPendingFinalizers(); GC.Collect();
             Assert.True(weak.All(reference => !reference.IsAlive), "Surviving window indexes: " + string.Join(",", weak.Select((r, i) => (r, i)).Where(p => p.r.IsAlive).Select(p => p.i)));
         }
@@ -110,8 +110,11 @@ public sealed class HelpWindowTests
         internal bool Disposed { get; private set; }
         internal bool Suspended { get; private set; }
         internal TaskCompletionSource? Delay { get; init; }
+        internal string? WaitForPageId { get; init; }
+        internal TaskCompletionSource Entered { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
         public async Task DisplayAsync(HelpPage page, HelpPagePosition position, string query, string anchor, HelpReaderPresentation presentation, CancellationToken cancellationToken)
         {
+            if (page.Id == WaitForPageId) Entered.TrySetResult();
             if (Delay is not null) await Delay.Task.WaitAsync(cancellationToken);
             cancellationToken.ThrowIfCancellationRequested(); Page = page; Query = query; Presentation = presentation;
         }

@@ -221,15 +221,11 @@ public sealed class PluginStatusWindowTests
         var point = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), window)!.Value;
         window.MouseDown(point, MouseButton.Left); window.MouseUp(point, MouseButton.Left);
     }
-    private static async Task Flush()
-    {
-        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-        await Task.Delay(30);
-    }
+    private static Task Flush() => UiTestWait.RenderAsync();
     private static async Task Render(Window window, string name)
     {
         await Flush();
-        var directory = Environment.GetEnvironmentVariable("MYAVALONIA_PLUGIN_STATUS_RENDER_DIRECTORY");
+        var directory = MyAvaloniaManagement.Testing.TestEvidenceDirectory.Optional("plugin-status", "MYAVALONIA_PLUGIN_STATUS_RENDER_DIRECTORY");
         if (string.IsNullOrWhiteSpace(directory)) return;
         Directory.CreateDirectory(directory);
         using var frame = window.CaptureRenderedFrame();

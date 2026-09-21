@@ -72,7 +72,7 @@ public sealed class StartupSplashUiTests
                 Assert.False(window.AnimationRunning);
                 using var frame = window.CaptureRenderedFrame();
                 Assert.NotNull(frame);
-                var directory = Path.Combine(AppContext.BaseDirectory, "TestResults", "v15-ui");
+                var directory = MyAvaloniaManagement.Testing.TestEvidenceDirectory.Create("startup-splash");
                 Directory.CreateDirectory(directory);
                 frame.Save(Path.Combine(directory, theme == ThemeVariant.Light ? "splash-light.png" : "splash-dark.png"), PngBitmapEncoderOptions.Default);
             }

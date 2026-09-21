@@ -112,7 +112,8 @@ public sealed class ToolCenterUiTests
                 var adapter = Assert.IsType<ManagedToolDockable>(context.Workspace.CreatedTools[id]);
                 var prepared = Assert.IsAssignableFrom<Control>(adapter.PreparedView);
                 var model = adapter.Model;
-                for (var cycle = 0; cycle < 3; cycle++)
+                // 首次显示与隐藏后再显示各一次，均核对相同模型/View；窗口寿命由独立多轮用例保护。
+                for (var cycle = 0; cycle < 2; cycle++)
                 {
                     Click(window, RowButton(window, id, "显示"));
                     await Flush();
@@ -412,11 +413,11 @@ public sealed class ToolCenterUiTests
         var point = control.TranslatePoint(new Point(control.Bounds.Width / 2, control.Bounds.Height / 2), window)!.Value;
         window.MouseDown(point, MouseButton.Left); window.MouseUp(point, MouseButton.Left);
     }
-    private static async Task Flush() { await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background); await Task.Delay(30); }
+    private static Task Flush() => UiTestWait.RenderAsync();
     private static async Task Render(Window window, string name)
     {
         await Flush();
-        var directory = Environment.GetEnvironmentVariable("MYAVALONIA_V7_RENDER_DIRECTORY");
+        var directory = MyAvaloniaManagement.Testing.TestEvidenceDirectory.Optional("tool-center", "MYAVALONIA_V7_RENDER_DIRECTORY");
         if (string.IsNullOrWhiteSpace(directory)) return;
         Directory.CreateDirectory(directory);
         using var frame = window.CaptureRenderedFrame();

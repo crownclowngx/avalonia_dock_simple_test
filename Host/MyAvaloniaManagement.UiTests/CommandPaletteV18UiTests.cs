@@ -278,7 +278,7 @@ public sealed class CommandPaletteV18UiTests
         Assert.Contains(row.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "页面 1 · 当前" && text.Bounds.Width > 0);
         Assert.True(session.View.Bounds.Width <= session.Window.ClientSize.Width);
         Assert.True(session.Hint.Bounds.Bottom <= session.View.Bounds.Height);
-        var directory = Environment.GetEnvironmentVariable("MYAVALONIA_V18_RENDER_DIRECTORY");
+        var directory = MyAvaloniaManagement.Testing.TestEvidenceDirectory.Optional("command-palette", "MYAVALONIA_V18_RENDER_DIRECTORY");
         if (!string.IsNullOrWhiteSpace(directory))
         {
             Directory.CreateDirectory(directory);
@@ -288,7 +288,7 @@ public sealed class CommandPaletteV18UiTests
         }
     }
 
-    private static Task Flush() => Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background).GetTask();
+    private static Task Flush() => UiTestWait.DrainAsync();
     private static WorkbenchCommandPaletteProjectionEntry Item(string name, RecordingCommand binding) =>
         new(new CommandPaletteIdentity(new($"myavalonia.test.command.{name}")), name, "说明", "", true, binding) { SourceText = "测试" };
 

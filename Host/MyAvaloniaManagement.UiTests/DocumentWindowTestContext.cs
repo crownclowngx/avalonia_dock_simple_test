@@ -51,8 +51,7 @@ internal sealed class DocumentWindowTestContext : IAsyncDisposable
         return Assert.IsType<HostFloatingWindow>(DockTreeNavigator.FindWindow(Workspace.RootDock!, document)!.Host);
     }
 
-    internal static async Task Flush() =>
-        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+    internal static Task Flush() => UiTestWait.DrainAsync();
 
     internal static async Task<CommandPaletteView> OpenPalette(Window window)
     {
@@ -72,16 +71,15 @@ internal sealed class DocumentWindowTestContext : IAsyncDisposable
     {
         // 只等待按钮实际布局完成，动作仅发送一次；等待上限防止模板缺失造成测试挂起。
         Button? button = null;
-        for (var attempt = 0; attempt < 100; attempt++)
+        await UiTestWait.UntilAsync(() =>
         {
             window.UpdateLayout();
             button = window.GetVisualDescendants().OfType<DocumentTabStripItem>()
                 .SingleOrDefault(item => ReferenceEquals(item.DataContext, document))?
                 .GetVisualDescendants().OfType<Button>().FirstOrDefault(item => ReferenceEquals(item.CommandParameter, document)
                     && item.IsEffectivelyVisible && item.Bounds.Width > 0 && item.Bounds.Height > 0);
-            if (button is { Bounds.Width: > 0, Bounds.Height: > 0 }) break;
-            await Task.Delay(10);
-        }
+            return button is { Bounds.Width: > 0, Bounds.Height: > 0 };
+        }, "文档标签关闭按钮完成布局");
         Assert.NotNull(button);
         Assert.True(button.Bounds.Width > 0 && button.IsEffectivelyVisible);
         var point = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;
@@ -92,15 +90,15 @@ internal sealed class DocumentWindowTestContext : IAsyncDisposable
 
     internal static async Task<DocumentTabStripItem> WaitForTab(Window window, ManagedDocumentDockable document)
     {
-        for (var attempt = 0; attempt < 100; attempt++)
+        DocumentTabStripItem? tab = null;
+        await UiTestWait.UntilAsync(() =>
         {
             window.UpdateLayout();
-            var tab = window.GetVisualDescendants().OfType<DocumentTabStripItem>()
+            tab = window.GetVisualDescendants().OfType<DocumentTabStripItem>()
                 .SingleOrDefault(item => ReferenceEquals(item.DataContext, document));
-            if (tab is { Bounds.Width: > 0 }) return tab;
-            await Task.Delay(10);
-        }
-        throw new TimeoutException("V16 文档标签未完成布局。");
+            return tab is { Bounds.Width: > 0 };
+        }, "文档标签完成布局");
+        return tab!;
     }
 
     public async ValueTask DisposeAsync()

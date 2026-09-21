@@ -86,7 +86,7 @@ public sealed class PluginEnablementUiTests
             await Flush();
             Assert.InRange(toggle.DesiredSize.Width, 1, toggle.Bounds.Width + 0.5);
             Assert.True(toggle.IsEffectivelyVisible);
-            var output = Path.Combine(AppContext.BaseDirectory, "TestResults", "v13-ui");
+            var output = MyAvaloniaManagement.Testing.TestEvidenceDirectory.Create("plugin-enablement");
             Directory.CreateDirectory(output);
             using var frame = window.CaptureRenderedFrame();
             Assert.NotNull(frame);
@@ -139,8 +139,7 @@ public sealed class PluginEnablementUiTests
         var point = control.TranslatePoint(new Point(20, control.Bounds.Height - 12), window)!.Value;
         window.MouseDown(point, MouseButton.Left); window.MouseUp(point, MouseButton.Left);
     }
-    private static async Task Flush()
-    { await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); }
+    private static Task Flush() => UiTestWait.RenderAsync();
 
     private sealed class DelayedActions(IPluginEnablementActions inner, TaskCompletionSource entered, TaskCompletionSource release) : IPluginEnablementActions
     {

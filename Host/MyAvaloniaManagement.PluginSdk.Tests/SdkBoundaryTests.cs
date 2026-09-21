@@ -18,7 +18,8 @@ public sealed class SdkBoundaryTests
 
         var exportedNames = assembly.ExportedTypes.Select(type => type.Name).ToHashSet(StringComparer.Ordinal);
         Assert.DoesNotContain("DocumentActivationContext", exportedNames);
-        Assert.DoesNotContain("IHostEventBus", exportedNames);
+        // SDK 自己守护类型不存在（包括 internal），Host 测试只负责其消费者和自身旧类型。
+        Assert.Null(assembly.GetType("MyAvaloniaManagement.PluginSdk.IHostEventBus"));
         Assert.DoesNotContain("IDocumentCreationStrategy", exportedNames);
         Assert.DoesNotContain("IToolCreationStrategy", exportedNames);
         Assert.DoesNotContain("PluginLifecycleManager", exportedNames);
@@ -122,15 +123,61 @@ public sealed class SdkBoundaryTests
             root, "Host", "MyAvaloniaManagement.LegacyPluginContracts",
             "MyAvaloniaManagement.LegacyPluginContracts.csproj")));
 
-        var actual = Directory.EnumerateFiles(root, "*.csproj", SearchOption.AllDirectories)
-            .Where(path => !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase) &&
-                           !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.OrdinalIgnoreCase))
+        Assert.Empty(FindLegacyReferences(root));
+    }
+
+    [Fact]
+    public void Ui程序集不公开旧消息包装器或消息框架签名()
+    {
+        var assembly = typeof(IPluginModule).Assembly;
+        Assert.DoesNotContain(assembly.ExportedTypes.SelectMany(type => type.GetMembers()).Select(member => member.ToString()),
+            signature => signature?.Contains("CommunityToolkit.Mvvm.Messaging", StringComparison.Ordinal) == true);
+        Assert.Null(assembly.GetType("MyAvaloniaManagementCommon.Message.IMessengerService"));
+        Assert.Null(assembly.GetType("MyAvaloniaManagementCommon.Message.MessengerService"));
+        Assert.Null(assembly.GetType("MyAvaloniaManagementCommon.Message.MessageHandler`2"));
+    }
+
+    [Fact]
+    public void 扫描覆盖新增项目与模板但不进入生成目录或嵌套仓库()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "MAV-sdk-scan-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            foreach (var relative in new[] { "NewArea/Deep/New.csproj", "Packaging/Templates/Template.csproj",
+                         "artifacts/clone/Old.csproj", "Host/bin/Old.csproj", "Host/obj/Old.csproj",
+                         ".cache/Old.csproj", "Neighbor/Old.csproj" })
+            {
+                var path = Path.Combine(root, relative);
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                File.WriteAllText(path, "<Project><!-- MyAvaloniaManagement.LegacyPluginContracts --></Project>");
+            }
+            File.WriteAllText(Path.Combine(root, "Neighbor", ".git"), "gitdir: elsewhere");
+            Assert.Equal(["NewArea/Deep/New.csproj", "Packaging/Templates/Template.csproj"], FindLegacyReferences(root));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, recursive: true); }
+    }
+
+    private static string[] FindLegacyReferences(string root) =>
+        EnumerateActiveProjects(root)
             .Where(path => File.ReadAllText(path).Contains("MyAvaloniaManagement.LegacyPluginContracts", StringComparison.Ordinal))
             .Select(path => Path.GetRelativePath(root, path).Replace('\\', '/'))
             .OrderBy(path => path, StringComparer.Ordinal)
             .ToArray();
 
-        Assert.Empty(actual);
+    /// <summary>
+    /// 进入子目录前裁剪生成物，避免先遍历 artifacts 中的临时克隆再过滤文件。
+    /// 从根目录动态发现项目和模板，不维护易漏更新的项目白名单；嵌套 Git 仓库、隐藏目录与链接不属于当前源码树。
+    /// </summary>
+    private static IEnumerable<string> EnumerateActiveProjects(string directory)
+    {
+        foreach (var project in Directory.EnumerateFiles(directory, "*.csproj")) yield return project;
+        foreach (var child in new DirectoryInfo(directory).EnumerateDirectories())
+        {
+            if (child.Name.StartsWith('.') || (child.Attributes & FileAttributes.ReparsePoint) != 0 ||
+                new[] { "artifacts", "bin", "obj", "TestResults", "node_modules" }.Contains(child.Name, StringComparer.OrdinalIgnoreCase) ||
+                Directory.Exists(Path.Combine(child.FullName, ".git")) || File.Exists(Path.Combine(child.FullName, ".git"))) continue;
+            foreach (var project in EnumerateActiveProjects(child.FullName)) yield return project;
+        }
     }
 
     private static string FindRepositoryRoot()

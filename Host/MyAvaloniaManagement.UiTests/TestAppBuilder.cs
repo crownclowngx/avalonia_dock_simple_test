@@ -19,8 +19,8 @@ namespace MyAvaloniaManagement.UiTests;
 /// 为 xUnit v3 测试构建加载生产 <see cref="App"/> 的 Avalonia Headless 应用。
 /// </summary>
 /// <remarks>
-/// 开启 HeadlessDrawing 后可以实例化真实控件、主题和 Dock 样式，
-/// 但不依赖显示器、显卡驱动或像素截图。
+/// 关闭 HeadlessDrawing 并启用 Skia 软件渲染，加载真实控件、主题和 Dock 样式。
+/// 布局、交互和像素断言使用同一生产资源；不依赖真实桌面或显卡驱动。
 /// </remarks>
 public static class TestAppBuilder
 {

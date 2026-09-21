@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Threading.Channels;
+using MyAvaloniaManagement.Testing;
 
 namespace MyAvaloniaManagement.PluginTests;
 
@@ -34,6 +35,7 @@ public sealed class HostRestartProcessTests
             Assert.NotEqual(responsive.RootElement.GetProperty("uiThread").GetInt32(), entered.RootElement.GetProperty("thread").GetInt32());
         }
         Assert.Empty(Directory.GetFiles(run.Root, "helper-*.start.json"));
+        run.AssertRuntimeIdentity();
         run.SaveEvidence();
     }
 
@@ -73,6 +75,7 @@ public sealed class HostRestartProcessTests
         }
         using var writer = new FileStream(Path.Combine(run.Root, "data", "layout-v3.lock"), FileMode.Open, FileAccess.ReadWrite, FileShare.None);
         Assert.True(File.Exists(Path.Combine(run.Root, "data", "layout-v3.json")));
+        run.AssertRuntimeIdentity();
         run.SaveEvidence();
     }
 
@@ -106,6 +109,7 @@ public sealed class HostRestartProcessTests
             using var result = JsonDocument.Parse(File.ReadAllText(Path.Combine(run.Root, "cancelled.json")));
             Assert.True(result.RootElement.GetProperty("visible").GetBoolean());
         }
+        run.AssertRuntimeIdentity();
         run.SaveEvidence();
     }
 
@@ -125,6 +129,7 @@ public sealed class HostRestartProcessTests
         Assert.Equal(0, first.ExitCode);
         Assert.Equal(2, Directory.GetFiles(run.Root, "host-*.start.json").Length);
         Assert.Single(Directory.GetFiles(run.Root, "helper-*.start.json"));
+        run.AssertRuntimeIdentity();
         run.SaveEvidence();
     }
 
@@ -132,13 +137,16 @@ public sealed class HostRestartProcessTests
     {
         internal string Root { get; } = Path.Combine(Path.GetTempPath(), "Host重启 测试", Guid.NewGuid().ToString("N"));
         private readonly List<Process> _owned = [];
+        private readonly FixtureCopyReceipt _copy;
+        private readonly Stopwatch _scenario = new();
+        private readonly string _evidence = TestEvidenceDirectory.Create(Path.Combine("restart", Guid.NewGuid().ToString("N")));
         internal bool HasErrors => Directory.GetFiles(Root, "*.error").Length != 0;
         internal string Errors => string.Join(Environment.NewLine, Directory.GetFiles(Root, "*.error").Select(File.ReadAllText));
 
         internal RunFiles()
         {
             Directory.CreateDirectory(Root);
-            Copy(Path.Combine(AppContext.BaseDirectory, "RestartHarness"), Path.Combine(Root, "app"));
+            _copy = RestartHarnessFiles.Copy(Path.Combine(AppContext.BaseDirectory, "RestartHarness"), Path.Combine(Root, "app"));
             // 使用 Gate 已构建的 MyPlugTest 完整部署闭包；不依赖用户安装目录或邻接业务仓库。
             var repo = new DirectoryInfo(AppContext.BaseDirectory);
             while (repo is not null && !File.Exists(Path.Combine(repo.FullName, "MyAvaloniaManagement.sln"))) repo = repo.Parent;
@@ -149,6 +157,7 @@ public sealed class HostRestartProcessTests
 
         internal Process Start(string mode, bool dotnet)
         {
+            if (!_scenario.IsRunning) _scenario.Start();
             var app = Path.Combine(Root, "app", "MyAvaloniaManagement.RestartHarness");
             var info = new ProcessStartInfo(dotnet ? "dotnet" : app + (OperatingSystem.IsWindows() ? ".exe" : ""))
             { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = Root };
@@ -216,9 +225,23 @@ public sealed class HostRestartProcessTests
 
         internal void SaveEvidence()
         {
-            var evidence = Path.Combine(AppContext.BaseDirectory, "TestResults", "v14-restart", Path.GetFileName(Root));
-            Directory.CreateDirectory(evidence);
-            foreach (var path in Directory.GetFiles(Root, "*.json")) File.Copy(path, Path.Combine(evidence, Path.GetFileName(path)), true);
+            foreach (var path in Directory.GetFiles(Root, "*.json").Concat(Directory.GetFiles(Root, "*.error")))
+                File.Copy(path, Path.Combine(_evidence, Path.GetFileName(path)), true);
+        }
+
+        internal void AssertRuntimeIdentity()
+        {
+            var starts = Directory.GetFiles(Root, "*.start.json");
+            Assert.NotEmpty(starts);
+            foreach (var path in starts)
+            {
+                using var state = JsonDocument.Parse(File.ReadAllText(path));
+                foreach (var (field, name) in new[] { ("avaloniaSha256", "Avalonia.Base.dll"), ("dockSha256", "Dock.Avalonia.dll") })
+                {
+                    using var stream = File.OpenRead(Path.Combine(AppContext.BaseDirectory, name));
+                    Assert.Equal(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream)), state.RootElement.GetProperty(field).GetString());
+                }
+            }
         }
 
         private static void Copy(string source, string target)
@@ -233,6 +256,8 @@ public sealed class HostRestartProcessTests
 
         public void Dispose()
         {
+            _scenario.Stop();
+            var cleanup = Stopwatch.StartNew();
             foreach (var path in Directory.GetFiles(Root, "*.start.json"))
                 try
                 {
@@ -245,8 +270,14 @@ public sealed class HostRestartProcessTests
             foreach (var process in _owned)
                 try { if (!process.HasExited) { process.Kill(true); process.WaitForExit(5000); } } catch (InvalidOperationException) { }
             foreach (var process in _owned) process.Dispose();
-            // 只清理本夹具创建且持有的目录，失败时保留收据以便诊断。
+            // 成功和失败均在清理之前保存本夹具证据；目录与 PID 所有权保持不变。
+            SaveEvidence();
             try { Directory.Delete(Root, true); } catch (IOException) { }
+            File.WriteAllText(Path.Combine(_evidence, "fixture-timing.json"), JsonSerializer.Serialize(new
+            {
+                copy = _copy, scenarioMilliseconds = _scenario.Elapsed.TotalMilliseconds,
+                cleanupMilliseconds = cleanup.Elapsed.TotalMilliseconds, remainingDirectory = Directory.Exists(Root)
+            }));
         }
     }
 }

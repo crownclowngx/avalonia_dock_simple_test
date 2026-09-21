@@ -370,12 +370,12 @@ public sealed class CognitiveUxV8UiTests
     }
 
     private static void OpenPalette(Window window) => window.KeyPressQwerty(PhysicalKey.P, RawInputModifiers.Control | RawInputModifiers.Shift);
-    private static async Task Flush() => await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+    private static Task Flush() => UiTestWait.DrainAsync();
 
     private static async Task Render(Window window, string name)
     {
         await Flush();
-        var path = Environment.GetEnvironmentVariable("MYAVALONIA_V8_RENDER_DIRECTORY");
+        var path = MyAvaloniaManagement.Testing.TestEvidenceDirectory.Optional("cognitive-ux", "MYAVALONIA_V8_RENDER_DIRECTORY");
         if (string.IsNullOrWhiteSpace(path)) return;
         Directory.CreateDirectory(path);
         using var bitmap = window.CaptureRenderedFrame();

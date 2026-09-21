@@ -284,11 +284,7 @@ public sealed class PluginNavigationUiTests
             typeof(MetadataDocument<T>), typeof(MetadataView<T>), static () => new MetadataView<T>(), false);
     }
 
-    private static async Task Flush()
-    {
-        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-        await Task.Delay(30);
-    }
+    private static Task Flush() => UiTestWait.RenderAsync();
 
     private static void Click(Window window, Control control)
     {
@@ -301,7 +297,7 @@ public sealed class PluginNavigationUiTests
     private static async Task Render(Window window, string name)
     {
         await Flush();
-        var directory = Environment.GetEnvironmentVariable("MYAVALONIA_V6_RENDER_DIRECTORY");
+        var directory = MyAvaloniaManagement.Testing.TestEvidenceDirectory.Optional("navigation", "MYAVALONIA_V6_RENDER_DIRECTORY");
         if (string.IsNullOrWhiteSpace(directory)) return;
         Directory.CreateDirectory(directory);
         using var frame = window.CaptureRenderedFrame();

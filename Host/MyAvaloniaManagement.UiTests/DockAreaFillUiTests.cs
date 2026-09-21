@@ -317,11 +317,7 @@ public sealed class DockAreaFillUiTests
         main.Show();
         return main;
     }
-    private static async Task Flush()
-    {
-        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-    }
+    private static Task Flush() => UiTestWait.RenderAsync();
     private static DockLayoutSnapshotV3 ToolLayout() => new(3,
         new("main", DockWindowBounds.Default, DockLayoutNode.Split("restored", "horizontal",
             [DockLayoutNode.Group("first", [FirstTool]) with { Proportion = .25 },

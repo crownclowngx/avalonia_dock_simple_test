@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\build\TestEvidenceDirectory.cs" Link="TestEvidenceDirectory.cs" />
     <!-- 外部产物验收显式开启，避免普通开发测试依赖个人安装目录或悄悄跳过用例。
          使用独立 artifacts-path 构建此变体；Gate verify 的默认测试集合保持可重现。 -->
     <Compile Remove="ExternalPluginBinaryAcceptanceTests.cs" Condition="'$(HostExternalPluginAcceptance)' != 'true'" />

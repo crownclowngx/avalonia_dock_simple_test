@@ -274,11 +274,7 @@ public sealed class DockCrossWindowLayoutUiTests
         finally { source.Close(); target.Close(); }
     }
 
-    private static async Task Flush()
-    {
-        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-        AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-    }
+    private static Task Flush() => UiTestWait.RenderAsync();
 
     private sealed class ArrangeCallback : Control
     {

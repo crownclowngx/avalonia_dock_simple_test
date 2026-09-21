@@ -47,7 +47,7 @@ public sealed class PluginEnablementRestartTests
             var phases = result.RootElement.GetProperty("trace").EnumerateArray().Select(item => item.GetString()).ToArray();
             Assert.Equal(phase == 1 ? [] : new[] { "module", "configure", "lifecycle-constructor", "initialize", "shutdown", "dispose" }, phases);
             // 收据保存在测试输出目录，父进程随后可以完整清理已退出进程曾加载的临时 DLL。
-            var evidence = Path.Combine(AppContext.BaseDirectory, "TestResults", "v13-restart");
+            var evidence = MyAvaloniaManagement.Testing.TestEvidenceDirectory.Create(Path.Combine("plugin-enablement", Path.GetFileName(files.DirectoryPath)));
             Directory.CreateDirectory(evidence);
             File.Copy(Path.Combine(files.DirectoryPath, $"phase-{phase}.json"), Path.Combine(evidence, $"phase-{phase}.json"), true);
         }

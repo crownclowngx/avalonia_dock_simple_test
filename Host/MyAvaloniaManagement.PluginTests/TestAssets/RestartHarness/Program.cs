@@ -37,7 +37,9 @@ internal static class Program
         File.WriteAllText(Path.Combine(root, identity + ".start.json"), JsonSerializer.Serialize(new
         { pid = Environment.ProcessId, startTicks = Process.GetCurrentProcess().StartTime.ToUniversalTime().Ticks,
             helper, stage, at = DateTimeOffset.UtcNow, args = helper ? args[6..] : args,
-            workingDirectory = Environment.CurrentDirectory, dataRoot = Environment.GetEnvironmentVariable("MYAVALONIA_DATA_DIRECTORY") }));
+            workingDirectory = Environment.CurrentDirectory, dataRoot = Environment.GetEnvironmentVariable("MYAVALONIA_DATA_DIRECTORY"),
+            avaloniaSha256 = AssemblyHash(typeof(AvaloniaObject).Assembly.Location),
+            dockSha256 = AssemblyHash(typeof(Dock.Avalonia.Controls.DockControl).Assembly.Location) }));
         var failure = false;
         var result = MyAvaloniaManagement.Program.Run(args, (startupBuilder, arguments) =>
         {
@@ -222,5 +224,12 @@ internal static class Program
             if (!File.Exists(Path.Combine(root, "release.json")) && !release.Wait(TimeSpan.FromSeconds(25))) return 1;
         }
         return result;
+    }
+
+    /// <summary>收据记录子进程实际加载的程序集字节，避免缩小副本时碰巧加载到别处的旧运行时。</summary>
+    private static string AssemblyHash(string path)
+    {
+        using var stream = File.OpenRead(path);
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(stream));
     }
 }

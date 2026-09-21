@@ -40,10 +40,7 @@ public sealed class InternalRefactorTests
                 constructorParameters);
         }
 
-        Assert.Null(typeof(IPluginLifecycle).Assembly.GetType(
-            "MyAvaloniaManagement.PluginSdk.IHostEventBus"));
-        Assert.Null(hostAssembly.GetType(
-            "MyAvaloniaManagement.Business.Events.HostEventBus"));
+        // 类型不存在分别由 SDK 边界和 Host 公共契约测试负责；这里保留消费者接线与旧消息迁移的独立契约。
     }
 
     [Fact]

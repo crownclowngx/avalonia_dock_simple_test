@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\build\TestEvidenceDirectory.cs" Link="TestEvidenceDirectory.cs" />
     <!-- 测试资产由各自项目编译，不能再次并入主测试程序集。 -->
     <Compile Remove="TestAssets\PluginIsolation\**\*.cs" />
     <Compile Remove="TestAssets\ManagedOnly\**\*.cs" />
@@ -58,8 +59,26 @@
 
   <Target Name="CopyRestartHarness" AfterTargets="Build">
     <MSBuild Projects="$(MSBuildThisFileDirectory)TestAssets\RestartHarness\RestartHarness.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
-    <ItemGroup><RestartHarnessFile Include="$(MSBuildThisFileDirectory)TestAssets\RestartHarness\bin\$(Configuration)\$(TargetFramework)\**\*" /></ItemGroup>
-    <Copy SourceFiles="@(RestartHarnessFile)" DestinationFiles="@(RestartHarnessFile->'$(OutDir)RestartHarness\%(RecursiveDir)%(Filename)%(Extension)')" />
+    <PropertyGroup>
+      <RestartHarnessSource>$(MSBuildThisFileDirectory)TestAssets\RestartHarness\bin\$(Configuration)\$(TargetFramework)\</RestartHarnessSource>
+    </PropertyGroup>
+    <ItemGroup>
+      <RestartHarnessFile Include="$(RestartHarnessSource)**\*"
+                          Exclude="$(RestartHarnessSource)runtimes\**\native\*.pdb;$(RestartHarnessSource)TestResults\**\*" />
+      <!-- Windows Host 固定为 x64，保留 win-x64 及通用 win 回退；其他系统暂保留原运行资产。
+           不改 deps/runtimeconfig，也保留托管 PDB。此裁剪只发生于测试副本，不改变交付闭包。 -->
+      <RestartHarnessFile Remove="$(RestartHarnessSource)runtimes\**\*" Condition="'$(OS)' == 'Windows_NT'" />
+      <RestartHarnessFile Include="$(RestartHarnessSource)runtimes\win-x64\**\*;$(RestartHarnessSource)runtimes\win\**\*"
+                          Exclude="$(RestartHarnessSource)runtimes\**\native\*.pdb" Condition="'$(OS)' == 'Windows_NT'" />
+      <RestartHarnessFile Update="@(RestartHarnessFile)">
+        <Destination>$(OutDir)RestartHarness\$([MSBuild]::MakeRelative('$(RestartHarnessSource)', '%(FullPath)'))</Destination>
+      </RestartHarnessFile>
+      <!-- 只删除本目标专属副本里已退出清单的文件，避免增量构建继续携带旧依赖。 -->
+      <RestartHarnessStale Include="$(OutDir)RestartHarness\**\*"
+                           Exclude="@(RestartHarnessFile->'%(Destination)')" />
+    </ItemGroup>
+    <Delete Files="@(RestartHarnessStale)" />
+    <Copy SourceFiles="@(RestartHarnessFile)" DestinationFiles="@(RestartHarnessFile->'%(Destination)')" SkipUnchangedFiles="true" />
   </Target>
   <Target Name="CopyStartupProbe" AfterTargets="Build">
     <MSBuild Projects="$(MSBuildThisFileDirectory)TestAssets\StartupProbe\StartupProbe.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />
