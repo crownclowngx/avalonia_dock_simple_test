@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "pending-final-verify",
+  "status": "passed",
   "planCommit": "08ed2c68f0c600b67a3745adc1538a09f69d47d9",
   "implementationCommits": [
     "17c3a557a9d41c1834beff5c4e41d0d961f85e8c",
@@ -514,7 +514,24 @@
         "start": "2026-09-21T18:26:55.2271054+08:00",
         "finish": "2026-09-21T18:28:13.1257149+08:00"
       },
-      "failures": []
+      "failures": [],
+      "commandNormalized": [
+        "dotnet",
+        "test",
+        "Host/MyAvaloniaManagement.PluginTests",
+        "-c",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "--no-build",
+        "--filter",
+        "(FullyQualifiedName~HostRestartProcessTests|FullyQualifiedName~RestartHarnessFilesTests|FullyQualifiedName~PluginEnablementRestartTests|FullyQualifiedName~StartupPluginProgressTests|FullyQualifiedName~HostRestartLifecycleTests)&Category!=PackageAcceptance",
+        "--logger",
+        "trx;LogFileName=p1.trx",
+        "--results-directory",
+        "artifacts/host-v21/p1-process"
+      ],
+      "exitCode": 0
     },
     {
       "trx": "artifacts/host-v21/p2-ui/p2.trx",
@@ -549,7 +566,22 @@
           "name": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: False)",
           "message": "Assert.Equal() Failure: Values differ\r\nExpected: False\r\nActual:   True"
         }
-      ]
+      ],
+      "commandNormalized": [
+        "dotnet",
+        "test",
+        "Host/MyAvaloniaManagement.UiTests",
+        "-c",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "--no-build",
+        "--logger",
+        "trx;LogFileName=p2.trx",
+        "--results-directory",
+        "artifacts/host-v21/p2-ui"
+      ],
+      "exitCode": 1
     },
     {
       "trx": "artifacts/host-v21/p2-ui-fixed/ui.trx",
@@ -584,7 +616,24 @@
           "name": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: False)",
           "message": "System.TimeoutException : Headless 等待超时：多组浮窗关闭完成；最后一次条件仍为 false。"
         }
-      ]
+      ],
+      "commandNormalized": [
+        "dotnet",
+        "test",
+        "Host/MyAvaloniaManagement.UiTests",
+        "-c",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "--no-build",
+        "--filter",
+        "Category!=ExternalAcceptance",
+        "--logger",
+        "trx;LogFileName=ui.trx",
+        "--results-directory",
+        "artifacts/host-v21/p2-ui-fixed"
+      ],
+      "exitCode": 1
     },
     {
       "trx": "artifacts/host-v21/p2-close-ready/close.trx",
@@ -619,7 +668,24 @@
           "name": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: False)",
           "message": "System.TimeoutException : Headless 等待超时：多组浮窗关闭完成；最后一次条件仍为 false。"
         }
-      ]
+      ],
+      "commandNormalized": [
+        "dotnet",
+        "test",
+        "Host/MyAvaloniaManagement.UiTests",
+        "-c",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "-warnaserror",
+        "--filter",
+        "FullyQualifiedName~DockToolWindowCloseUiTests",
+        "--logger",
+        "trx;LogFileName=close.trx",
+        "--results-directory",
+        "artifacts/host-v21/p2-close-ready"
+      ],
+      "exitCode": 1
     },
     {
       "trx": "artifacts/host-v21/p2-close-trace/trace.trx",
@@ -654,7 +720,23 @@
           "name": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: False)",
           "message": "System.TimeoutException : Headless 等待超时：多组浮窗关闭完成；最后一次条件仍为 false。"
         }
-      ]
+      ],
+      "commandNormalized": [
+        "dotnet",
+        "test",
+        "Host/MyAvaloniaManagement.UiTests",
+        "-c",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "--filter",
+        "FullyQualifiedName~P2多组整窗关闭保留比例和位置且取消不隐藏任何成员",
+        "--logger",
+        "trx;LogFileName=trace.trx",
+        "--results-directory",
+        "artifacts/host-v21/p2-close-trace"
+      ],
+      "exitCode": 1
     },
     {
       "trx": "artifacts/host-v21/p2-close-trace2/trace.trx",
@@ -689,7 +771,23 @@
           "name": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: False)",
           "message": "System.InvalidOperationException : READY visible=True window=True factory=True layout=True; NATIVE closing cancel=False"
         }
-      ]
+      ],
+      "commandNormalized": [
+        "dotnet",
+        "test",
+        "Host/MyAvaloniaManagement.UiTests",
+        "-c",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "--filter",
+        "FullyQualifiedName~P2多组整窗关闭保留比例和位置且取消不隐藏任何成员",
+        "--logger",
+        "trx;LogFileName=trace.trx",
+        "--results-directory",
+        "artifacts/host-v21/p2-close-trace2"
+      ],
+      "exitCode": 1
     },
     {
       "trx": "artifacts/host-v21/p2-close-layout/trace.trx",
@@ -719,7 +817,23 @@
         "start": "2026-09-21T18:43:31.8830098+08:00",
         "finish": "2026-09-21T18:43:34.8366492+08:00"
       },
-      "failures": []
+      "failures": [],
+      "commandNormalized": [
+        "dotnet",
+        "test",
+        "Host/MyAvaloniaManagement.UiTests",
+        "-c",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "--filter",
+        "FullyQualifiedName~P2多组整窗关闭保留比例和位置且取消不隐藏任何成员",
+        "--logger",
+        "trx;LogFileName=trace.trx",
+        "--results-directory",
+        "artifacts/host-v21/p2-close-layout"
+      ],
+      "exitCode": 0
     },
     {
       "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
@@ -749,7 +863,22 @@
         "start": "2026-09-21T18:44:24.1427939+08:00",
         "finish": "2026-09-21T18:45:34.4537497+08:00"
       },
-      "failures": []
+      "failures": [],
+      "commandNormalized": [
+        "dotnet",
+        "test",
+        "Host/MyAvaloniaManagement.UiTests",
+        "-c",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "--no-build",
+        "--logger",
+        "trx;LogFileName=ui.trx",
+        "--results-directory",
+        "artifacts/host-v21/p2-ui-final"
+      ],
+      "exitCode": 0
     },
     {
       "trx": "artifacts/host-v21/p3-gate/gate-tests.trx",
@@ -779,7 +908,22 @@
         "start": "2026-09-21T18:36:45.4496844+08:00",
         "finish": "2026-09-21T18:36:47.3537433+08:00"
       },
-      "failures": []
+      "failures": [],
+      "commandNormalized": [
+        "dotnet",
+        "test",
+        "tools/MyAvaloniaManagement.Gate.Tests",
+        "-c",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "-warnaserror",
+        "--logger",
+        "trx;LogFileName=gate-tests.trx",
+        "--results-directory",
+        "artifacts/host-v21/p3-gate"
+      ],
+      "exitCode": 0
     },
     {
       "trx": "artifacts/host-v21/p3-gate-final/gate.trx",
@@ -809,7 +953,22 @@
         "start": "2026-09-21T18:46:29.2442746+08:00",
         "finish": "2026-09-21T18:46:31.1930440+08:00"
       },
-      "failures": []
+      "failures": [],
+      "commandNormalized": [
+        "dotnet",
+        "test",
+        "tools/MyAvaloniaManagement.Gate.Tests",
+        "-c",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "-warnaserror",
+        "--logger",
+        "trx;LogFileName=gate.trx",
+        "--results-directory",
+        "artifacts/host-v21/p3-gate-final"
+      ],
+      "exitCode": 0
     },
     {
       "trx": "artifacts/host-v21/p4-sdk/sdk.trx",
@@ -839,7 +998,22 @@
         "start": "2026-09-21T18:46:24.2880956+08:00",
         "finish": "2026-09-21T18:46:24.9028469+08:00"
       },
-      "failures": []
+      "failures": [],
+      "commandNormalized": [
+        "dotnet",
+        "test",
+        "Host/MyAvaloniaManagement.PluginSdk.Tests",
+        "-c",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "--no-build",
+        "--logger",
+        "trx;LogFileName=sdk.trx",
+        "--results-directory",
+        "artifacts/host-v21/p4-sdk"
+      ],
+      "exitCode": 0
     },
     {
       "trx": "artifacts/host-v21/p4-unit/unit.trx",
@@ -869,12 +1043,4366 @@
         "start": "2026-09-21T18:46:25.8136071+08:00",
         "finish": "2026-09-21T18:46:27.7758279+08:00"
       },
-      "failures": []
+      "failures": [],
+      "commandNormalized": [
+        "dotnet",
+        "test",
+        "Host/MyAvaloniaManagement.Tests",
+        "-c",
+        "Release",
+        "--no-restore",
+        "-m:1",
+        "--no-build",
+        "--logger",
+        "trx;LogFileName=unit.trx",
+        "--results-directory",
+        "artifacts/host-v21/p4-unit"
+      ],
+      "exitCode": 0
     }
   ],
   "staleFileCheck": {
     "probe": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\bin\\Release\\net10.0\\RestartHarness\\v21-stale-probe.txt",
     "passed": true,
     "description": "构建移除测试副本旧文件，源输出未改动"
+  },
+  "finalVerify": {
+    "command": [
+      "dotnet",
+      "run",
+      "--project",
+      "tools/MyAvaloniaManagement.Gate",
+      "--",
+      "verify"
+    ],
+    "exitCode": 0,
+    "runRoot": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf",
+    "summarySha256": "11C30CC109C3AA5B7D72C50546E3590FB959B644FADA1E6DB085DD9239B348FB",
+    "summary": {
+      "schemaVersion": 2,
+      "runId": "20260921-105730-82438a920fcf",
+      "profile": "verify",
+      "scope": "all",
+      "passed": true,
+      "startedAtUtc": "2026-09-21T10:57:29.8779439+00:00",
+      "finishedAtUtc": "2026-09-21T11:00:36.8264068+00:00",
+      "sources": {
+        "main": {
+          "revision": "82438a920fcf72335468bc16c6db7e4fdaa6942a",
+          "tree": "f7b3dcd8388960a21a2ff2a02a18223e51589cd4",
+          "clean": true,
+          "files": 1090,
+          "sha256": "17B414AF24AFBB7D96028C8CEEA28945ADE0B55AC091452235469D13C68BC10B"
+        }
+      },
+      "host": {
+        "releaseEligible": false,
+        "publishable": false
+      },
+      "repeatability": {
+        "requested": false,
+        "verified": false
+      },
+      "passes": [
+        {
+          "pass": 1,
+          "passed": true,
+          "evidenceRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1",
+          "stages": [
+            {
+              "id": "avalonia-layout-patch",
+              "status": "passed",
+              "durationMilliseconds": 676,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1"
+            },
+            {
+              "id": "dock-patch",
+              "status": "passed",
+              "durationMilliseconds": 896,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1"
+            },
+            {
+              "id": "restore",
+              "status": "passed",
+              "durationMilliseconds": 2751,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1"
+            },
+            {
+              "id": "build",
+              "status": "passed",
+              "durationMilliseconds": 10786,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1"
+            },
+            {
+              "id": "contracts",
+              "status": "passed",
+              "durationMilliseconds": 4496,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1"
+            },
+            {
+              "id": "tests",
+              "status": "passed",
+              "durationMilliseconds": 165038,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1"
+            },
+            {
+              "id": "packages",
+              "status": "passed",
+              "durationMilliseconds": 18,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1"
+            },
+            {
+              "id": "package-acceptance",
+              "status": "passed",
+              "durationMilliseconds": 1591,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1"
+            }
+          ],
+          "packages": {
+            "my-plug-test": {
+              "pluginId": "myavalonia.plugin.my-plug-test",
+              "archivePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1\\packages\\my-plug-test\\build-1\\MyPlugTest-win-x64.zip",
+              "sha256": "2869DE3CE1BEEC28021B0F445234BFD5AD951146EAE1637B9D7335BC8FA2D359",
+              "files": 8,
+              "manifestSha256": "93B4006555E65634300C0E1AF204CCC345A1739B432AD6FD9CDC384E2A567AE1",
+              "deterministic": false
+            }
+          }
+        }
+      ]
+    },
+    "testSuitesSha256": "BEF1AA110F07AAFF008517684E4C036B71F4C8CCADFB04371014339D0AE3C7DD",
+    "testSuites": {
+      "runId": "20260921-105730-82438a920fcf",
+      "pass": 1,
+      "source": {
+        "revision": "82438a920fcf72335468bc16c6db7e4fdaa6942a",
+        "tree": "f7b3dcd8388960a21a2ff2a02a18223e51589cd4",
+        "clean": true,
+        "files": 1090,
+        "sha256": "17B414AF24AFBB7D96028C8CEEA28945ADE0B55AC091452235469D13C68BC10B"
+      },
+      "suites": [
+        {
+          "id": "sdk",
+          "status": "passed",
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.PluginSdk.Tests/MyAvaloniaManagement.PluginSdk.Tests.csproj",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "Category!=PackageAcceptance",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1\\tests\\sdk",
+            "--logger",
+            "trx;LogFileName=sdk.trx"
+          ],
+          "filter": "Category!=PackageAcceptance",
+          "exitCode": 0,
+          "wallMilliseconds": 2556.8538,
+          "trxPath": "tests\\sdk\\sdk.trx",
+          "attachmentsPath": "tests\\sdk\\attachments",
+          "result": {
+            "outcome": "Completed",
+            "counts": {
+              "total": 93,
+              "executed": 93,
+              "passed": 93,
+              "failed": 0,
+              "skipped": 0,
+              "other": 0
+            },
+            "sha256": "AD2B34134B45280C1205AA739E929D01766B5C7AB793EA9D959A5D4E4E9A3CF8",
+            "milliseconds": 859.5742,
+            "slowTests": [
+              {
+                "name": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.扫描覆盖新增项目与模板但不进入生成目录或嵌套仓库",
+                "outcome": "Passed",
+                "milliseconds": 126.4521
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Legacy项目已删除且活动项目没有旧引用",
+                "outcome": "Passed",
+                "milliseconds": 24.2972
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.Catalog哈希忽略Action属性Required和Enum的声明顺序",
+                "outcome": "Passed",
+                "milliseconds": 20.5881
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkbenchCommandContractTests.描述符冻结纯数据和四个共享位置",
+                "outcome": "Passed",
+                "milliseconds": 9.9778
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.全屏端口只负责内容所有权迁移和恢复",
+                "outcome": "Passed",
+                "milliseconds": 7.6601
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowProtocolTests.保守值域覆盖Enum子集字符串数值数组和Required关系",
+                "outcome": "Passed",
+                "milliseconds": 6.9476
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.公共资源保持稳定键只读集合且程序集不依赖SDK或UI",
+                "outcome": "Passed",
+                "milliseconds": 6.6941
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginSdk.Tests.IconContractTests.旧接口无需增加成员且缺少可选能力时错误清楚",
+                "outcome": "Passed",
+                "milliseconds": 6.3684
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginSdk.Tests.WorkflowActionContractTests.ActionId遵循稳定身份规则",
+                "outcome": "Passed",
+                "milliseconds": 6.3392
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginSdk.Tests.DocumentAndDescriptorTests.ToolDescriptor拒绝非法枚举并保存明确关闭语义",
+                "outcome": "Passed",
+                "milliseconds": 5.6755
+              }
+            ],
+            "hasAbnormalCounters": false
+          }
+        },
+        {
+          "id": "host-unit",
+          "status": "passed",
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "Category!=PackageAcceptance",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1\\tests\\host-unit",
+            "--logger",
+            "trx;LogFileName=host-unit.trx"
+          ],
+          "filter": "Category!=PackageAcceptance",
+          "exitCode": 0,
+          "wallMilliseconds": 2787.7248,
+          "trxPath": "tests\\host-unit\\host-unit.trx",
+          "attachmentsPath": "tests\\host-unit\\attachments",
+          "result": {
+            "outcome": "Completed",
+            "counts": {
+              "total": 652,
+              "executed": 652,
+              "passed": 652,
+              "failed": 0,
+              "skipped": 0,
+              "other": 0
+            },
+            "sha256": "5E649908710881B0ABD622DF9AC15E3A7E3F51DFA3A74F2A1068451444EACFBC",
+            "milliseconds": 1920.4033,
+            "slowTests": [
+              {
+                "name": "MyAvaloniaManagement.Tests.WorkspaceLayoutQuerySnapshotTests.有限大布局与原查询一致并记录关系查询采样",
+                "outcome": "Passed",
+                "milliseconds": 443.9138
+              },
+              {
+                "name": "MyAvaloniaManagement.Tests.PluginDashboardTests.文件查询不执行模块且文件变化不会替换会话身份",
+                "outcome": "Passed",
+                "milliseconds": 375.9309
+              },
+              {
+                "name": "MyAvaloniaManagement.Tests.ToolCenterTests.分类保留名称及非法输入受保护而最近列表有界去重",
+                "outcome": "Passed",
+                "milliseconds": 317.9084
+              },
+              {
+                "name": "MyAvaloniaManagement.Tests.PluginEnablementRetentionTests.禁用期间保存布局仍保留位置显示意图和收藏且重新启用后可投影",
+                "outcome": "Passed",
+                "milliseconds": 289.9299
+              },
+              {
+                "name": "MyAvaloniaManagement.Tests.PluginCompatibilityEvidenceTests.旧插件缺少构建信息仍可读取且新元数据改变产物身份",
+                "outcome": "Passed",
+                "milliseconds": 263.9407
+              },
+              {
+                "name": "MyAvaloniaManagement.Tests.PluginNavigationTests.双模式切换保留展开身份与用户显示名称且不会创建文档",
+                "outcome": "Passed",
+                "milliseconds": 168.0289
+              },
+              {
+                "name": "MyAvaloniaManagement.Tests.DockLayoutV3StoreTests.旧布局不参与恢复或诊断且仍可保存V3(scenario: \"valid\")",
+                "outcome": "Passed",
+                "milliseconds": 155.5737
+              },
+              {
+                "name": "MyAvaloniaManagement.Tests.WelcomePageTests.OpenToolRejectsUnknownToolId",
+                "outcome": "Passed",
+                "milliseconds": 150.1315
+              },
+              {
+                "name": "MyAvaloniaManagement.Tests.PluginCompatibilityEvidenceTests.目录部署仍包含Host与SDK的真实文件身份",
+                "outcome": "Passed",
+                "milliseconds": 146.0738
+              },
+              {
+                "name": "MyAvaloniaManagement.Tests.HelpContentTests.V19专用文档归档后仍可从嵌入帮助读取和渲染(path: \"docs/archive/records/host-v19/test-matrix.md\")",
+                "outcome": "Passed",
+                "milliseconds": 140.8509
+              }
+            ],
+            "hasAbnormalCounters": false
+          }
+        },
+        {
+          "id": "host-plugin",
+          "status": "passed",
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "Category!=PackageAcceptance",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1\\tests\\host-plugin",
+            "--logger",
+            "trx;LogFileName=host-plugin.trx"
+          ],
+          "filter": "Category!=PackageAcceptance",
+          "exitCode": 0,
+          "wallMilliseconds": 76429.2799,
+          "trxPath": "tests\\host-plugin\\host-plugin.trx",
+          "attachmentsPath": "tests\\host-plugin\\attachments",
+          "result": {
+            "outcome": "Completed",
+            "counts": {
+              "total": 283,
+              "executed": 283,
+              "passed": 283,
+              "failed": 0,
+              "skipped": 0,
+              "other": 0
+            },
+            "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323",
+            "milliseconds": 75491.0486,
+            "slowTests": [
+              {
+                "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式(dotnet: False)",
+                "outcome": "Passed",
+                "milliseconds": 8752.3255
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式(dotnet: True)",
+                "outcome": "Passed",
+                "milliseconds": 7609.3715
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.最终许可已确认但旧进程仍存活时不能提前拉起",
+                "outcome": "Passed",
+                "milliseconds": 5376.3975
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-slow\", exitCode: 0)",
+                "outcome": "Passed",
+                "milliseconds": 5017.7881
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"kill\", error: False)",
+                "outcome": "Passed",
+                "milliseconds": 4588.2856
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"bad-exit\", error: True)",
+                "outcome": "Passed",
+                "milliseconds": 4046.3907
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"crash\", error: False)",
+                "outcome": "Passed",
+                "milliseconds": 3984.0832
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"cancel\", error: False)",
+                "outcome": "Passed",
+                "milliseconds": 3906.2096
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-warning\", exitCode: 0)",
+                "outcome": "Passed",
+                "milliseconds": 3673.531
+              },
+              {
+                "name": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-empty\", exitCode: 0)",
+                "outcome": "Passed",
+                "milliseconds": 3582.7415
+              }
+            ],
+            "hasAbnormalCounters": false
+          }
+        },
+        {
+          "id": "host-ui",
+          "status": "passed",
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.UiTests/MyAvaloniaManagement.UiTests.csproj",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "Category!=PackageAcceptance",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1\\tests\\host-ui",
+            "--logger",
+            "trx;LogFileName=host-ui.trx"
+          ],
+          "filter": "Category!=PackageAcceptance",
+          "exitCode": 0,
+          "wallMilliseconds": 81915.0697,
+          "trxPath": "tests\\host-ui\\host-ui.trx",
+          "attachmentsPath": "tests\\host-ui\\attachments",
+          "result": {
+            "outcome": "Completed",
+            "counts": {
+              "total": 292,
+              "executed": 292,
+              "passed": 292,
+              "failed": 0,
+              "skipped": 0,
+              "other": 0
+            },
+            "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964",
+            "milliseconds": 81065.0478,
+            "slowTests": [
+              {
+                "name": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.标题栏关闭最后一个工具后可从工具中心反复显示且复用视图",
+                "outcome": "Passed",
+                "milliseconds": 6037.0836
+              },
+              {
+                "name": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.菜单打开非模态单实例窗口且显隐收藏通过真实按钮提交",
+                "outcome": "Passed",
+                "milliseconds": 2404.8218
+              },
+              {
+                "name": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Right, keepExpandedTool: False)",
+                "outcome": "Passed",
+                "milliseconds": 2076.32
+              },
+              {
+                "name": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Bottom, keepExpandedTool: False)",
+                "outcome": "Passed",
+                "milliseconds": 1915.3706
+              },
+              {
+                "name": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.搜索异步失败保留查询选择并阻止重复输入和窗口假取消且重试成功后交还焦点",
+                "outcome": "Passed",
+                "milliseconds": 1746.2221
+              },
+              {
+                "name": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Bottom, keepExpandedTool: True)",
+                "outcome": "Passed",
+                "milliseconds": 1600.0671
+              },
+              {
+                "name": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Left, keepExpandedTool: True)",
+                "outcome": "Passed",
+                "milliseconds": 1477.8414
+              },
+              {
+                "name": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Top, keepExpandedTool: False)",
+                "outcome": "Passed",
+                "milliseconds": 1472.5204
+              },
+              {
+                "name": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Right, keepExpandedTool: True)",
+                "outcome": "Passed",
+                "milliseconds": 1470.7469
+              },
+              {
+                "name": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Left, keepExpandedTool: False)",
+                "outcome": "Passed",
+                "milliseconds": 1385.8314
+              }
+            ],
+            "hasAbnormalCounters": false
+          }
+        },
+        {
+          "id": "my-plug-test",
+          "status": "passed",
+          "command": [
+            "dotnet",
+            "test",
+            "Plugins/MyPlugTest/MyPlugTest.Tests/MyPlugTest.Tests.csproj",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "Category!=PackageAcceptance",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1\\tests\\my-plug-test",
+            "--logger",
+            "trx;LogFileName=my-plug-test.trx"
+          ],
+          "filter": "Category!=PackageAcceptance",
+          "exitCode": 0,
+          "wallMilliseconds": 1340.5201,
+          "trxPath": "tests\\my-plug-test\\my-plug-test.trx",
+          "attachmentsPath": "tests\\my-plug-test\\attachments",
+          "result": {
+            "outcome": "Completed",
+            "counts": {
+              "total": 11,
+              "executed": 11,
+              "passed": 11,
+              "failed": 0,
+              "skipped": 0,
+              "other": 0
+            },
+            "sha256": "B8D71CED4601602E225A87FFC69D50323DCD6CF3A6EE9E3922FDA958FEBE3AD6",
+            "milliseconds": 553.3961,
+            "slowTests": [
+              {
+                "name": "MyPlugTest.Tests.MyPlugTestEventBusTests.令牌独立幂等且处理器可以自释放并重入发布",
+                "outcome": "Passed",
+                "milliseconds": 14.5969
+              },
+              {
+                "name": "MyPlugTest.Tests.RevisionedDocumentSaveTests.捕获同时观察调用方取消与Document关闭令牌",
+                "outcome": "Passed",
+                "milliseconds": 11.2019
+              },
+              {
+                "name": "MyPlugTest.Tests.RevisionedDocumentSaveTests.快照内容可恢复且初始化后的目标Document保持干净",
+                "outcome": "Passed",
+                "milliseconds": 9.2999
+              },
+              {
+                "name": "MyPlugTest.Tests.MyPlugTestEventBusTests.并发发布订阅和释放不损坏内部集合",
+                "outcome": "Passed",
+                "milliseconds": 3.7476
+              },
+              {
+                "name": "MyPlugTest.Tests.MyPlugTestEventBusTests.订阅中新增订阅从下一次发布开始生效",
+                "outcome": "Passed",
+                "milliseconds": 1.8734
+              },
+              {
+                "name": "MyPlugTest.Tests.RevisionedDocumentSaveTests.捕获后继续编辑_旧修订不清脏且当前修订确认幂等",
+                "outcome": "Passed",
+                "milliseconds": 1.2076
+              },
+              {
+                "name": "MyPlugTest.Tests.MyPlugTestEventBusTests.不同插件Provider实例互不接收事件",
+                "outcome": "Passed",
+                "milliseconds": 1.1954
+              },
+              {
+                "name": "MyPlugTest.Tests.MyPlugTestEventBusTests.空事件和空处理器被明确拒绝",
+                "outcome": "Passed",
+                "milliseconds": 1.018
+              },
+              {
+                "name": "MyPlugTest.Tests.MyPlugTestEventBusTests.释放后拒绝发布订阅且旧令牌仍可重复释放",
+                "outcome": "Passed",
+                "milliseconds": 0.536
+              },
+              {
+                "name": "MyPlugTest.Tests.MyPlugTestEventBusTests.按订阅顺序在发布线程同步派发且只匹配精确类型",
+                "outcome": "Passed",
+                "milliseconds": 0.5338
+              }
+            ],
+            "hasAbnormalCounters": false
+          }
+        },
+        {
+          "id": "my-plug-test-package",
+          "status": "passed",
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "Category=PackageAcceptance",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-105730-82438a920fcf\\pass-1\\tests\\my-plug-test-package",
+            "--logger",
+            "trx;LogFileName=my-plug-test-package.trx"
+          ],
+          "filter": "Category=PackageAcceptance",
+          "exitCode": 0,
+          "wallMilliseconds": 1580.4454,
+          "trxPath": "tests\\my-plug-test-package\\my-plug-test-package.trx",
+          "attachmentsPath": "tests\\my-plug-test-package\\attachments",
+          "result": {
+            "outcome": "Completed",
+            "counts": {
+              "total": 1,
+              "executed": 1,
+              "passed": 1,
+              "failed": 0,
+              "skipped": 0,
+              "other": 0
+            },
+            "sha256": "E8B01E3E5DFE3609BED17056044323F63664DDA4DE974CC08BCDF65D8E7469FB",
+            "milliseconds": 740.7372,
+            "slowTests": [
+              {
+                "name": "MyAvaloniaManagement.PluginTests.CurrentManagedPluginLoadingTests.MyPlugTest真实Zip通过Host发现组合并进入Workspace目录",
+                "outcome": "Passed",
+                "milliseconds": 137.9805
+              }
+            ],
+            "hasAbnormalCounters": false
+          }
+        }
+      ]
+    },
+    "totalPassed": 1332,
+    "elapsedSeconds": 186.948463,
+    "attachments": [
+      {
+        "suite": "sdk",
+        "files": []
+      },
+      {
+        "suite": "host-unit",
+        "files": []
+      },
+      {
+        "suite": "host-plugin",
+        "files": [
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/0442843dff024f779d0347257386a70e/fixture-timing.json",
+            "bytes": 153,
+            "sha256": "967B81DBF87B910047937B5B04154A5E49DBCF74650E606CE9531EAD093650BB"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/0442843dff024f779d0347257386a70e/helper-45736.exit.json",
+            "bytes": 63,
+            "sha256": "C13F576B3415C25D3348821830B7A1280496E47746B61BF1A4E51A298E3461C8"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/0442843dff024f779d0347257386a70e/helper-45736.start.json",
+            "bytes": 691,
+            "sha256": "0D91D4EAB2BA1A7214E7E0F5421ACA9799D8ECACDFE880303C7BCFFDBFBE403B"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/0442843dff024f779d0347257386a70e/host-0.start.json",
+            "bytes": 692,
+            "sha256": "43875C2A1F5252C8720B409E8EE2486533A3653C94D4F6B6096EF006A9760526"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/0442843dff024f779d0347257386a70e/parent-ready.json",
+            "bytes": 2,
+            "sha256": "44136FA355B3678A1146AD16F7E8649E94FB4FC21FE77E8310C060F61CAAFF8A"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/0442843dff024f779d0347257386a70e/startup-0.json",
+            "bytes": 84,
+            "sha256": "42B67FB13F3ADFE961A6A13A98AE10D097AA8BE9476D1F14193A3295552B8013"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1fe3baf2349a424f8e00f8ccb380c609/fixture-timing.json",
+            "bytes": 150,
+            "sha256": "A7BEBD3B899B72D6832FB0D5A1324C482DAFAF7510739351D078DBE528A1AE5B"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1fe3baf2349a424f8e00f8ccb380c609/host-0.exit.json",
+            "bytes": 63,
+            "sha256": "B4297F068D64DD0E2982CEB7215916D74ED588E45D2898AF4DFB430243EF7C2E"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1fe3baf2349a424f8e00f8ccb380c609/host-0.start.json",
+            "bytes": 704,
+            "sha256": "0B42E62EB637D82375644A9A6F23C1B86126587CE2BB4F1E5F0CA45CD5B388F3"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1fe3baf2349a424f8e00f8ccb380c609/startup-0.json",
+            "bytes": 84,
+            "sha256": "5D408CDB714645E9909C7CBDDE9DBBDB18DCAA08F7105D261EB9246D708F37F8"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1fe3baf2349a424f8e00f8ccb380c609/startup.json",
+            "bytes": 36,
+            "sha256": "C3443E771655694ED64566DBDF113A918485DE09666380CEEA14C258A62C956B"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/fixture-timing.json",
+            "bytes": 152,
+            "sha256": "8E99551A896762C7FE281CBCAA5AF7D04BD6758FDED6BC43CEC39FFB5B76758D"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/helper-15000.exit.json",
+            "bytes": 63,
+            "sha256": "3C393CB29C988ED7AD81D2D37A1534F65A7DA4C86F6146D50DFAD2F291F6E124"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/helper-15000.start.json",
+            "bytes": 695,
+            "sha256": "DD2D19542D17DB09250CEF7ADA5E8326860201D682301349234EA21961BE4194"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/helper-53324.exit.json",
+            "bytes": 63,
+            "sha256": "5994D33B26E61AF2C33411CD46E5CEF93898AAA2424487642D4D6D9188380455"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/helper-53324.start.json",
+            "bytes": 696,
+            "sha256": "22CAE6BFD6097ED63EED4D2A7F333F8F2CC6968B43F7F51E456DCCCAE5224F43"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/host-0.exit.json",
+            "bytes": 63,
+            "sha256": "7BE2A950A7C7B019386F0CC5972FF21D0924FB05AA2EF17BDC0ED5030ED17879"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/host-0.start.json",
+            "bytes": 697,
+            "sha256": "3E0B22F4F3291D6BFF9ED3EF65D95397F962A59FC741B1A37FC6FDEE146EE87F"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/host-1.exit.json",
+            "bytes": 62,
+            "sha256": "1106268DB2E61E332BB05BD5E808534C76BB0F4BA493E30CAA734E95CD984CC5"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/host-1.start.json",
+            "bytes": 696,
+            "sha256": "A320416683C93CD9444A1543CE6065A2F48C2384FB020B1005147195EC04E7E6"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/host-2.exit.json",
+            "bytes": 62,
+            "sha256": "933F6AA9036D5F8F12FE0690F568FD34596BBB74A41A727197FD6651203252CB"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/host-2.start.json",
+            "bytes": 696,
+            "sha256": "B48134460342530DDF3FB7D1E32E7A70E9EF3FEFD63674B2E1A8E9D676677D7B"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/startup-0.json",
+            "bytes": 84,
+            "sha256": "8A7F8E51B75EC47BC6C4B532D2470B94456508B124F8277E70FFE3C7BA6C77D1"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/startup-1.json",
+            "bytes": 84,
+            "sha256": "7BF94677434C6B147DFF8D59B250E01258A9DF43CF1E809EC069B94C846211A5"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/startup-2.json",
+            "bytes": 82,
+            "sha256": "EC7AEE9CCD548888A65A05A8379AF803673DF476D9AC70A4AD59F71781DC286E"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/state-0.json",
+            "bytes": 90,
+            "sha256": "7242052954B505B763CDC99584AF5FD23AB87404A70CDD83BB08A98CA97D8821"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/state-1.json",
+            "bytes": 89,
+            "sha256": "12D839E6AC4DAA2D5380EE48E50A00E23CE2B7268B9D3BDCD0958092BEEA5326"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/1ff4271db57342d7a1f20fee30222ab0/state-2.json",
+            "bytes": 89,
+            "sha256": "AE48388AB69E5FBD981C38E4C0F25819EF7C7085CA34DA3D7AA639FDB93FF619"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/21929edf44c9421ea2549084ef9b0476/fixture-timing.json",
+            "bytes": 153,
+            "sha256": "23E823F3E56882DD7CB98C06F85D8548143ACD9BF731184FAF9221B843CE8C17"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/21929edf44c9421ea2549084ef9b0476/host-0.exit.json",
+            "bytes": 63,
+            "sha256": "AE08375E90187AB6BA24E2DDF650EF476F75FC533307BA2600E1B02A9C4BFA8F"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/21929edf44c9421ea2549084ef9b0476/host-0.start.json",
+            "bytes": 710,
+            "sha256": "EBBC8AB308CC0687EA636E15D74EF4A37E2D6A2FF549BE287B47DD1FCCEADC39"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/21929edf44c9421ea2549084ef9b0476/startup-entered.json",
+            "bytes": 71,
+            "sha256": "C2B6BF66CFBBEB62C204C263F4FF64A957E1C217C268E661316715002997EC8E"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/21929edf44c9421ea2549084ef9b0476/startup-responsive.json",
+            "bytes": 61,
+            "sha256": "702117E3EFFA0A062368C9F9CC2F6E023E094CEEEFDFC4849F2E1F8B621F01A4"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/21929edf44c9421ea2549084ef9b0476/startup.json",
+            "bytes": 38,
+            "sha256": "E0B752AF356C0B6C48D94D3E39D661AD9FB0DC7023DEF7EBEE1B18FD2A19E853"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/4f441737fda7453683b63608e9fcdcb8/fixture-timing.json",
+            "bytes": 153,
+            "sha256": "DBC9C6E976BB09685A40F02D03F343C6379128850B62A4B76FEAC075F5FC4910"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/4f441737fda7453683b63608e9fcdcb8/helper-49340.error",
+            "bytes": 663,
+            "sha256": "2693068554AC70AB458A528D3DF0401BD7EC21ABC78B25808704C9F2D3055EED"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/4f441737fda7453683b63608e9fcdcb8/helper-49340.exit.json",
+            "bytes": 63,
+            "sha256": "427E75C489FB0D1C9A61B7FD8962F93BC2695EEFF5B37EE6EAAA0F550870849D"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/4f441737fda7453683b63608e9fcdcb8/helper-49340.start.json",
+            "bytes": 695,
+            "sha256": "787924A053A8EC71F853A8011BF4097B828B38E0115E0AF05C51F71F19255F8B"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/4f441737fda7453683b63608e9fcdcb8/host-0.exit.json",
+            "bytes": 63,
+            "sha256": "73A3F77DBA6B511A764875C99CF0FD54A88B67BBDCDBD31F006427C57E218EE2"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/4f441737fda7453683b63608e9fcdcb8/host-0.start.json",
+            "bytes": 696,
+            "sha256": "29BA2AE75C5A0892E408DE45E8A9F8FFBC9AD737CC88022DCC9D87D74F7528D2"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/4f441737fda7453683b63608e9fcdcb8/startup-0.json",
+            "bytes": 84,
+            "sha256": "432B9C4C6D60DD5251BB3701D4E8E87EB22C86B7B3800E02BFDF29C794297627"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/8825c7b2db2b4221b6400971466bbc31/fixture-timing.json",
+            "bytes": 153,
+            "sha256": "D020BD5D876B907CC0EF639B571A5A69724148ACB80B84D553DA03499F0A701F"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/8825c7b2db2b4221b6400971466bbc31/host-0.exit.json",
+            "bytes": 63,
+            "sha256": "7A413FE4AFC7CA999E644B9588E7AF63AEC15807921D568436944A6A0AE3D07F"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/8825c7b2db2b4221b6400971466bbc31/host-0.start.json",
+            "bytes": 703,
+            "sha256": "46352FA9B72E9A1A0E7D13657750C7292467542B6FC5D211A17350A3510BEB91"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/8825c7b2db2b4221b6400971466bbc31/startup.json",
+            "bytes": 43,
+            "sha256": "9CAD3EEA999FA0F40BFF6BF86D594B94F83FE513289A315391976EF5D9C83FA7"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/fixture-timing.json",
+            "bytes": 153,
+            "sha256": "7061CC2D06FB770D385813763B296525EBB1A1C09380CC2C63A28A5F4B76636A"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/helper-45372.exit.json",
+            "bytes": 62,
+            "sha256": "D41BCC278A93715B03B546F7175C612FF4554D02589D6ED89A40051C19BA5264"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/helper-45372.start.json",
+            "bytes": 696,
+            "sha256": "52EC712F7C2732075AA9EC4DCE5F027981658B25B6EF84B5A4B4BE6C789DEBD3"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/helper-51672.exit.json",
+            "bytes": 63,
+            "sha256": "66C921530EE4F119850A14E68E99FB15D5541951CEF5BE3EF946040D0DB80B31"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/helper-51672.start.json",
+            "bytes": 696,
+            "sha256": "BD62C0CBD7D7A941CA366A15D6D5F4730D0DEFB312E245F37387FA5D9B595E15"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/host-0.exit.json",
+            "bytes": 62,
+            "sha256": "57EA57BFB5139285D285823F38CDC5D8AACEE496C765A62B7D942726515936C7"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/host-0.start.json",
+            "bytes": 697,
+            "sha256": "7D8910F4C4CF7971C917EE02FDF20F7F480811C3EE0C52847B372F2E551FC8BA"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/host-1.exit.json",
+            "bytes": 63,
+            "sha256": "6F7F1E18CE84A8CC37F59EE5FDBBDBD095E053A3B4BC3C9EAAAC1CD006D62DA2"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/host-1.start.json",
+            "bytes": 695,
+            "sha256": "DDDBA959D67583BBD8E06CF049AA38B1043927349CA662D9C681ABAD31E6CA8A"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/host-2.exit.json",
+            "bytes": 63,
+            "sha256": "5465FFC74A2340463F43E9A8445DFD58241CB57CCAA768B0F72D2DB348CC7118"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/host-2.start.json",
+            "bytes": 697,
+            "sha256": "607074D2FDCCC7452E10C73082728811DDBB79869772F0543DBF88FDF15431FD"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/startup-0.json",
+            "bytes": 83,
+            "sha256": "6CE3AB9E43D10E0D2A5679F23288E2675263D1924259A0F71590310D87B3F9FA"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/startup-1.json",
+            "bytes": 83,
+            "sha256": "96BD0C482FD78C99E39E61BA1B38E32A7E14778F435A4975ED91FDAD9F0D2705"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/startup-2.json",
+            "bytes": 83,
+            "sha256": "CB553C57236A2E5D70E6547335BC395A859F6D04605E6600F5BE4F91224CF5C4"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/state-0.json",
+            "bytes": 90,
+            "sha256": "6E53D48427607BC76AD5F0CD2FAAB2778F3A9F9DB7CB65B90F0220C86E45CE2B"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/state-1.json",
+            "bytes": 89,
+            "sha256": "B0017357B4C0F62234F12D5641262F19C5E93A661FC0D549B54A530BFB207C84"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/899ae81d9c614e4eb410c28db39f9ad5/state-2.json",
+            "bytes": 90,
+            "sha256": "57B6920DD6B374D40FB875C33D20309F3ED9A2530192B7817BD11D6F91313495"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/8cf7bc48b51c45e5801a63b4e265326e/fixture-timing.json",
+            "bytes": 153,
+            "sha256": "C6B6C8906A11776F8FD3850391F0ACA62A9151E7866A9E48216FEA1B083AB953"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/8cf7bc48b51c45e5801a63b4e265326e/host-0.exit.json",
+            "bytes": 63,
+            "sha256": "32B65E26B3E9661CC1B8BA927A937AB9BB9E7BB5D5A8EEDF10B201B89CE567F5"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/8cf7bc48b51c45e5801a63b4e265326e/host-0.start.json",
+            "bytes": 696,
+            "sha256": "3032523D13EE259B66D69074965DA72E218E3B909D39E15BECACC68A362F2EBC"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/8cf7bc48b51c45e5801a63b4e265326e/startup-0.json",
+            "bytes": 84,
+            "sha256": "71DA34730D19E1E69AA7A1A9E1FAD7C696C60D16B557EE41D252D2860CCC6AB8"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c035a0bcff414ffd9b051213d54e84b7/fixture-timing.json",
+            "bytes": 153,
+            "sha256": "451508ACD87EAC1E4A8269E62418ECCF8754A58A16B004775B6F49E938AEC684"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c035a0bcff414ffd9b051213d54e84b7/host-0.exit.json",
+            "bytes": 63,
+            "sha256": "4FAA08CBAADFC8A25D8B8EA03F96E33E4E9153257BEB1556C5EA66FBEE61ED86"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c035a0bcff414ffd9b051213d54e84b7/host-0.start.json",
+            "bytes": 700,
+            "sha256": "AE8EF91354A9FB2B06DC0D04B019098A24EE5CCB7E06E78AB2F4FBEF36414788"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c035a0bcff414ffd9b051213d54e84b7/startup-0.json",
+            "bytes": 84,
+            "sha256": "6C881B8FCAAEF0998C9F0216B8D47C27C9149AB415CC21EDD7C6CDCF1997650B"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c035a0bcff414ffd9b051213d54e84b7/startup-entered.json",
+            "bytes": 70,
+            "sha256": "8C2863FC1F88876C328EDF976439AC0F18202A599FDD6A87ADD89935FD8D5212"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c035a0bcff414ffd9b051213d54e84b7/startup-release.json",
+            "bytes": 2,
+            "sha256": "44136FA355B3678A1146AD16F7E8649E94FB4FC21FE77E8310C060F61CAAFF8A"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c035a0bcff414ffd9b051213d54e84b7/startup-responsive.json",
+            "bytes": 61,
+            "sha256": "702117E3EFFA0A062368C9F9CC2F6E023E094CEEEFDFC4849F2E1F8B621F01A4"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c035a0bcff414ffd9b051213d54e84b7/startup.json",
+            "bytes": 36,
+            "sha256": "C3443E771655694ED64566DBDF113A918485DE09666380CEEA14C258A62C956B"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c0faff601e5c4058a8f57a0e35f76b9f/fixture-timing.json",
+            "bytes": 153,
+            "sha256": "0390192A5FAEF83AB596491BFD4156562042A210753ADDE142F336254CFBE7E0"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c0faff601e5c4058a8f57a0e35f76b9f/helper-22400.exit.json",
+            "bytes": 63,
+            "sha256": "D7F59337BCF919B6A41BCB1955135E794CF15256C0D57156E60E7DEF19F8EBD4"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c0faff601e5c4058a8f57a0e35f76b9f/helper-22400.start.json",
+            "bytes": 692,
+            "sha256": "46A879550B395ACFFF7022A3B0EE07ADDD5EA07202B6A346ED09ECE0EE3A0CD3"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c0faff601e5c4058a8f57a0e35f76b9f/host-0.start.json",
+            "bytes": 693,
+            "sha256": "62C4906B36D66FA4214D539E02EFC226AC0C31FFEC285C76717D1C2E365D0A8D"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c0faff601e5c4058a8f57a0e35f76b9f/startup-0.json",
+            "bytes": 84,
+            "sha256": "DC5EC464A51428098313F7E18AC81AE8CE379EC6386098B0E13B6351BE0D53C7"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c34afee6b7144daa9a9a6b4432a04116/fixture-timing.json",
+            "bytes": 153,
+            "sha256": "B5A2155D4F22D3FF1CFEB1E09C397CD3555E8056BE6FF167A7A909427E7DD70E"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c34afee6b7144daa9a9a6b4432a04116/host-0.exit.json",
+            "bytes": 63,
+            "sha256": "4B90C134EC7A0A75BEC711E19CF68919002FF6DC88CCE23461C8CC9FA5462F70"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c34afee6b7144daa9a9a6b4432a04116/host-0.start.json",
+            "bytes": 703,
+            "sha256": "DA0BA111092E0F39F6C62387E8770A89D2D4B92D1EBEE6EB0E0847A9DA12A27C"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c34afee6b7144daa9a9a6b4432a04116/startup-0.json",
+            "bytes": 84,
+            "sha256": "ADA78B8D8354F6E4587D7E224D3EAF5D1AC29C084AF4F130FD1A18AD6F021850"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c34afee6b7144daa9a9a6b4432a04116/startup.json",
+            "bytes": 35,
+            "sha256": "15D2C0268033CF74FD8E6E7367910CDEBF198D44F86A6858A597B483AEFB559B"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c6a53a96e54447dc911f77a77bcef710/fixture-timing.json",
+            "bytes": 152,
+            "sha256": "F822681C8241A807E0286A459E790C574DC90AF931601DD69F0D8DD1E39237E9"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c6a53a96e54447dc911f77a77bcef710/helper-54248.exit.json",
+            "bytes": 63,
+            "sha256": "377EFFA2A05E404FD5628AFDD40D1A6F61F4A9CD69A606528D44F6D0A3E74362"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c6a53a96e54447dc911f77a77bcef710/helper-54248.start.json",
+            "bytes": 699,
+            "sha256": "9310A3668DC6FBA5F6D096AFF63E9D0476A5EE310F15A3944973DA08EC5C9329"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c6a53a96e54447dc911f77a77bcef710/host-0.exit.json",
+            "bytes": 63,
+            "sha256": "95E199067E686797EEB9F3CA40627F33B82E5030CE3DE460FA5BB8F5DCEF5EB6"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c6a53a96e54447dc911f77a77bcef710/host-0.start.json",
+            "bytes": 700,
+            "sha256": "2D0980FA39835411843B94E22D88F70BAE3731083A7BF2B48F191AEE7F0E87B4"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c6a53a96e54447dc911f77a77bcef710/host-1.exit.json",
+            "bytes": 63,
+            "sha256": "731E3286F8598897CC1AC90802402D08386B94628B3EE46A78C8597E0DD64CE9"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c6a53a96e54447dc911f77a77bcef710/host-1.start.json",
+            "bytes": 700,
+            "sha256": "A907D479BD5EB663D05DA7D85B44D3CB37B63C79CB6A4C32771F148B8BBE7F1B"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c6a53a96e54447dc911f77a77bcef710/release.json",
+            "bytes": 2,
+            "sha256": "44136FA355B3678A1146AD16F7E8649E94FB4FC21FE77E8310C060F61CAAFF8A"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c6a53a96e54447dc911f77a77bcef710/startup-0.json",
+            "bytes": 84,
+            "sha256": "998D11EB15BF16AD8D09558ABE023B7ECABA9B0CFFAAC41F61553312AD3C7C85"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/c6a53a96e54447dc911f77a77bcef710/startup-1.json",
+            "bytes": 84,
+            "sha256": "CB5C8B53E4C2DAA4F29B3F288A0BCFF3CC6344BABCBADBD6AAC5A452DF315F82"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cc9c38dd40ee4370ae0bff73c9ba8f56/fixture-timing.json",
+            "bytes": 153,
+            "sha256": "04318A064089FEF65E8337823B4501317493EB68D862325AA7A8FAAFF81EDEA6"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cc9c38dd40ee4370ae0bff73c9ba8f56/host-0.exit.json",
+            "bytes": 63,
+            "sha256": "7D13DE24EE2D443CF2008B778ABF553EEEF9BD9D45C4474A6585219E9B11D75E"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cc9c38dd40ee4370ae0bff73c9ba8f56/host-0.start.json",
+            "bytes": 701,
+            "sha256": "483D61945AE52B0ABE19ACAA511A38C3D1D5E11AE80C73EA9AC3FE83E22F3742"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cc9c38dd40ee4370ae0bff73c9ba8f56/startup-0.json",
+            "bytes": 83,
+            "sha256": "B47A3CBC364B8DD522CEE1E827F7B97F800E289A8117620056CFD7EFEFFDA8A4"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cc9c38dd40ee4370ae0bff73c9ba8f56/startup.json",
+            "bytes": 36,
+            "sha256": "C3443E771655694ED64566DBDF113A918485DE09666380CEEA14C258A62C956B"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cef6d81af19c496cb8ece3b102fe3543/fixture-timing.json",
+            "bytes": 153,
+            "sha256": "AA9913A08E21B05662F439B427E08C94264005812CABAD4A957AE36642177A0C"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cef6d81af19c496cb8ece3b102fe3543/host-0.exit.json",
+            "bytes": 62,
+            "sha256": "CDE0466FA6519FC1C7A1422AA4C3F665ADA5C4B9FE9850E22898D25A7927C8F2"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cef6d81af19c496cb8ece3b102fe3543/host-0.start.json",
+            "bytes": 702,
+            "sha256": "762E72B5C413C2C218260CD57D7348A6F40A79A0F5390A4B5231C4D11271E94E"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cef6d81af19c496cb8ece3b102fe3543/startup.json",
+            "bytes": 38,
+            "sha256": "E0B752AF356C0B6C48D94D3E39D661AD9FB0DC7023DEF7EBEE1B18FD2A19E853"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cfbda33a3e5f4075b4756e4d0603e6a2/cancelled.json",
+            "bytes": 16,
+            "sha256": "B0094935A71875FF4CC11169731B8A851F93A9EE94AD3B635496FC93695D7F19"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cfbda33a3e5f4075b4756e4d0603e6a2/fixture-timing.json",
+            "bytes": 153,
+            "sha256": "30F38BA202CCA1AE05DD4C9E1D0957814B003846FF85476EFE739B86CF4ABADF"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cfbda33a3e5f4075b4756e4d0603e6a2/helper-30532.exit.json",
+            "bytes": 63,
+            "sha256": "A52333BAA32EF61B9D292867D32DA4AA47B6AFECD21ECF15B4B1DA096430E5EC"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cfbda33a3e5f4075b4756e4d0603e6a2/helper-30532.start.json",
+            "bytes": 692,
+            "sha256": "B684B5843C3F52E460609EEC5B0AF8E6278B7DB3EC9B13152BEE430E8E9C1206"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cfbda33a3e5f4075b4756e4d0603e6a2/host-0.exit.json",
+            "bytes": 63,
+            "sha256": "B6F415B25839816BE069A5413E48B87B6913884A32BAD8A8ECC79B0B7418ED77"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cfbda33a3e5f4075b4756e4d0603e6a2/host-0.start.json",
+            "bytes": 694,
+            "sha256": "B775CA335202417FDE2336305F0F1953150FF3F6BBA886FC68CC6385745FEDE5"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/restart/cfbda33a3e5f4075b4756e4d0603e6a2/startup-0.json",
+            "bytes": 84,
+            "sha256": "FFA4E1A5D209ACAF593AD854376BF524592E78241DEDAB1D78136AA7F53EC633"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/plugin-enablement/507721841fc4458781f9325288303cbc/phase-0.json",
+            "bytes": 141,
+            "sha256": "21E70480646386CA61B2FE202F59B1F530C92A9B992252D013721C7837CD9324"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/plugin-enablement/507721841fc4458781f9325288303cbc/phase-1.json",
+            "bytes": 64,
+            "sha256": "87685A3101E0CCEB200684568CE53C28FE06F2C7BAF834A412665A427653C332"
+          },
+          {
+            "path": "pass-1/tests/host-plugin/attachments/plugin-enablement/507721841fc4458781f9325288303cbc/phase-2.json",
+            "bytes": 141,
+            "sha256": "14B7FF70A4B202F522175754CA6B19AD48EC44ED411025E378990B5CF2072A9D"
+          }
+        ]
+      },
+      {
+        "suite": "host-ui",
+        "files": [
+          {
+            "path": "pass-1/tests/host-ui/attachments/cognitive-ux/palette-empty-dark.png",
+            "bytes": 56319,
+            "sha256": "528BB853E1DC53A67E6A29E3A18FD09A5C480BFEA6DCC5CC537D26390F869A63"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/cognitive-ux/palette-empty-light.png",
+            "bytes": 54290,
+            "sha256": "EDC8B46AAB57A364B5661E25B0DA7522BC4C9114C30EB8AB0417611D94DD688D"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/cognitive-ux/palette-failure.png",
+            "bytes": 93327,
+            "sha256": "14399F2C16F685C7C2AA5C96EF31C8A01EB3D92B0AD96199975F586D1551D5EF"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/cognitive-ux/palette-long-dark.png",
+            "bytes": 129697,
+            "sha256": "476416E8931D39453B94715B2F6037BDD08EF7CFF1E4DC0D4432DD81CABF70D1"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/cognitive-ux/palette-long-light.png",
+            "bytes": 128113,
+            "sha256": "42E62B7A2934559FB556E12A4240DC398CEE38FD6E107B4D6F1E66F0DD85759A"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/cognitive-ux/palette-success.png",
+            "bytes": 8138,
+            "sha256": "63649FA92AB9968A27C5CE9648F7B0D6370F861D826C167E600B815FE378571F"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/command-palette/palette-v18-dark.png",
+            "bytes": 36015,
+            "sha256": "20E531CC11EA19CFABB141761805482174BF3BED1127017788120D2988F34B28"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/command-palette/palette-v18-light.png",
+            "bytes": 37480,
+            "sha256": "1A5F6D4E8BBCF1EBEB3F4326D19BE46679AF5EBFF940E0703F722B5E19EFD2CC"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/navigation/function-center-dark.png",
+            "bytes": 39693,
+            "sha256": "DEF374BD0F3A382AFDCB037F61F30A4DE2F911ACED8641FB79D8DE71975C8450"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/navigation/function-center-light.png",
+            "bytes": 41587,
+            "sha256": "1F697A4CF96EA7C1CEA354AD141820CBD2D9C52622B53B875E23796CE469B56A"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/navigation/tool-legacy-light.png",
+            "bytes": 17132,
+            "sha256": "99FD3DD6F0BEAFF3F4F23B51AC5435CE1E2BB045D73C98C42E2469175D89804E"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/navigation/tool-tree-dark.png",
+            "bytes": 29948,
+            "sha256": "306A47DDAA1CB6B371CB2A67B001B8D37922FFEE84DFA5A6C3EE124E123C1EEF"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/navigation/tool-tree-light.png",
+            "bytes": 27290,
+            "sha256": "89E6D7AC205833839B848D64E3853205D3443DE63668C3818C7BF9905803E97A"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/plugin-enablement/enablement-dark.png",
+            "bytes": 44520,
+            "sha256": "F87C12775B9E9F0E6CC74F5C94D18829DAED33DF6BBEC81D434FB0645C0E60BF"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/plugin-enablement/enablement-light.png",
+            "bytes": 43126,
+            "sha256": "365C55C77EC21E5E1C0C3F588441FD9591E53B4FD31051D719DDFB14DC8DC0EE"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/plugin-status/plugin-status-compact.png",
+            "bytes": 42006,
+            "sha256": "96C6AD658C45947BD4122971B3D804F8E283A9E65925403AE466681DA6BD8A32"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/plugin-status/plugin-status-dark.png",
+            "bytes": 63410,
+            "sha256": "4975F37A90C4846BF1EF7A29BC04D62E5FE2367C269E29BC757DEF7521AD4B09"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/plugin-status/plugin-status-diagnostics.png",
+            "bytes": 56119,
+            "sha256": "37E5E87BC4C92F7D5308FAED54875E3450E6EB65F7950158DE420B1F3D72E216"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/plugin-status/plugin-status-light.png",
+            "bytes": 60125,
+            "sha256": "D099028D8DFAD62A5A988C3E87DEAFB5E89B760B2BF873CC0FFF8EA6A3B1266D"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/startup-splash/splash-dark.png",
+            "bytes": 21693,
+            "sha256": "75E0F887D7613E27AC799D4C60D03936CC858217182498C302654DE29F444598"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/startup-splash/splash-light.png",
+            "bytes": 21775,
+            "sha256": "024A3058ECFB9879C34531A429BD62F09855ED6CDA8D9C7804F29292FDA03FAB"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/tool-center/tool-center-100-tools.png",
+            "bytes": 54906,
+            "sha256": "D8F6F840C5C66ACC1ADBAD4A9DEC0C765B0D8299EF165818607DDDDCE633C6C4"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/tool-center/tool-center-compact.png",
+            "bytes": 38382,
+            "sha256": "164FED1C268A214BBBB17987121388C171AB3945D0267A780410B0D1AD30BB0D"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/tool-center/tool-center-dark.png",
+            "bytes": 40554,
+            "sha256": "7168A1D1CA48E1AC7BD08FF6E41FC3D19039ECFB63D68ECEF7816B48EA864D81"
+          },
+          {
+            "path": "pass-1/tests/host-ui/attachments/tool-center/tool-center-light.png",
+            "bytes": 40793,
+            "sha256": "4C4A726DB2C8AD9A9EAE323A2BD8FBE502899E38811441240F160CE3E8F30878"
+          }
+        ]
+      },
+      {
+        "suite": "my-plug-test",
+        "files": []
+      },
+      {
+        "suite": "my-plug-test-package",
+        "files": []
+      }
+    ],
+    "restartCleanup": {
+      "fixtures": 15,
+      "remainingDirectories": 0
+    },
+    "postRunRecordNote": "门禁验证的源码为 summary.sources.main.revision；后续仅补录非嵌入 JSON，没有修改代码或 Markdown。"
+  },
+  "documentation": {
+    "links": {
+      "files": 22,
+      "links": 553,
+      "errors": [],
+      "checks": [
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/README.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/archive/records/host-v19/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/archive/records/host-v19/local-deployment-20260921.json",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/archive/plans/host-v20-layout-retirement-plan.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/archive/records/host-v20/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "design/architecture.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "design/design-methodology-and-tradeoffs.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "reference/compatibility-contracts.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/reference/platform-baseline.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/maintenance/verification.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/maintenance/host-v18-command-palette-verification.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/archive/plans/host-v19-complexity-reduction-plan.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/maintenance/host-v19-complexity-verification.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/archive/records/host-v19/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/archive/plans/host-v20-layout-retirement-plan.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/maintenance/host-v20-layout-retirement-verification.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/maintenance/local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/archive/README.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/README.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/roadmap/README.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/README.md",
+          "target": "../../../docs/maintenance/documentation.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "architecture.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../reference/compatibility-contracts.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "architecture.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/archive/records/host-v19/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/archive/plans/host-v20-layout-retirement-plan.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/archive/records/host-v18/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/archive/plans/host-v17-readability-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/maintenance/host-v17-readability-verification.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/reference/host-restart.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/maintenance/verification.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/roadmap/README.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/reference/dock-layout-snapshot-v3.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/archive/records/host-v11/p1-tool-split-fix.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/archive/records/host-v11/p2-tool-window-close-fix.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/maintenance/dock-area-fill-verification.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/archive/records/host-v12/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/archive/records/host-v13/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/archive/records/host-v15/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/archive/plans/host-v16-document-floating-close-and-creation-target-plan.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/maintenance/host-v16-document-window-verification.md",
+          "exists": true
+        },
+        {
+          "source": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "target": "../../../../docs/archive/records/host-v21/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "Directory.Version.props",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/README.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "patches/avalonia-cross-window-layout/README.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "patches/dock-area-fill/README.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/reference/platform-baseline.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/quick-start/macos-experiment.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/archive/records/host-v19/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/maintenance/local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/archive/plans/host-v20-layout-retirement-plan.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/archive/records/host-v20/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/archive/records/host-v20/local-deployment-guide.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/archive/records/host-v21/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "global.json",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/maintenance/verification.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/quick-start/workbench-search.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/quick-start/floating-windows-and-layout.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/quick-start/README.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "Host/MyAvaloniaManagement/docs/README.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/roadmap/README.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/maintenance/host-v18-command-palette-verification.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "docs/archive/README.md",
+          "exists": true
+        },
+        {
+          "source": "README.md",
+          "target": "LICENSE",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "reference/platform-baseline.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "maintenance/documentation.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/records/host-v20/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "maintenance/local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/startup.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/workbench-search.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/plugin-navigation-and-function-center.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/floating-windows-and-layout.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/tool-center.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/plugin-status.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/restart-host.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/macos-experiment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/README.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/create-managed-plugin.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/add-document-and-tool.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/verification-and-troubleshooting.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/plugin-icons.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/workflow-action-development.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/host-v9-upgrade.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "reference/workbench-commands.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "../Host/MyAvaloniaManagement/docs/README.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "reference/host-startup.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "reference/plugin-enablement.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "reference/host-restart.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "reference/document-persistence.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "reference/dock-layout-snapshot-v3.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "quick-start/floating-windows-and-layout.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "reference/workbench-commands.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "reference/workflow-actions.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "reference/plugin-sdk-api-compatibility.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "reference/plugin-compatibility.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "maintenance/verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "maintenance/local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "maintenance/nuget-release.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "maintenance/documentation.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/records/host-v21/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/plans/host-v20-layout-retirement-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "maintenance/host-v20-layout-retirement-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/records/host-v20/test-matrix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/records/host-v20/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/plans/host-v19-complexity-reduction-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "maintenance/host-v19-complexity-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/records/host-v19/test-matrix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/records/host-v19/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/plans/host-v18-command-palette-interaction-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "maintenance/host-v18-command-palette-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/records/host-v18/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "roadmap/README.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/README.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "archive/records/documentation/reorganization-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "theory/attention-centered-dock-workspace-design.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "theory/activity-theory-requirements-decomposition.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "theory/约束驱动的软件工业化.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "theory/ai-enabled-forkable-software-bases.md",
+          "exists": true
+        },
+        {
+          "source": "docs/README.md",
+          "target": "maintenance/documentation.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "../README.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "../roadmap/README.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "../maintenance/local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v21-gate-and-test-efficiency-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v21/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v21/test-matrix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "../maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v20-layout-retirement-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v20/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v20/test-matrix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "../maintenance/host-v20-layout-retirement-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v19-complexity-reduction-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v19/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v19/test-matrix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-dock-area-fill-implementation-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-document-cross-window-layout-crash-fix-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v11-floating-windows-and-layout-v3-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v11-p1-tool-split-fix-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v11-p2-tool-window-close-fix-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v12-internal-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v13-plugin-enablement-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v14-automatic-restart-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v15-startup-splash-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v16-document-floating-close-and-creation-target-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v17-readability-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v18-command-palette-interaction-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/ai-workflow-plugin-exploration.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/avalonia-dock-upgrade-assessment-20260916.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-plugin-architecture-review.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v1-sealing-readiness-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v2-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v3-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v4-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v5-lifecycle-ownership-repair-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v6-plugin-navigation-and-function-center-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v6.1-extensible-icon-contributions-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v7-tool-center-and-visibility-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v8-cognitive-ux-convergence-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v9-avalonia-dock-upgrade-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/host-v10-plugin-compatibility-and-dashboard-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/plugin-status-window.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "plans/workbench-command-introduction-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "specifications/dock-layout-snapshot-v2.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "specifications/dock-layout-snapshot-v1.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "specifications/document-persistence-v1-design.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/documentation/reorganization-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host/manual-acceptance-20260920.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/documentation/reorganization-20260920.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/documentation/reorganization-20260916.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v21/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v21/development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v21/test-matrix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v21/test-mapping.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v20/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v20/development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v20/test-matrix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v20/local-deployment-guide.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v20/local-deployment-20260921.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v19/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v19/development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v19/test-matrix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v19/local-deployment-guide.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v19/local-deployment-20260921.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v18/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v18/final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v18/local-deployment-20260921.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v18/local-deployment-with-v19-plan-20260921.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v17/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v17/final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v17/local-deployment-20260920.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v16/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v16/final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v16/local-deployment-20260920.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v15/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v15/final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v15/local-deployment-20260920.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v15/local-deployment-guide.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v14/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v14/final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v14/local-deployment-20260919.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v14/local-deployment-guide.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v13/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v13/final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v13/local-deployment-20260919.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v13/local-deployment-guide.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v12/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v12/final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v12/local-deployment-20260917.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/dock-area-fill/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/dock-area-fill/cross-window-layout-fix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/dock-area-fill/cross-window-layout-fix-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/dock-area-fill/cross-window-layout-deployment-20260917.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/dock-area-fill/development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/dock-area-fill/local-deployment-20260917.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/dock-area-fill/cross-window-layout-crash-20260917.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v11/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v11/final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v11/p1-tool-split-fix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v11/p1-final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v11/p2-tool-window-close-fix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v11/p2-final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v10/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v10/old-plugin-inputs.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v10/final-compatibility-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g0-green-baseline.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g1-support-boundary-and-version-lines.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g10-host-internal-coordination.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g11-low-value-public-surface-cleanup.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g12-unified-plugin-build-and-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g13-plugin-sdk-api-compatibility-baseline.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g14-windows-release-gate.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g15-host-diagnostic-redaction.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g16-documentation-and-v1-baseline.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g2-host-api-surface.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g3-plugin-sdk-and-ui-profile.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g4-managed-only-plugin-loading.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g5-explicit-contributions-and-plugin-registry.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g6-host-di-protection.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g7-document-envelope-v1.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g8-document-content-persistence-contract.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v1/g9-sdk-event-bus.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v2/g0-green-baseline.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v2/g1-version-and-data-boundaries.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v2/g13-remove-v1-production-surface.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v2/g14-v2-sealing.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v2/g2-plugin-sdk-rebuild.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v2/g3-manifest-v2-and-build-protocol.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v2/g4-per-plugin-containers.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v2/g5-declarative-contribution-catalog.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v2/g6-host-dock-adapter.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v2/g7-document-v2.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v2/g8-layout-and-lifecycle-v2.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v2/g9-my-plug-test-v2.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v3/g0-green-baseline.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v3/g1-version-and-data-boundaries.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v3/g13-remove-v2-production-surface.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v3/g14-v3-sealing.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v3/g2-revisioned-document-save.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v3/g3-exclusive-document-activation.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v3/g4-plugin-registration-ownership.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v3/g5-plugin-private-messaging.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v3/g6-workspace-session-and-dock-factory.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v3/g7-host-catalog-and-plugin-registry.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v3/g9-my-plug-test-v3-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v4/g0-v3-source-baseline.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v4/g1-remove-dead-host-surface.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v4/g2-strongly-typed-identity-and-use-case-entry.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v4/g3-layout-responsibility-alignment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v4/g4-document-control-recycling-ownership.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v4/g5-domain-helper-migration.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v4/g6-file-system-path-and-presentation-model.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v4/g7-four-plugins-harness-documentation-regression.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v4/g8-v4-sealing.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v5/lifecycle-ownership-repair-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v6/plugin-navigation-and-function-center-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v6.1/external-plugin-icons-upgrade.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v6.1/icon-contributions-and-resources-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v7/tool-center-and-visibility-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v8/cognitive-ux-convergence-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v8/local-deployment-20260912.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v9/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v9/generated-artifacts-cleanup.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/host-v9/nuget-unified-3.4.1-release.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/net10/phase-0-baseline.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/net10/phase-1-governance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/net10/phase-2-net10-foundation.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/net10/phase-3-plugin-dependencies.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/net10/phase-4-avalonia12-libvlc-gate.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/plugin-packaging/distribution-baseline-20260828.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/plugin-status/window-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workbench-command/g0-facts-semantics-public-api.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workbench-command/g1-command-contracts-registration-declarations.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workbench-command/g10-cross-repository-integration-sealing.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workbench-command/g2-command-catalog-executor.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workbench-command/g3-context-active-document-target-routing.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workbench-command/g4-host-open-save-presentation-loop.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workbench-command/g5-declarative-menu-keybinding-projection.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workbench-command/g6-sdk-candidate-template-independent-consumption.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workbench-command/g7-workflow-studio-three-real-commands.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workbench-command/g8-classic-game-multi-instance-commands.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workbench-command/g9-minimal-command-palette.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workflow-action/g1-host-workflow-action-kernel.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workflow-action/g2-sdk-build-external-template-propagation.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workflow-action/g3-workflow-studio-fake-action-loop.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workflow-action/g3.1-template-1.2-publication.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workflow-action/g3.1-workflow-protocol-consistency.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/workflow-action/g5-dual-role-governance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "../../TestResults/Phase4/NO-GO.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/README.md",
+          "target": "records/documentation/reorganization-20260916.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "target": "../records/host-v21/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "target": "../../maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "target": "../../maintenance/verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "target": "../records/host-v20/development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement.PluginTests/HostRestartProcessTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement.UiTests/TestAppBuilder.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "target": "../../../tools/MyAvaloniaManagement.Gate/GateApplication.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "target": "../../../tools/MyAvaloniaManagement.Gate/TestEvidenceReader.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "target": "../../maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../README.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../records/host-v8/cognitive-ux-convergence-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "host-v6-plugin-navigation-and-function-center-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "host-v7-tool-center-and-visibility-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "plugin-status-window.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../theory/attention-centered-dock-workspace-design.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/docs/design/architecture.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../specifications/dock-layout-snapshot-v2.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/ViewModels/Welcome/WelcomeViewModel.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/Views/FunctionCenter/FunctionCenterWindow.axaml",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/Business/Presentation/FunctionCenterWindowService.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkbenchCommandPaletteProjection.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/Business/Workspace/DocumentCreationDirectory.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/Views/ToolCenter/ToolCenterWindow.axaml",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/Models/Tools/ToolWorkspaceState.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/Business/Docking/HostDockFactory.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/Business/Docking/ManagedDocumentDockable.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/Business/Help/HelpContentCatalog.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/HostWorkbenchCommandPresentation.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Directory.Version.props",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../tools/MyAvaloniaManagement.Gate/gate.config.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement.Tests/coverage.runsettings",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../README.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../README.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../quick-start/plugin-navigation-and-function-center.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../quick-start/tool-center.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/HelpContent/workbench.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/HelpContent/product.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "target": "../../../Host/MyAvaloniaManagement/docs/design/architecture.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/records/host-v21/development-acceptance.md",
+          "target": "development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/records/host-v21/development-acceptance.md",
+          "target": "test-matrix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/records/host-v21/test-matrix.md",
+          "target": "../../../maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/records/host-v21/test-matrix.md",
+          "target": "test-mapping.json",
+          "exists": true
+        },
+        {
+          "source": "docs/archive/records/host-v21/test-matrix.md",
+          "target": "development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/floating-layout-verification.md",
+          "target": "../archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/floating-layout-verification.md",
+          "target": "local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/floating-layout-verification.md",
+          "target": "dock-area-fill-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/floating-layout-verification.md",
+          "target": "../archive/records/host-v11/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/floating-layout-verification.md",
+          "target": "../quick-start/floating-windows-and-layout.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/floating-layout-verification.md",
+          "target": "../roadmap/README.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/floating-layout-verification.md",
+          "target": "../archive/records/host-v11/p1-tool-split-fix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/floating-layout-verification.md",
+          "target": "../archive/records/host-v11/p2-tool-window-close-fix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/floating-layout-verification.md",
+          "target": "../archive/records/host-v11/p2-final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/floating-layout-verification.md",
+          "target": "../archive/records/host-v11/p1-final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/floating-layout-verification.md",
+          "target": "host-v21-gate-and-test-efficiency-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v12-refactor-verification.md",
+          "target": "../archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v12-refactor-verification.md",
+          "target": "local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v12-refactor-verification.md",
+          "target": "../archive/plans/host-v12-internal-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v12-refactor-verification.md",
+          "target": "../archive/records/host-v12/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v12-refactor-verification.md",
+          "target": "../archive/records/host-v12/final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v12-refactor-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v12-refactor-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/gate.config.json",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v12-refactor-verification.md",
+          "target": "verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v12-refactor-verification.md",
+          "target": "verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v13-plugin-enablement-verification.md",
+          "target": "../archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v13-plugin-enablement-verification.md",
+          "target": "local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v13-plugin-enablement-verification.md",
+          "target": "../archive/plans/host-v13-plugin-enablement-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v13-plugin-enablement-verification.md",
+          "target": "../archive/records/host-v13/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v13-plugin-enablement-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v13-plugin-enablement-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/gate.config.json",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v13-plugin-enablement-verification.md",
+          "target": "verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v13-plugin-enablement-verification.md",
+          "target": "../reference/plugin-enablement.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v14-automatic-restart-verification.md",
+          "target": "../archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v14-automatic-restart-verification.md",
+          "target": "local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v14-automatic-restart-verification.md",
+          "target": "../archive/records/host-v14/final-development-evidence.json",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v14-automatic-restart-verification.md",
+          "target": "../archive/plans/host-v14-automatic-restart-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v14-automatic-restart-verification.md",
+          "target": "verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v14-automatic-restart-verification.md",
+          "target": "../reference/plugin-enablement.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v14-automatic-restart-verification.md",
+          "target": "../archive/records/host-v14/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v14-automatic-restart-verification.md",
+          "target": "host-v21-gate-and-test-efficiency-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v15-startup-verification.md",
+          "target": "../archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v15-startup-verification.md",
+          "target": "local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v15-startup-verification.md",
+          "target": "../archive/records/host-v15/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v15-startup-verification.md",
+          "target": "host-v21-gate-and-test-efficiency-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v16-document-window-verification.md",
+          "target": "../archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v16-document-window-verification.md",
+          "target": "local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v16-document-window-verification.md",
+          "target": "../archive/records/host-v16/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v16-document-window-verification.md",
+          "target": "../archive/plans/host-v16-document-floating-close-and-creation-target-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v16-document-window-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v16-document-window-verification.md",
+          "target": "verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v17-readability-verification.md",
+          "target": "../archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v17-readability-verification.md",
+          "target": "local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v17-readability-verification.md",
+          "target": "../archive/records/host-v17/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v17-readability-verification.md",
+          "target": "../archive/plans/host-v17-readability-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v17-readability-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v17-readability-verification.md",
+          "target": "verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v17-readability-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/coverage-baseline.json",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v17-readability-verification.md",
+          "target": "../archive/records/host-v17/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v18-command-palette-verification.md",
+          "target": "../archive/records/host-v18/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v18-command-palette-verification.md",
+          "target": "../archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v18-command-palette-verification.md",
+          "target": "../archive/plans/host-v18-command-palette-interaction-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v18-command-palette-verification.md",
+          "target": "../quick-start/workbench-search.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v18-command-palette-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v18-command-palette-verification.md",
+          "target": "verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../archive/records/host-v19/test-matrix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../archive/records/host-v19/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../archive/plans/host-v19-complexity-reduction-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../archive/records/host-v19/local-deployment-20260921.json",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/DocumentCloseTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/DockWindowCloseTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/WorkbenchCommandDocumentTargetTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/DocumentWindowV16UiTests.Close.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/HostRestartUiTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/DocumentPersistenceTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/WorkspaceSessionAndDockFactoryTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.PluginTests/DocumentScopeManagerTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/DocumentOperationShutdownTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/DocumentWindowV16UiTests.Creation.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/WorkbenchCommandCatalogExecutorTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/WorkbenchCommandContextStateTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/ServiceAndModelTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.PluginTests/HostLifecycleOwnershipTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/StartupSplashUiTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/CommandPaletteV18TargetTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/PluginNavigationTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/CognitiveUxV8Tests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/WorkspaceLayoutQuerySnapshotTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/CommandPaletteV18Tests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/CommandPaletteV18UiTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/ToolCenterTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/ToolViewModelTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/ToolCenterUiTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/DockToolWindowCloseUiTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/AutoHideRestoreVisualTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/DockLayoutV3UiTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v19-complexity-verification.md",
+          "target": "../archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../archive/records/host-v20/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../archive/records/host-v20/test-matrix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../archive/plans/host-v20-layout-retirement-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../archive/records/host-v20/test-matrix.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/DockLayoutV3StoreTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/DockLayoutV3Tests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/DockLayoutV3BoundaryTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/DockLayoutSaveQueueTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.PluginTests/DockFourWayLayoutTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.PluginTests/DockLayoutAvailabilityTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/AutoHideRestoreVisualTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/ToolCenterUiTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/DockLayoutWorkspaceStateTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/DockLayoutV3UiTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/DockToolWindowCloseUiTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../tools/Verify-LayoutV3WriterLease.ps1",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/GateChecks.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate.Tests/MyAvaloniaManagement.Gate.Tests.csproj",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/ServiceAndModelTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/PluginNavigationTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/CognitiveUxV8Tests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.Tests/CommandPaletteV18Tests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.UiTests/PluginNavigationUiTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "target": "../archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "target": "../archive/records/host-v21/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "target": "verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.PluginTests/HostRestartProcessTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.PluginTests/PluginEnablementRestartTests.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "target": "../../Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate.Tests/MyAvaloniaManagement.Gate.Tests.csproj",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/DockPatchIdentity.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/TestEvidenceReader.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/GateOptions.cs",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../../tools/MyAvaloniaManagement.Gate/gate.config.json",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../../patches/avalonia-cross-window-layout/README.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../../patches/dock-area-fill/README.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "dock-cross-window-layout-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "plugin-compatibility-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../quick-start/host-v9-upgrade.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "floating-layout-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "dock-area-fill-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "dock-cross-window-layout-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "host-v12-refactor-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "plugin-compatibility-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "host-v13-plugin-enablement-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "host-v14-automatic-restart-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "host-v15-startup-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "host-v16-document-window-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "host-v17-readability-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "host-v18-command-palette-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../archive/records/host-v18/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "host-v19-complexity-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../archive/plans/host-v19-complexity-reduction-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../archive/records/host-v19/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../archive/plans/host-v20-layout-retirement-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "host-v20-layout-retirement-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../archive/records/host-v20/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "host-v21-gate-and-test-efficiency-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../archive/records/host-v21/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "floating-layout-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/maintenance/verification.md",
+          "target": "../reference/plugin-sdk-api-compatibility.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../archive/records/host/manual-acceptance-20260921.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../maintenance/local-deployment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../archive/records/host-v19/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../archive/records/host-v19/local-deployment-20260921.json",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../maintenance/host-v19-complexity-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../archive/plans/host-v19-complexity-reduction-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../archive/plans/host-v20-layout-retirement-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../archive/records/host-v20/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../archive/records/host-v21/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../archive/records/host-v20/development-acceptance.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../maintenance/verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../reference/plugin-sdk-api-compatibility.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../archive/records/host-v9/nuget-unified-3.4.1-release.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../maintenance/plugin-compatibility-verification.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../quick-start/macos-experiment.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../archive/plans/host-v17-readability-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "source": "docs/roadmap/README.md",
+          "target": "../archive/plans/ai-workflow-plugin-exploration.md",
+          "exists": true
+        }
+      ]
+    },
+    "embedded": {
+      "checkedAtUtc": "2026-09-21T11:01:07.8295116Z",
+      "files": [
+        {
+          "path": "Host/MyAvaloniaManagement/docs/README.md",
+          "bytes": 3587,
+          "sourceEqualsEmbedded": true,
+          "sha256": "572F669D9884079B2C06DEE7D195996EA47CF4257750A2777139A652B86AD968",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\Host__MyAvaloniaManagement__docs__README.md.html"
+        },
+        {
+          "path": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "bytes": 19207,
+          "sourceEqualsEmbedded": true,
+          "sha256": "D860418C402CE381BEDBB1C2D7762E8C76D3AA437D4E3C75A4D7F18B9EAE4189",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\Host__MyAvaloniaManagement__docs__design__design-methodology-and-tradeoffs.md.html"
+        },
+        {
+          "path": "README.md",
+          "bytes": 5346,
+          "sourceEqualsEmbedded": true,
+          "sha256": "DF201A5C30849B89E97FB1CDF5D6C96D085F07B93576C925E60B19439937C33F",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\README.md.html"
+        },
+        {
+          "path": "docs/README.md",
+          "bytes": 7122,
+          "sourceEqualsEmbedded": true,
+          "sha256": "D90812D1415869889BD210245D43D39C286E9B3F989BDD4F5F8C3D2E8CAD4980",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__README.md.html"
+        },
+        {
+          "path": "docs/archive/README.md",
+          "bytes": 20453,
+          "sourceEqualsEmbedded": true,
+          "sha256": "26939DD656B60B4407A85B6D81DD06B7602DDDAA7B27DB51D0C8D24E1D4EDC97",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__archive__README.md.html"
+        },
+        {
+          "path": "docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md",
+          "bytes": 21275,
+          "sourceEqualsEmbedded": true,
+          "sha256": "093EC6C6D704873564B69081F43CC19A7F060A3237E8F571177D17C04062BDD5",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__archive__plans__host-v21-gate-and-test-efficiency-plan.md.html"
+        },
+        {
+          "path": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "bytes": 45247,
+          "sourceEqualsEmbedded": true,
+          "sha256": "44694FCCDC972B2DA28B5C5EC0C2404356DF1FC31A4BB54C9D1E686D728652E5",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__archive__plans__host-v8-cognitive-ux-convergence-plan.md.html"
+        },
+        {
+          "path": "docs/archive/records/host-v21/development-acceptance.md",
+          "bytes": 7525,
+          "sourceEqualsEmbedded": true,
+          "sha256": "539BF24E8D97317AF3C3B38B7E7F114FE5CE98690A9B2042C0696B8E0126B85A",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__archive__records__host-v21__development-acceptance.md.html"
+        },
+        {
+          "path": "docs/archive/records/host-v21/test-matrix.md",
+          "bytes": 6331,
+          "sourceEqualsEmbedded": true,
+          "sha256": "2EC96B0FCB734836D18AB04EB2AEDF3C5958CA8A1B724A0BC468EB383CBA9A89",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__archive__records__host-v21__test-matrix.md.html"
+        },
+        {
+          "path": "docs/maintenance/floating-layout-verification.md",
+          "bytes": 9156,
+          "sourceEqualsEmbedded": true,
+          "sha256": "DE43873791DAEFB10C56D0992A22A9AE32309C54F52A6903775DA490B6C0145D",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__maintenance__floating-layout-verification.md.html"
+        },
+        {
+          "path": "docs/maintenance/host-v12-refactor-verification.md",
+          "bytes": 23323,
+          "sourceEqualsEmbedded": true,
+          "sha256": "865E0970C3AD80A67F3BA833BB1F26739FFE73B24433251807A74A76ADB502C1",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__maintenance__host-v12-refactor-verification.md.html"
+        },
+        {
+          "path": "docs/maintenance/host-v13-plugin-enablement-verification.md",
+          "bytes": 16186,
+          "sourceEqualsEmbedded": true,
+          "sha256": "E5B171BEBB3853ED8E90B434D5E8B22A9BFDF772D09499A3FA7623D663112733",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__maintenance__host-v13-plugin-enablement-verification.md.html"
+        },
+        {
+          "path": "docs/maintenance/host-v14-automatic-restart-verification.md",
+          "bytes": 23785,
+          "sourceEqualsEmbedded": true,
+          "sha256": "7CF941FA295630B8D3154773DF5B95DFD46615D17C9C62A52160E11CB50ACE3B",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__maintenance__host-v14-automatic-restart-verification.md.html"
+        },
+        {
+          "path": "docs/maintenance/host-v15-startup-verification.md",
+          "bytes": 6889,
+          "sourceEqualsEmbedded": true,
+          "sha256": "4C605F7807EE8C00E0791F46E1B7AE5AC9ED5EAB816AAE20FFD45BC27A522538",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__maintenance__host-v15-startup-verification.md.html"
+        },
+        {
+          "path": "docs/maintenance/host-v16-document-window-verification.md",
+          "bytes": 21080,
+          "sourceEqualsEmbedded": true,
+          "sha256": "77D0FBBE53F8300BAD40BB14E40E13F94FB6967F462506C17526FC9F201016AD",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__maintenance__host-v16-document-window-verification.md.html"
+        },
+        {
+          "path": "docs/maintenance/host-v17-readability-verification.md",
+          "bytes": 22617,
+          "sourceEqualsEmbedded": true,
+          "sha256": "56161891348D875FE8D621FF81EF29AFB85D29D0708FEF3ADE46F1BFC2AEBF8C",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__maintenance__host-v17-readability-verification.md.html"
+        },
+        {
+          "path": "docs/maintenance/host-v18-command-palette-verification.md",
+          "bytes": 26355,
+          "sourceEqualsEmbedded": true,
+          "sha256": "7BF52E30936882BF59DC03C369448912CB460E832F26BA3C72526CEF0E268251",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__maintenance__host-v18-command-palette-verification.md.html"
+        },
+        {
+          "path": "docs/maintenance/host-v19-complexity-verification.md",
+          "bytes": 24324,
+          "sourceEqualsEmbedded": true,
+          "sha256": "9A4678C468C0CABE7866ABA3ADC86D467C991B8585CA2FD8727126DC53AE3B7A",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__maintenance__host-v19-complexity-verification.md.html"
+        },
+        {
+          "path": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "bytes": 18726,
+          "sourceEqualsEmbedded": true,
+          "sha256": "D2614759C061E732381D48A8F3603C72DE499730343C149345CDF31390E4CD86",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__maintenance__host-v20-layout-retirement-verification.md.html"
+        },
+        {
+          "path": "docs/maintenance/host-v21-gate-and-test-efficiency-verification.md",
+          "bytes": 16545,
+          "sourceEqualsEmbedded": true,
+          "sha256": "F47C34C960A21C098892D155608A8758322C13A80DD39718912ADF8B5DED2D3A",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__maintenance__host-v21-gate-and-test-efficiency-verification.md.html"
+        },
+        {
+          "path": "docs/maintenance/verification.md",
+          "bytes": 8739,
+          "sourceEqualsEmbedded": true,
+          "sha256": "F5F578399BF9EA1329DDA76608CE4B719F419E4737CF1E0CE4CBDED1EA924197",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__maintenance__verification.md.html"
+        },
+        {
+          "path": "docs/roadmap/README.md",
+          "bytes": 5204,
+          "sourceEqualsEmbedded": true,
+          "sha256": "BE31E02267236E3631AE23AC3C2C17D5FC4A229B358CD5DA1CABAE96853F4BE1",
+          "rendered": true,
+          "htmlPath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\docs\\rendered\\docs__roadmap__README.md.html"
+        }
+      ],
+      "releaseGatesExecuted": false
+    },
+    "helpTests": [
+      {
+        "trx": "artifacts/host-v21/docs/unit/help-unit.trx",
+        "sha256": "DB85D32AC1636B7D8CA72D44E0832585DBA32285DB507DEA02807C0A489BF74B"
+      },
+      {
+        "trx": "artifacts/host-v21/docs/ui/help-ui.trx",
+        "sha256": "341BF5A852D62D8E90E41A22CFDC603E8F8AC9EA007656C49018FE43505AF03B"
+      }
+    ],
+    "toolingFailure": "首次临时嵌入审计脚本的 ConvertFrom-Json 元素为 PSObject，反射调用要求 String；显式转换后 22 篇全部通过，未修改产品代码。"
+  },
+  "finalAssemblies": [
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.dll",
+      "sha256": "09069633EA8E80E3C073A938F8FDBA7AE30ABED761935EE8CF350F202CC4B2B5"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/Avalonia.Base.dll",
+      "sha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement/bin/Release/net10.0/Dock.Avalonia.dll",
+      "sha256": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1"
+    }
+  ],
+  "ownedProcessAudit": {
+    "ownedProcessesStillAlive": [],
+    "receiptCount": 116,
+    "checkedAtUtc": "2026-09-21T11:00:05.8447685Z",
+    "passed": true
+  },
+  "finalBuild": {
+    "log": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/logs/build-main.log",
+    "sha256": "2EDEF0F7BC58AC186F484F349CF00644359584DB5B9861A0988A03D84267301C",
+    "warnings": 0,
+    "errors": 0
   }
 }

@@ -8,7 +8,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2同组工具逐项关闭仅最后一项回收窗口(entry: \"button\")",
@@ -16,7 +21,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C09单页等待期间变成最后一页可把已确认许可交给整窗",
@@ -24,7 +34,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.真实保存携带页面约束而全局入口无页面约束并保留创建意图",
@@ -32,7 +47,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"same\", operation: Top)",
@@ -40,7 +60,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Left, keepExpandedTool: False)",
@@ -48,7 +73,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"cancel\", closed: False)",
@@ -56,7 +86,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.主文档区工具上下分屏使用全宽预览而工具与浮窗目标保持局部(operation: Bottom)",
@@ -64,7 +99,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.菜单打开非模态单实例窗口且显隐收藏通过真实按钮提交",
@@ -72,7 +112,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1从V3恢复后文档区及其拆分子组仍全宽停靠(operation: Top, splitDocument: True)",
@@ -80,7 +125,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.配置错误时管理窗口可打开且开关只读",
@@ -88,7 +138,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.搜索定位分割区域页面后文档目标和输入焦点一致",
@@ -96,7 +151,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: False, keepSource: True)",
@@ -104,7 +164,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N05初始化或串行门等待期间切窗不改变落点(queued: False)",
@@ -112,7 +177,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2同组工具逐项关闭仅最后一项回收窗口(entry: \"close\")",
@@ -120,7 +190,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.隐藏期间真实后台任务继续处理且恢复展示原状态",
@@ -128,7 +203,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Left, keepExpandedTool: True)",
@@ -136,7 +216,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.保存期间禁用重复操作且关窗不撤销已接受提交",
@@ -144,7 +229,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Bottom, keepExpandedTool: False)",
@@ -152,7 +242,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.外部写冲突恢复开关且重新读取后可操作并验证窄窗口主题",
@@ -160,7 +255,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"last\", native: False)",
@@ -168,7 +268,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: False, targetFirst: True)",
@@ -176,7 +281,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02N03多分组与工具焦点使用同窗最近活动文档组(floating: True, toolFocus: False)",
@@ -184,7 +294,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C01最后文档标签按钮关闭后回收浮窗和文档资源",
@@ -192,7 +307,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"close\", cancel: False)",
@@ -200,7 +320,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"save-cancel\", closed: False)",
@@ -208,7 +333,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档内容区合并保留原模型视图和作用域且关闭源空窗(wholeGroup: True, targetFloating: False)",
@@ -216,7 +346,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N09跨窗切换面板会话不会沿用上次来源",
@@ -224,7 +359,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档标签栏和工具标题不属于默认合并正文(tool: True)",
@@ -232,7 +372,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.大目录使用虚拟化且重激活读取最新数据并尊重命令取消",
@@ -240,7 +385,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C10确认期间新增页面使旧关闭请求失效",
@@ -248,7 +398,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.主文档区工具上下分屏使用全宽预览而工具与浮窗目标保持局部(operation: Top)",
@@ -256,7 +411,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"float-back\", operation: Top)",
@@ -264,7 +424,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.应用工具布局不重开文档且把已有浮动文档原实例安全回停",
@@ -272,7 +437,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"menu\", cancel: True)",
@@ -280,7 +450,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.关闭重开释放窗口模型并由Owner退出关闭",
@@ -288,7 +463,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N10迟到焦点恢复不能覆盖切页关页或新面板会话(change: \"page\")",
@@ -296,7 +476,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.看板开关保存并改回取消待重启且重开保留选择",
@@ -304,7 +489,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.分类编辑全局搜索与清空恢复并保持来源约束",
@@ -312,7 +502,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2异步重试被窗口或Factory取消后仍可再次正常关闭(factoryCancellation: True)",
@@ -320,7 +515,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"save-fail\", closed: False)",
@@ -328,7 +528,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"cross\", operation: Top)",
@@ -336,7 +541,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Top, keepExpandedTool: True)",
@@ -344,7 +554,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N05初始化或串行门等待期间切窗不改变落点(queued: True)",
@@ -352,7 +567,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.HelpWindowTests.ModelessHelpIsSinglePerRuntimeAndMainCloseCancellationKeepsItOpen",
@@ -360,7 +580,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.菜单和命令面板打开同一非模态窗口且不产生工具或文档",
@@ -368,7 +593,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"last\", native: True)",
@@ -376,7 +606,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.可用性刷新绑定不会被误认为用户切换分类而清空搜索(category: \"闲才业务工具\")",
@@ -384,7 +619,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: False)",
@@ -392,7 +632,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.同类型两个创建入口按原意图各自新建而不会复用同名已有页面(intent: \"profile\", name: \"个人内容来源\")",
@@ -400,7 +645,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档内容区合并保留原模型视图和作用域且关闭源空窗(wholeGroup: False, targetFloating: False)",
@@ -408,7 +658,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.欢迎开始使用与文件菜单打开同一功能中心且旧目录保持隐藏",
@@ -416,7 +671,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2关闭命令遵守工具能力和框架取消(restriction: \"capability\")",
@@ -424,7 +684,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"float-back\", operation: Bottom)",
@@ -432,7 +697,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.正文回收器跨窗口转交保留旧根布局队列时仍可完成布局(duringArrange: True)",
@@ -440,7 +710,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.工具合并回主窗口或浮窗后保持实例和可恢复的V3布局(targetFloating: False)",
@@ -448,7 +723,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C07其他文档组或工具仍在时仅回收空组(tool: False)",
@@ -456,7 +736,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"discard\", closed: True)",
@@ -464,7 +749,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1浮窗内部连续上下分割不访问主窗口稳定停靠点(operation: Bottom)",
@@ -472,7 +762,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2异步重试被窗口或Factory取消后仍可再次正常关闭(factoryCancellation: False)",
@@ -480,7 +775,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.状态刷新保留身份顺序和滚动而查询更改采用新的默认项",
@@ -488,7 +788,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.搜索异步失败保留查询选择并阻止重复输入和窗口假取消且重试成功后交还焦点",
@@ -496,7 +801,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"capability\", native: False)",
@@ -504,7 +814,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": null,
@@ -512,7 +827,12 @@
       "layer": "ui",
       "change": "新增边界或负向验证",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1从V3恢复后文档区及其拆分子组仍全宽停靠(operation: Bottom, splitDocument: False)",
@@ -520,7 +840,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.功能中心单窗口搜索分类实际图标和创建成功闭环",
@@ -528,7 +853,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.组标题不增加键盘步骤或执行入口且中文预编辑回车只交给输入控件",
@@ -536,7 +866,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"hide\", cancel: True)",
@@ -544,7 +879,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: True, width: 640)",
@@ -552,7 +892,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Right, keepExpandedTool: True)",
@@ -560,7 +905,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: True, targetFirst: False)",
@@ -568,7 +918,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.HelpWindowTests.MenuF1AndPaletteShareHelpCommandWithoutAnActiveDocument",
@@ -576,7 +931,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C06原生首次或重试取消后仍可重新关闭(rejectedAttempt: 2)",
@@ -584,7 +944,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N10迟到焦点恢复不能覆盖切页关页或新面板会话(change: \"close\")",
@@ -592,7 +957,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N08浮窗初始化失败不新增标签且原查询可重试",
@@ -600,7 +970,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1内容全屏期间分割入口不迁移工具或改变布局",
@@ -608,7 +983,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.V3恢复可见工具且新增工具默认隐藏并可全隐藏重启",
@@ -616,7 +996,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.StartupSplashUiTests.浅深主题与真实进度绑定_保存羽毛首屏截图",
@@ -624,7 +1009,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"center\", cancel: True)",
@@ -632,7 +1022,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.主窗等待干净文档命令后被原生取消会恢复命令与创建入口",
@@ -640,7 +1035,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: True)",
@@ -648,7 +1048,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N10迟到焦点恢复不能覆盖切页关页或新面板会话(change: \"session\")",
@@ -656,7 +1061,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.命令面板工具使用独立身份打开隐藏或自动收起项并记录访问",
@@ -664,7 +1074,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Top, keepExpandedTool: False)",
@@ -672,7 +1087,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1浮窗内部连续上下分割不访问主窗口稳定停靠点(operation: Top)",
@@ -680,7 +1100,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.重置被原生窗口拒绝时回滚已关闭的其他窗口并保留全部原实例",
@@ -688,7 +1113,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗真实标签拖入已有浮窗正文后两窗可继续布局(keepAnotherDocument: False)",
@@ -696,7 +1126,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2同组工具逐项关闭仅最后一项回收窗口(entry: \"center\")",
@@ -704,7 +1139,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.搜索筛选刷新和复制通过真实控件工作并验证深浅主题与窄窗口",
@@ -712,7 +1152,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: False)",
@@ -720,7 +1165,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"center\", cancel: False)",
@@ -728,7 +1178,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N09同一共享动作的并发请求分别保留目标",
@@ -736,7 +1191,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.所有内置图标均可解析且不同控件复用几何而不复用控件",
@@ -744,7 +1204,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C02关闭入口回收同一原生浮窗(entry: \"command\")",
@@ -752,7 +1217,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.HelpWindowTests.TwentyCloseCyclesDisposeEveryReaderAndReleaseWindows",
@@ -760,7 +1230,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N06创建提交前原组移走或来源关闭按规则回退(change: \"window\")",
@@ -768,7 +1243,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.可用性撤回同步更新两种Tool与功能中心且已关闭会话不再刷新",
@@ -776,7 +1256,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗真实标签拖入已有浮窗正文后两窗可继续布局(keepAnotherDocument: True)",
@@ -784,7 +1269,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N01主窗和两个浮窗的新建互不串组(source: 1)",
@@ -792,7 +1282,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Bottom, keepExpandedTool: True)",
@@ -800,7 +1295,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"group\", operation: Top)",
@@ -808,7 +1308,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.HelpWindowTests.ClosingAndFastNavigationIgnoreStaleRendererCompletion",
@@ -816,7 +1321,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档内容区合并保留原模型视图和作用域且关闭源空窗(wholeGroup: True, targetFloating: True)",
@@ -824,7 +1334,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"save\", closed: True)",
@@ -832,7 +1347,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N01浮窗快捷键新建进入发起文档组且逐页关闭回收窗口",
@@ -840,7 +1360,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"event\", native: True)",
@@ -848,7 +1373,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档标签栏和工具标题不属于默认合并正文(tool: False)",
@@ -856,7 +1386,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"cross\", operation: Bottom)",
@@ -864,7 +1399,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.同类型两个创建入口按原意图各自新建而不会复用同名已有页面(intent: \"link\", name: \"链接下载\")",
@@ -872,7 +1412,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.同一正文和同窗交接不清空当前Presenter",
@@ -880,7 +1425,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.取消不创建且重复打开关闭释放会话",
@@ -888,7 +1438,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02N03多分组与工具焦点使用同窗最近活动文档组(floating: True, toolFocus: True)",
@@ -896,7 +1451,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"menu\", cancel: False)",
@@ -904,7 +1464,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"same\", operation: Bottom)",
@@ -912,7 +1477,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N04纯工具浮窗新建回到主窗活动组且不改造工具窗口",
@@ -920,7 +1490,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.一百个工具虚拟化搜索不重复创建视图且图标保持Owner",
@@ -928,7 +1503,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.可用性撤回保留解释禁用打开并且关闭会话不再订阅",
@@ -936,7 +1516,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: True, options: True)",
@@ -944,7 +1529,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.默认跨禁用项选择可用结果且全部禁用和空查询结果不误执行",
@@ -952,7 +1542,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: False, keepSource: False)",
@@ -960,7 +1555,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C07其他文档组或工具仍在时仅回收空组(tool: True)",
@@ -968,7 +1568,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.创建中重复输入及窗口关闭不会遗失在途会话",
@@ -976,7 +1581,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C02关闭入口回收同一原生浮窗(entry: \"menu\")",
@@ -984,7 +1594,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C08主窗最后文档关闭后可重新新建",
@@ -992,7 +1607,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.百入口长名称与不同主题可滚动且查询不创建插件(dark: True)",
@@ -1000,7 +1620,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"close\", cancel: True)",
@@ -1008,7 +1633,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C09最后文档等待命令排空并去重关闭请求",
@@ -1016,7 +1646,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N06创建提交前原组移走或来源关闭按规则回退(change: \"group\")",
@@ -1024,7 +1659,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: True)",
@@ -1032,7 +1672,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.工具更多菜单捕获原行且来源可清除并由整理菜单全局隐藏",
@@ -1040,7 +1685,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C11整窗关闭混合内容后工具原实例可恢复而文档只释放一次",
@@ -1048,7 +1698,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.可用性刷新绑定不会被误认为用户切换分类而清空搜索(category: \"帮助\")",
@@ -1056,7 +1711,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.最终布局写入失败保留窗口与命令且重试成功后可以退出",
@@ -1064,7 +1724,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02N03多分组与工具焦点使用同窗最近活动文档组(floating: False, toolFocus: False)",
@@ -1072,7 +1737,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.全屏限制在预览查询阶段生效并在退出后恢复",
@@ -1080,7 +1750,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.真实标签鼠标输入在内容区松开完成回停",
@@ -1088,7 +1763,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C06原生首次或重试取消后仍可重新关闭(rejectedAttempt: 1)",
@@ -1096,7 +1776,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: True, keepSource: True)",
@@ -1104,7 +1789,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": null,
@@ -1112,7 +1802,12 @@
       "layer": "ui",
       "change": "新增边界或负向验证",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": null,
@@ -1120,7 +1815,12 @@
       "layer": "ui",
       "change": "新增边界或负向验证",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02N03多分组与工具焦点使用同窗最近活动文档组(floating: False, toolFocus: True)",
@@ -1128,7 +1828,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"button\", cancel: True)",
@@ -1136,7 +1841,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2按钮关闭写入V3后重启不产生空窗且按原窗口恢复工具",
@@ -1144,7 +1854,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.百入口长名称与不同主题可滚动且查询不创建插件(dark: False)",
@@ -1152,7 +1867,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N06创建提交前原组移走或来源关闭按规则回退(change: \"closing\")",
@@ -1160,7 +1880,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"button\", cancel: False)",
@@ -1168,7 +1893,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.工具浮窗恢复复用原模型和View且关闭后按原组只显示目标工具",
@@ -1176,7 +1906,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: False, targetFirst: False)",
@@ -1184,7 +1919,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2关闭命令遵守工具能力和框架取消(restriction: \"event\")",
@@ -1192,7 +1932,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.标题栏关闭最后一个工具后可从工具中心反复显示且复用视图",
@@ -1200,7 +1945,12 @@
       "layer": "ui",
       "change": "两个工具各三轮改两轮；保留首次/重开、身份及位置断言",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N11辅助窗口不作为来源且跨窗已有页只定位原实例",
@@ -1208,7 +1958,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: False, width: 800)",
@@ -1216,7 +1971,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.正文回收器跨窗口转交保留旧根布局队列时仍可完成布局(duringArrange: False)",
@@ -1224,7 +1984,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.同名页面选择按实例切换并保留编辑内容且消失目标不新建",
@@ -1232,7 +1997,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2关闭命令遵守工具能力和框架取消(restriction: \"last\")",
@@ -1240,7 +2010,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.全隐藏或插件缺失的浮窗不创建空窗口但保留恢复记录",
@@ -1248,7 +2023,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.工具合并回主窗口或浮窗后保持实例和可恢复的V3布局(targetFloating: True)",
@@ -1256,7 +2036,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: False, options: True)",
@@ -1264,7 +2049,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2同组工具逐项关闭仅最后一项回收窗口(entry: \"hide\")",
@@ -1272,7 +2062,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2主窗或混合浮窗隐藏Tool保留Document原实例(floating: True)",
@@ -1280,7 +2075,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02点击另一组已选中页面仍更新新建落点",
@@ -1288,7 +2088,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: True, targetFirst: True)",
@@ -1296,7 +2101,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: True, options: False)",
@@ -1304,7 +2114,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N01主窗和两个浮窗的新建互不串组(source: 2)",
@@ -1312,7 +2127,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"hide\", cancel: False)",
@@ -1320,7 +2140,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.重开取消Owner关闭和Runtime释放均遵循窗口所有权且各Runtime隔离",
@@ -1328,7 +2153,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1从V3恢复后文档区及其拆分子组仍全宽停靠(operation: Top, splitDocument: False)",
@@ -1336,7 +2166,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"capability\", native: True)",
@@ -1344,7 +2179,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C02关闭入口回收同一原生浮窗(entry: \"native\")",
@@ -1352,7 +2192,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1从V3恢复后文档区及其拆分子组仍全宽停靠(operation: Bottom, splitDocument: True)",
@@ -1360,7 +2205,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.选中身份在执行前消失时本次回车不执行自动补选项且错误不被底部提示覆盖",
@@ -1368,7 +2218,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档内容区合并保留原模型视图和作用域且关闭源空窗(wholeGroup: False, targetFloating: True)",
@@ -1376,7 +2231,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.StartupSplashUiTests.用户关闭只提交取消意图_协调器允许后才真正关闭",
@@ -1384,7 +2244,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.原Tool双模式模板绑定独立展开并可以直接创建Host文档",
@@ -1392,7 +2257,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N01主窗和两个浮窗的新建互不串组(source: 0)",
@@ -1400,7 +2270,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: False, options: False)",
@@ -1408,7 +2283,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"save-edit\", closed: False)",
@@ -1416,7 +2296,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.主窗口退出先保存可见浮窗再拆除且重启不恢复文档",
@@ -1424,7 +2309,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.StartupSplashUiTests.V19工作台执行绑定在UI线程且后台附接先于服务解析被拒绝",
@@ -1432,7 +2322,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2主窗或混合浮窗隐藏Tool保留Document原实例(floating: False)",
@@ -1440,7 +2335,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Right, keepExpandedTool: False)",
@@ -1448,7 +2348,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"group\", operation: Bottom)",
@@ -1456,7 +2361,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.批量隐藏部分失败保留成功结果并显示对应工具错误",
@@ -1464,7 +2374,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.内容全屏阻止迁移且重置保留文档实例并关闭浮窗",
@@ -1472,7 +2387,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: True, keepSource: False)",
@@ -1480,7 +2400,12 @@
       "layer": "ui",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "8A5F4F9E27C2627972B92A5C9BC92CD448DE7942CAA5D8F2C51688610D1FD964"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.三次新进程证明禁用与重新启用且所有贡献随重启变化",
@@ -1488,7 +2413,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.初始化失败与成功均推进实际计数且保持执行顺序",
@@ -1496,7 +2426,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式(dotnet: True)",
@@ -1504,7 +2439,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartLifecycleTests.关闭结果保留释放异常且重复关闭不重复释放(fail: True)",
@@ -1512,7 +2452,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.注册失败不妨碍后继插件_计数来自真实Provider组合",
@@ -1520,7 +2465,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.DLL损坏报告失败且已处理数到达总数",
@@ -1528,7 +2478,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"crash\", error: False)",
@@ -1536,7 +2491,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": null,
@@ -1544,7 +2504,12 @@
       "layer": "plugin",
       "change": "新增边界或负向验证",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"ordinary\", error: False)",
@@ -1552,7 +2517,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.扫描时取消不进入任何DLL加载",
@@ -1560,7 +2530,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-empty\", exitCode: 0)",
@@ -1568,7 +2543,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-cancel-loading\", exitCode: 1)",
@@ -1576,7 +2556,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartLifecycleTests.关闭结果保留释放异常且重复关闭不重复释放(fail: False)",
@@ -1584,7 +2569,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-disabled\", exitCode: 0)",
@@ -1592,7 +2582,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.最终许可已确认但旧进程仍存活时不能提前拉起",
@@ -1600,7 +2595,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.独立进程验收入口",
@@ -1608,7 +2608,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": null,
@@ -1616,7 +2621,12 @@
       "layer": "plugin",
       "change": "新增边界或负向验证",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"bad-exit\", error: True)",
@@ -1624,7 +2634,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": null,
@@ -1632,7 +2647,12 @@
       "layer": "plugin",
       "change": "新增边界或负向验证",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式(dotnet: False)",
@@ -1640,7 +2660,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.实际程序集加载报告开始和完成_缓存读取不伪造再次加载",
@@ -1648,7 +2673,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-warning\", exitCode: 0)",
@@ -1656,7 +2686,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"cancel\", error: False)",
@@ -1664,7 +2699,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartLifecycleTests.无法关闭文档Scope时保留Provider且不伪装成功",
@@ -1672,7 +2712,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.初始化超时报告失败_迟到成功不回写启动进度",
@@ -1680,7 +2725,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-slow\", exitCode: 0)",
@@ -1688,7 +2738,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-cancel\", exitCode: 1)",
@@ -1696,7 +2751,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-failure\", exitCode: 1)",
@@ -1704,7 +2764,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"kill\", error: False)",
@@ -1712,7 +2777,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.空生命周期阶段不虚构插件执行",
@@ -1720,7 +2790,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.禁用插件只报告跳过而不构造加载上下文",
@@ -1728,7 +2803,12 @@
       "layer": "plugin",
       "change": "保留原方法和参数；只改共享准备、等待或证据机制",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p1-process/p1.trx"
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "DD640D6CB2A9B88136A80EB0C72A97890C5BA431F03C408D138E15638DBC2323"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Ui程序集不引用Dock和Newtonsoft且注册接口没有独立AddView",
@@ -1736,7 +2816,12 @@
       "layer": "sdk",
       "change": "保留契约",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/sdk/sdk.trx",
+        "sha256": "AD2B34134B45280C1205AA739E929D01766B5C7AB793EA9D959A5D4E4E9A3CF8"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.可持久化Document只暴露修订快照与有参确认",
@@ -1744,7 +2829,12 @@
       "layer": "sdk",
       "change": "保留契约",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/sdk/sdk.trx",
+        "sha256": "AD2B34134B45280C1205AA739E929D01766B5C7AB793EA9D959A5D4E4E9A3CF8"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.窗口交互端口只暴露路径选择和剪贴板结果",
@@ -1752,7 +2842,12 @@
       "layer": "sdk",
       "change": "保留契约",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/sdk/sdk.trx",
+        "sha256": "AD2B34134B45280C1205AA739E929D01766B5C7AB793EA9D959A5D4E4E9A3CF8"
+      }
     },
     {
       "old": "MyAvaloniaManagement.Tests.PublicApiContractTests.PluginSdk不再公开通用事件总线或旧消息包装器",
@@ -1760,7 +2855,12 @@
       "layer": "sdk",
       "change": "UI 包装器迁入 SDK；Core 旧总线归 SDK Core 边界",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/sdk/sdk.trx",
+        "sha256": "AD2B34134B45280C1205AA739E929D01766B5C7AB793EA9D959A5D4E4E9A3CF8"
+      }
     },
     {
       "old": null,
@@ -1768,7 +2868,12 @@
       "layer": "sdk",
       "change": "新增边界或负向验证",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/sdk/sdk.trx",
+        "sha256": "AD2B34134B45280C1205AA739E929D01766B5C7AB793EA9D959A5D4E4E9A3CF8"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Core程序集只引用框架程序集且不存在旧公共面",
@@ -1776,7 +2881,12 @@
       "layer": "sdk",
       "change": "保留契约",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/sdk/sdk.trx",
+        "sha256": "AD2B34134B45280C1205AA739E929D01766B5C7AB793EA9D959A5D4E4E9A3CF8"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.全屏端口只负责内容所有权迁移和恢复",
@@ -1784,7 +2894,12 @@
       "layer": "sdk",
       "change": "保留契约",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/sdk/sdk.trx",
+        "sha256": "AD2B34134B45280C1205AA739E929D01766B5C7AB793EA9D959A5D4E4E9A3CF8"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Legacy项目已删除且活动项目没有旧引用",
@@ -1792,7 +2907,12 @@
       "layer": "sdk",
       "change": "保留契约",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/sdk/sdk.trx",
+        "sha256": "AD2B34134B45280C1205AA739E929D01766B5C7AB793EA9D959A5D4E4E9A3CF8"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.生命周期接口只有启动和停止且不再暴露顺序",
@@ -1800,7 +2920,12 @@
       "layer": "sdk",
       "change": "保留契约",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/sdk/sdk.trx",
+        "sha256": "AD2B34134B45280C1205AA739E929D01766B5C7AB793EA9D959A5D4E4E9A3CF8"
+      }
     },
     {
       "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.注册泛型约束固定模型生命周期和AvaloniaView边界",
@@ -1808,7 +2933,12 @@
       "layer": "sdk",
       "change": "保留契约",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/sdk/sdk.trx",
+        "sha256": "AD2B34134B45280C1205AA739E929D01766B5C7AB793EA9D959A5D4E4E9A3CF8"
+      }
     },
     {
       "old": "MyAvaloniaManagement.Tests.InternalRefactorTests.Host内部直接协作消费者不依赖Sdk事件总线",
@@ -1816,7 +2946,12 @@
       "layer": "unit",
       "change": "保留契约",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p4-unit/unit.trx"
+      "trx": "artifacts/host-v21/p4-unit/unit.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "5E649908710881B0ABD622DF9AC15E3A7E3F51DFA3A74F2A1068451444EACFBC"
+      }
     },
     {
       "old": "MyAvaloniaManagement.Tests.PublicApiContractTests.Host程序集不再包含V2Facade总线或伪插件所有者",
@@ -1824,7 +2959,12 @@
       "layer": "unit",
       "change": "保留契约",
       "outcome": "Passed",
-      "trx": "artifacts/host-v21/p4-unit/unit.trx"
+      "trx": "artifacts/host-v21/p4-unit/unit.trx",
+      "finalVerify": {
+        "outcome": "Passed",
+        "trx": "D:/code/local/avalonia_dock_simple_test/artifacts/gate/20260921-105730-82438a920fcf/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "5E649908710881B0ABD622DF9AC15E3A7E3F51DFA3A74F2A1068451444EACFBC"
+      }
     },
     {
       "old": null,
