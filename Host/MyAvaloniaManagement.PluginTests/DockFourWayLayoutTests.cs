@@ -17,49 +17,12 @@ public sealed partial class DockFourWayLayoutTests
 {
     private static readonly ConditionalWeakTable<WorkspaceSession, Dictionary<string, Tool>> ToolMaps = new();
 
-    [Fact]
-    public void 运行时校验器稳定返回激活Pane和ToolDock错误码()
-    {
-        using var context = CreateFactory(("validatorTool", "Left"));
-        var session = context.Factory;
-        var toolId = CreateTestToolTypeId("validatorTool").Value;
-        var root = session.CreateWorkspaceLayout(CreateDocumentDock(session));
-        session.InitLayout(root);
-
-        var activationMissing = CreateRuntimeSnapshot(
-            toolId,
-            DockLayoutIds.LeftPane,
-            DockLayoutIds.LeftTools);
-        Assert.Equal(
-            "LAYOUT_TOOL_ACTIVATION_MISSING",
-            DockLayoutRuntimeValidator.ValidateContributions(
-                activationMissing,
-                session)?.Code);
-
-        RegisterTool(session, "validatorTool", "Left");
-        var paneMissing = CreateRuntimeSnapshot(
-            toolId,
-            "MissingStablePane",
-            DockLayoutIds.LeftTools);
-        Assert.Equal(
-            "LAYOUT_PANE_MISSING",
-            DockLayoutRuntimeValidator.Validate(paneMissing, root, session)?.Code);
-
-        var dockMissing = CreateRuntimeSnapshot(
-            toolId,
-            DockLayoutIds.LeftPane,
-            "MissingStableToolDock");
-        Assert.Equal(
-            "LAYOUT_TOOL_DOCK_MISSING",
-            DockLayoutRuntimeValidator.Validate(dockMissing, root, session)?.Code);
-    }
-
     [Theory]
     [InlineData(ToolDockSide.Left, Alignment.Left, DockLayoutIds.LeftTools)]
     [InlineData(ToolDockSide.Right, Alignment.Right, DockLayoutIds.RightTools)]
     [InlineData(ToolDockSide.Top, Alignment.Top, DockLayoutIds.TopTools)]
     [InlineData(ToolDockSide.Bottom, Alignment.Bottom, DockLayoutIds.BottomTools)]
-    public void V2Tool方向映射到对应Dock(
+    public void Tool方向映射到对应Dock(
         ToolDockSide dockSide,
         Alignment expectedAlignment,
         string expectedDockId)
@@ -545,34 +508,6 @@ public sealed partial class DockFourWayLayoutTests
         var state = snapshot.Tools.Single(tool => tool.Id == toolId);
         return state.State;
     }
-
-    private static DockLayoutSnapshotV2 CreateRuntimeSnapshot(
-        string toolId,
-        string paneId,
-        string dockId) =>
-        new()
-        {
-            Panes =
-            [
-                new DockPaneSnapshotV2
-                {
-                    Id = paneId,
-                    Proportion = 0.25,
-                },
-            ],
-            Tools =
-            [
-                new DockToolSnapshotV2
-                {
-                    Id = toolId,
-                    DockId = dockId,
-                    Order = 0,
-                    IsVisible = true,
-                    IsPinned = false,
-                },
-            ],
-            ActiveToolId = toolId,
-        };
 
     private static IList<IDockable>? GetPinnedDockables(
         IRootDock root,

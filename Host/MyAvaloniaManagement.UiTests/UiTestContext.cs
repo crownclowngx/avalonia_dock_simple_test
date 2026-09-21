@@ -26,7 +26,6 @@ internal sealed class UiTestContext : IDisposable
     private readonly HostDiagnosticSession? _diagnostics;
     public UiTestContext(
         Action<IServiceCollection, PluginRegistryBuilder>? configureContributions = null,
-        DockLayoutSnapshotV2? initialLayout = null,
         PluginModuleCatalog? modules = null,
         DockLayoutSnapshotV3? initialLayoutV3 = null)
     {
@@ -35,10 +34,6 @@ internal sealed class UiTestContext : IDisposable
             "MyAvaloniaManagement.UiTests",
             Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(TempDirectory);
-        if (initialLayout is not null)
-        {
-            new DockLayoutStore(Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)).Save(initialLayout);
-        }
         if (initialLayoutV3 is not null)
         {
             using var initialStore = new DockLayoutV3Store(TempDirectory);
@@ -60,8 +55,6 @@ internal sealed class UiTestContext : IDisposable
         services.AddSingleton(new PluginNavigationSettingsStore(Path.Combine(TempDirectory, PluginNavigationSettingsStore.FileName)));
         services.AddSingleton(new MyAvaloniaManagement.Business.ToolCenter.ToolCenterPreferencesStore(Path.Combine(TempDirectory, "tool-center-v1.json")));
         services.AddSingleton(provider => new DockLayoutV3Store(TempDirectory));
-        services.AddSingleton(new DockLayoutStore(
-            Path.Combine(TempDirectory, DockLayoutStore.LayoutFileName)));
         services.AddSingleton(new AppearanceSettingsStore(
             Path.Combine(
                 TempDirectory,

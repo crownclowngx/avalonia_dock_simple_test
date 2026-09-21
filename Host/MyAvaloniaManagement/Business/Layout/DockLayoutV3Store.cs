@@ -1,13 +1,12 @@
 using System;
 using System.IO;
-using System.Linq;
 using System.Text.Json;
 using MyAvaloniaManagement.Business.Storage;
 
 namespace MyAvaloniaManagement.Business.Layout;
 
 /// <summary>
-/// Layout V3 的文件所有者：持有数据根独占写入句柄，严格读取、只读迁移、保留坏文件及上一有效备份。
+/// Layout V3 的文件所有者：持有数据根独占写入句柄，严格读取、保留坏文件及上一有效备份。
 /// 它不访问 Dock 或 UI；生命周期通过单一保存队列调用 Save，Dispose 必须晚于该队列排空。
 /// </summary>
 internal sealed class DockLayoutV3Store : IDisposable
@@ -45,29 +44,26 @@ internal sealed class DockLayoutV3Store : IDisposable
     internal string BackupPath => LayoutPath + ".bak";
     internal bool CanWrite => !_disposed && !_readOnly && _writeLease is not null;
 
-    /// <summary>V3 主文件与备份优先；只有首次且持有写入权的实例才从 V2 纯转换，不改旧文件字节。</summary>
+    /// <summary>
+    /// 只读取当前主文件和上一有效备份；没有可用快照时返回 null，由生命周期建立默认布局。
+    /// 未来格式必须停止恢复，不能以旧备份降级；当前文件的 I/O 状态不确定时，本会话转为只读。
+    /// 旧版本文件不属于本 Store 的输入或清理职责，因此不探测、不解析，也不修改其字节。
+    /// </summary>
     internal DockLayoutSnapshotV3? Load()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         try
         {
-            var hasHistory = File.Exists(LayoutPath) || File.Exists(BackupPath) ||
-                (Directory.Exists(_directory) && Directory.EnumerateFiles(_directory, "layout-v3*.invalid.bak").Any());
             var main = ReadV3(LayoutPath);
             if (_futureSchema) return null; // 已识别未来格式，不能使用旧备份覆盖语义。
             if (main is not null) return main;
             var backup = ReadV3(BackupPath);
             if (_futureSchema) return null;
-            if (backup is not null) return backup;
-            if (hasHistory || !CanWrite) return null;
-            var legacy = Path.Combine(_directory, "layout-v2.json");
-            if (!File.Exists(legacy)) return null;
-            using var bytes = ReadBounded(legacy);
-            return DockLayoutV2Migration.Convert(DockLayoutSnapshotV2Json.Read(bytes));
+            return backup;
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException or DockLayoutFormatException)
         {
-            // 读取失败不把 V2 或被其他程序占用的文件当坏文件隔离；I/O 不确定时拒绝本会话覆盖。
+            // 被其他程序占用的当前文件不等于坏文件；I/O 不确定时拒绝本会话覆盖。
             if (exception is IOException or UnauthorizedAccessException) _readOnly = true;
             Report("LAYOUT_LOAD_FAILED", exception);
             return null;
@@ -120,7 +116,7 @@ internal sealed class DockLayoutV3Store : IDisposable
         }
     }
 
-    /// <summary>V2 与 V3 共用有界读取，防止旧版 reader 在迁移入口无界分配文件内容。</summary>
+    /// <summary>在分配完整内容前限制读取字节数；失败时释放本次缓冲，文件句柄始终由本方法回收。</summary>
     private static MemoryStream ReadBounded(string path)
     {
         using var source = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -143,7 +139,7 @@ internal sealed class DockLayoutV3Store : IDisposable
 
     private void PreserveInvalid(string path)
     {
-        // 保留原位置，同时留下独立副本。即使下一次默认布局提交失败，也不会重新导入过时 V2。
+        // 保留原位置，同时留下独立诊断副本，后续默认布局提交也不能销毁损坏输入的证据。
         // 隔离失败向上抛出，禁止继续覆盖尚未得到保留的损坏输入。
         File.Copy(path, Path.Combine(_directory,
             $"{Path.GetFileName(path)}.{DateTimeOffset.UtcNow:yyyyMMddTHHmmssfffffffZ}.{Guid.NewGuid():N}.invalid.bak"));

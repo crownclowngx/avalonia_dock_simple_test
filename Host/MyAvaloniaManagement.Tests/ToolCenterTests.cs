@@ -250,46 +250,4 @@ public sealed class ToolCenterTests
         Assert.All(context.Provider.GetRequiredService<ToolWorkspaceReadModel>().Capture(), item => Assert.False(item.CanOpen));
     }
 
-    [Theory]
-    [InlineData(false, false)]
-    [InlineData(true, false)]
-    [InlineData(true, true)]
-    public void 旧管理项迁移幂等并在覆盖前保留原始字节(bool visible, bool pinned)
-    {
-        using var context = new TestHostContext();
-        var path = Path.Combine(context.TempDirectory, "legacy.json");
-        var snapshot = new DockLayoutSnapshotV2
-        {
-            ActiveToolId = RetiredHostToolIds.ToolManagement,
-            Panes = [new() { Id = "right", Proportion = 0.31 }],
-            Tools = [new() { Id = First, DockId = "tools", Order = 0, IsVisible = true },
-                new() { Id = RetiredHostToolIds.ToolManagement, DockId = "tools", Order = 1, IsVisible = visible, IsPinned = pinned },
-                new() { Id = Second, DockId = "tools", Order = 2, IsVisible = true, IsPinned = true }]
-        };
-        var store = new DockLayoutStore(path);
-        store.Save(snapshot);
-        var original = File.ReadAllBytes(path);
-        var migrated = Assert.IsType<DockLayoutSnapshotV2>(store.Load());
-        Assert.Null(migrated.ActiveToolId);
-        Assert.Equal([First, Second], migrated.Tools.Select(item => item.Id));
-        Assert.Equal([0, 1], migrated.Tools.Select(item => item.Order));
-        Assert.True(migrated.Tools[1].IsPinned);
-        Assert.Equal(0.31, Assert.Single(migrated.Panes).Proportion);
-        Assert.Same(migrated, RetiredToolLayoutMigration.Apply(migrated));
-        Assert.Equal(original, File.ReadAllBytes(path));
-        store.Save(migrated);
-        Assert.Equal(original, File.ReadAllBytes(Assert.Single(Directory.GetFiles(context.TempDirectory, "*.pre-tool-retirement.bak"))));
-        store.Save(store.Load()!);
-        Assert.Single(Directory.GetFiles(context.TempDirectory, "*.pre-tool-retirement.bak"));
-    }
-
-    [Fact]
-    public void 仅管理项可迁移为空且其他未知工具不会被吞掉()
-    {
-        var snapshot = new DockLayoutSnapshotV2 { Tools = [new() { Id = RetiredHostToolIds.ToolManagement, DockId = "tools", Order = 0 }] };
-        Assert.Empty(RetiredToolLayoutMigration.Apply(snapshot).Tools);
-        var unknown = new DockToolSnapshotV2 { Id = "myavalonia.plugin.unknown.tool.main", DockId = "tools", Order = 1 };
-        snapshot.Tools.Add(unknown);
-        Assert.Equal(unknown.Id, Assert.Single(RetiredToolLayoutMigration.Apply(snapshot).Tools).Id);
-    }
 }

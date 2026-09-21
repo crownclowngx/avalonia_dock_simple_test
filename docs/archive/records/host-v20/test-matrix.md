@@ -26,7 +26,7 @@
 | V3可以读取既有V2文档与布局且不会改写源文件 | Document Envelope V2 读取保持；布局改为 V3 输入，文件只读不改写仍验证 | 现行存储读取V2文档与V3布局且不会改写源文件 / L10 |
 | VersionPolicyTests 的 schema/文件名断言 | 只把 Layout 的 2/layout-v2 改为 3/layout-v3，数据根、SDK、manifest、Document 独立版本保持 | 原版本测试 / L10 |
 | PluginStatusMigrationTests.插件状态在隐藏停靠和自动收起状态下均可退役并保留其他布局（false,false / true,false / true,true） | 删除 V2 迁移及 pre-tool-retirement 备份契约，不迁入 V3 | A01 |
-| 仅退役项可以迁移为空而其他未知项和活动工具引用仍保留 | 删除 V2 转换器测试；当前未知项保留由 AvailabilityTests 和 V3TreeTests 覆盖 | A01、B04 |
+| 仅退役项可以迁移为空而其他未知项和活动工具引用仍保留 | 删除 V2 转换器测试；当前未知项保留由 AvailabilityTests 和 DockLayoutTreeTests 覆盖 | A01、B04 |
 | PluginStatusMigrationTests.历史收藏最近分类与名称一起迁移且缺失插件偏好不会丢失 | 非 Layout 兼容能力，原样保留 | L10 |
 | ToolCenterTests.旧管理项迁移幂等并在覆盖前保留原始字节（false,false / true,false / true,true） | 删除 V2 迁移与原始备份机制专属测试 | A01 |
 | 仅管理项可迁移为空且其他未知工具不会被吞掉 | 删除旧转换器测试；现行缺失工具投影继续验证 | A01、B04 |
@@ -55,7 +55,7 @@
 | L06 | DockLayoutV3Tests、DockLayoutV3BoundaryTests；异常归位保持 code/stableId，诊断不回显原文 |
 | L09 | DockLayoutSaveQueueTests；UiTests 的最终写入失败/取消/退出/重启 |
 | L10 | HostDataRootPolicyTests、VersionPolicyTests、DocumentEnvelopeV2Tests、API 比较及差异审查 |
-| B01–B04 | 上表迁移方法及 DockLayoutWorkspaceStateTests、DockLayoutV3TreeTests |
+| B01–B04 | 上表迁移方法及 DockLayoutWorkspaceStateTests、DockLayoutTreeTests |
 | B05–B06 | DockLayoutV3UiTests、DockToolWindowCloseUiTests、DockToolSplitUiTests、DocumentWindowV16UiTests、HostRestartUiTests；关闭否决、失败回滚、原 Scope/View、退出重启 |
 | W01–W04 | Verify-LayoutV3WriterLease.ps1；专属持锁子进程、就绪信号、跨进程只读与新会话写入、路径检查和 finally 回收 |
 | G01–G04 | Gate 的共享产物检查单测及原有 Profile 图测试；只调用文件检查，不启动 Windows Smoke；实际 Smoke 留待发布 |

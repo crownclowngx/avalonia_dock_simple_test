@@ -18,8 +18,6 @@
     "Business/Plugins/Registration/PluginRegistrationContext.cs": 75.0,
     "Business/Plugins/Registration/PluginRegistry.cs": 85.0,
     "Business/Plugins/Registration/PluginRegistryBuilder.cs": 85.0,
-    "Business/Layout/DockLayoutSnapshotV2Json.cs": 95.0,
-    "Business/Layout/DockLayoutSnapshotV2.cs": 95.0,
     "Business/Lifecycle/PluginLifecycleCoordinator.cs": 90.0,
     "Business/Lifecycle/PluginLifecycleOperationRunner.cs": 90.0,
     "Business/Lifecycle/PluginLifecycleStateStore.cs": 90.0,

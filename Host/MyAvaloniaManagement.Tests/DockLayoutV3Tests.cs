@@ -3,7 +3,7 @@ using MyAvaloniaManagement.Business.Layout;
 
 namespace MyAvaloniaManagement.Tests;
 
-/// <summary>验证布局线格式和迁移的用户数据边界，不启动桌面或插件。</summary>
+/// <summary>验证当前布局线格式的用户数据边界，不启动桌面或插件。</summary>
 public sealed class DockLayoutV3Tests
 {
     [Fact]
@@ -66,25 +66,6 @@ public sealed class DockLayoutV3Tests
         var source = Sample();
         Assert.Throws<DockLayoutFormatException>(() => DockLayoutV3Validator.Validate(source with
             { FloatingWindows = [source.FloatingWindows[0] with { Root = source.FloatingWindows[0].Root with { ActiveToolId = "sample.tool" } }] }));
-    }
-
-    [Fact]
-    public void V2转换保留比例顺序隐藏与自动隐藏且不修改输入()
-    {
-        var source = new DockLayoutSnapshotV2
-        {
-            Panes = [new() { Id = DockLayoutIds.LeftPane, Proportion = 0.25 }],
-            Tools = [new() { Id = "tool.hidden", DockId = DockLayoutIds.LeftTools, Order = 1, IsVisible = false },
-                new() { Id = "tool.pinned", DockId = DockLayoutIds.LeftTools, Order = 0, IsVisible = true, IsPinned = true }]
-        };
-        var result = DockLayoutV2Migration.Convert(source);
-        var group = result.MainWindow.Root.Children[0];
-        Assert.Equal(0.25, group.Proportion);
-        Assert.Equal(new[] { "tool.pinned", "tool.hidden" }, group.ToolIds);
-        Assert.Equal("autoHidden", result.Tools.Single(t => t.Id == "tool.pinned").State);
-        Assert.Equal(2, source.SchemaVersion);
-        Assert.Empty(result.FloatingWindows);
-        Assert.Equal(Write(result), Write(Read(Write(result))));
     }
 
     internal static DockLayoutSnapshotV3 Sample() => new(3, new("main", DockWindowBounds.Default, DockLayoutNode.Documents()),

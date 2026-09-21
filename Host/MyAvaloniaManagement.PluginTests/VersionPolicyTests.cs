@@ -109,9 +109,7 @@ public sealed class VersionPolicyTests
         Assert.Equal(2, PluginManifestReader.CurrentSchemaVersion);
         Assert.Equal(2, DocumentEnvelopeSerializer.CurrentSchemaVersion);
         Assert.Equal(3, DockLayoutSnapshotV3.CurrentSchemaVersion);
-        Assert.Equal(2, DockLayoutSnapshotV2.CurrentSchemaVersion);
         Assert.Equal("layout-v3.json", DockLayoutV3Store.LayoutFileName);
-        Assert.Equal("layout-v2.json", DockLayoutStore.LayoutFileName);
         AssertVersionFact(
             "Host data root generation",
             properties["MyAvaloniaHostDataRootGeneration"],
