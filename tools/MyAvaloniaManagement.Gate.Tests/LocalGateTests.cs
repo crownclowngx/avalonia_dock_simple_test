@@ -51,10 +51,12 @@ public sealed class LocalGateTests
     public async Task ProfileRunsLocalStagesAndCoverageFollowsPackageAcceptance(bool seal)
     {
         var executed = new List<string>();
-        var graph = GateExecutionGraph.ForProfile(seal ? GateProfile.Seal : GateProfile.Verify,
+        var graph = GateExecutionPlan.ForProfile(seal ? GateProfile.Seal : GateProfile.Verify,
             id => { executed.Add(id); return Task.CompletedTask; });
         await graph.ExecuteAsync((_, action) => action());
-        var expected = new List<string> { "avalonia-layout-patch", "dock-patch", "restore", "build", "tests", "contracts", "packages", "package-acceptance" };
+        var expected = new List<string> { "avalonia-layout-patch", "dock-patch", "restore", "build" };
+        expected.AddRange(seal ? ["tests", "contracts"] : ["contracts", "tests"]);
+        expected.AddRange(["packages", "package-acceptance"]);
         if (seal) expected.AddRange(["coverage", "windows-smoke"]);
         Assert.Equal(expected, executed);
     }
@@ -63,7 +65,7 @@ public sealed class LocalGateTests
     public async Task 补丁验证失败必须阻断依赖还原和后续构建()
     {
         var executed = new List<string>();
-        var graph = GateExecutionGraph.ForProfile(GateProfile.Verify, id =>
+        var graph = GateExecutionPlan.ForProfile(GateProfile.Verify, id =>
         {
             executed.Add(id);
             return id == "dock-patch" ? Task.FromException(new GateFailureException("补丁摘要不匹配")) : Task.CompletedTask;
@@ -99,7 +101,7 @@ public sealed class LocalGateTests
     public async Task FailedPackageAcceptancePreventsCoverageAndSmoke()
     {
         var executed = new List<string>();
-        var graph = GateExecutionGraph.ForProfile(GateProfile.Seal, id =>
+        var graph = GateExecutionPlan.ForProfile(GateProfile.Seal, id =>
         {
             executed.Add(id);
             return id == "package-acceptance" ? Task.FromException(new GateFailureException("broken package")) : Task.CompletedTask;
@@ -118,7 +120,7 @@ public sealed class LocalGateTests
     {
         using var temporary = new TemporaryDirectory();
         var path = Path.Combine(temporary.Path, "test.trx");
-        File.WriteAllText(path, $"<TestRun><Counters passed=\"{passed}\" failed=\"{failed}\" notExecuted=\"{skipped}\" /></TestRun>");
+        TrxFixture.Create(passed, failed, skipped).Save(path);
         Assert.Throws<GateFailureException>(() => GateRunner.AssertTests(path, "package", requireSingle: true));
     }
 
@@ -220,7 +222,7 @@ public sealed class LocalGateTests
         var runner = new GateRunner(temporary.Path, GateConfiguration.Load(ConfigurationPath), TextWriter.Null);
         await Assert.ThrowsAsync<GateFailureException>(() => runner.RunAsync(GateOptions.Parse(["verify"]), CancellationToken.None));
         var summary = Directory.GetFiles(Path.Combine(temporary.Path, "artifacts", "gate"), "summary.json", SearchOption.AllDirectories)
-            .Single(path => !Path.GetDirectoryName(path)!.EndsWith("pass-1", StringComparison.Ordinal));
+            .Single(path => Path.GetFileName(Path.GetDirectoryName(path)) is not ("pass-1" or "tests"));
         using var json = JsonDocument.Parse(File.ReadAllText(summary));
         Assert.False(json.RootElement.GetProperty("passed").GetBoolean());
         var pass = Assert.Single(json.RootElement.GetProperty("passes").EnumerateArray());
@@ -228,6 +230,30 @@ public sealed class LocalGateTests
         Assert.Equal("failed", Assert.Single(pass.GetProperty("stages").EnumerateArray()).GetProperty("status").GetString());
         Assert.False(json.RootElement.GetProperty("host").GetProperty("publishable").GetBoolean());
         Assert.False(json.RootElement.GetProperty("host").GetProperty("releaseEligible").GetBoolean());
+        using var suites = JsonDocument.Parse(File.ReadAllText(Path.Combine(Path.GetDirectoryName(summary)!, "pass-1", "tests", "summary.json")));
+        Assert.Equal(6, suites.RootElement.GetProperty("suites").GetArrayLength());
+        Assert.All(suites.RootElement.GetProperty("suites").EnumerateArray(), suite =>
+        {
+            Assert.Equal("not-run", suite.GetProperty("status").GetString());
+            Assert.False(suite.TryGetProperty("result", out _));
+            Assert.False(suite.TryGetProperty("exitCode", out _));
+        });
+    }
+
+    [Theory]
+    [InlineData("Dock.Avalonia.dll")]
+    [InlineData("Avalonia.Base.dll")]
+    public void 必需消费输出缺失时也必须提交身份核对(string assembly)
+    {
+        using var temporary = new TemporaryDirectory();
+        var runner = new GateRunner(temporary.Path, GateConfiguration.Load(ConfigurationPath), TextWriter.Null);
+        var paths = runner.RequiredHostAssemblies(temporary.Path, assembly).ToArray();
+        Assert.Equal(4, paths.Length);
+        Assert.All(paths, path => Assert.False(File.Exists(path)));
+        Assert.Contains(paths, path => path.Contains("MyAvaloniaManagement.UiTests", StringComparison.Ordinal));
+        Assert.Contains(paths, path => path.Contains("MyAvaloniaManagement.PluginTests", StringComparison.Ordinal));
+        Assert.Contains(paths, path => path.Contains("MyAvaloniaManagement.Tests", StringComparison.Ordinal));
+        Assert.DoesNotContain(paths, path => path.Contains("PluginSdk.Tests", StringComparison.Ordinal));
     }
 
     private sealed class TemporaryDirectory : IDisposable

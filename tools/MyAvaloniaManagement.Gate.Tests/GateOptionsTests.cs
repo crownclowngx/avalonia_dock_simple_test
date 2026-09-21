@@ -7,7 +7,7 @@ public sealed class GateOptionsTests
     {
         var options = GateOptions.Parse(["verify"]);
         Assert.Equal(GateProfile.Verify, options.Profile);
-        Assert.Equal(GateScope.All, options.Scope);
+        Assert.Equal("all", options.Scope);
         Assert.False(options.Repeat);
     }
 

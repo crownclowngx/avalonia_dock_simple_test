@@ -9,7 +9,7 @@ public sealed class AvaloniaLayoutPatchTests
     public async Task 布局补丁失败阻断全部后续阶段()
     {
         var executed = new List<string>();
-        var graph = GateExecutionGraph.ForProfile(GateProfile.Verify, id =>
+        var graph = GateExecutionPlan.ForProfile(GateProfile.Verify, id =>
         {
             executed.Add(id);
             return Task.FromException(new GateFailureException("布局补丁失败"));

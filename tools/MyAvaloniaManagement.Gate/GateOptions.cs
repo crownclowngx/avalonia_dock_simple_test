@@ -6,15 +6,10 @@ internal enum GateProfile
     Seal,
 }
 
-internal enum GateScope
-{
-    All,
-    Host,
-}
-
+/// <summary>Scope 仅保留命令兼容标签和历史证据值；host/all 共用唯一的本仓执行计划。</summary>
 internal sealed record GateOptions(
     GateProfile Profile,
-    GateScope Scope,
+    string Scope,
     bool Repeat,
     bool ShowHelp)
 {
@@ -23,7 +18,7 @@ internal sealed record GateOptions(
         if (arguments.Count == 0 || arguments.Contains("--help", StringComparer.Ordinal) ||
             arguments.Contains("-h", StringComparer.Ordinal))
         {
-            return new(GateProfile.Verify, GateScope.All, false, true);
+            return new(GateProfile.Verify, "all", false, true);
         }
 
         var profile = arguments[0] switch
@@ -33,7 +28,7 @@ internal sealed record GateOptions(
             _ => throw new GateUsageException($"未知 profile：{arguments[0]}。"),
         };
 
-        var scope = GateScope.All;
+        var scope = "all";
         var repeat = false;
         for (var index = 1; index < arguments.Count; index++)
         {
@@ -58,7 +53,7 @@ internal sealed record GateOptions(
             throw new GateUsageException("--repeat 只能与 seal 一起使用。");
         }
 
-        if (profile == GateProfile.Seal && scope != GateScope.All)
+        if (profile == GateProfile.Seal && scope != "all")
         {
             throw new GateUsageException("seal 始终执行完整门禁；--scope 只用于 verify 排错。");
         }
@@ -66,10 +61,10 @@ internal sealed record GateOptions(
         return new(profile, scope, repeat, false);
     }
 
-    private static GateScope ParseScope(string value) => value switch
+    private static string ParseScope(string value) => value switch
     {
-        "all" => GateScope.All,
-        "host" => GateScope.Host,
+        "all" => "all",
+        "host" => "host",
         "workflow" or "workbench" => throw new GateUsageException(
             $"scope {value} 已退役；host 与 all 均执行完整本仓验证。"),
         _ => throw new GateUsageException($"未知 scope：{value}。"),

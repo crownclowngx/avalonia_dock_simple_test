@@ -33,6 +33,21 @@ internal sealed record PackageEvidence(
 
 internal sealed record CoverageEvidence(double Line, double Branch);
 
+/// <summary>套件证据单独保存，不改变既有 GateSummary schema 2。未运行时计数与退出码为空。</summary>
+internal sealed record TestSuiteEvidence(string Id, string Status = "not-run")
+{
+    public string[]? Command { get; init; }
+    public string? Filter { get; init; }
+    public int? ExitCode { get; init; }
+    public double? WallMilliseconds { get; init; }
+    public string? TrxPath { get; init; }
+    public string? AttachmentsPath { get; init; }
+    public TestRunEvidence? Result { get; init; }
+    public string? Error { get; init; }
+}
+
+internal sealed record TestSuiteSummary(string RunId, int Pass, SourceEvidence Source, List<TestSuiteEvidence> Suites);
+
 internal sealed record GateSummary
 {
     public int SchemaVersion { get; init; } = 2;

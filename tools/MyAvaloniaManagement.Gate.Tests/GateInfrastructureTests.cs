@@ -16,13 +16,11 @@ public sealed class GateInfrastructureTests
     }
 
     [Fact]
-    public async Task ExecutionGraphDeduplicatesStagesInRegistrationOrder()
+    public async Task 顺序计划每个阶段只执行一次且保留阶段包装器()
     {
         var executed = new List<string>();
-        var graph = new GateExecutionGraph()
-            .Add("restore", () => { executed.Add("restore-action"); return Task.CompletedTask; })
-            .Add("restore", () => { executed.Add("duplicate"); return Task.CompletedTask; })
-            .Add("build", () => { executed.Add("build-action"); return Task.CompletedTask; });
+        var graph = GateExecutionPlan.ForProfile(GateProfile.Verify,
+            id => { executed.Add(id + "-action"); return Task.CompletedTask; });
 
         await graph.ExecuteAsync(async (id, action) =>
         {
@@ -30,21 +28,34 @@ public sealed class GateInfrastructureTests
             await action();
         });
 
-        Assert.Equal(["restore", "restore-action", "build", "build-action"], executed);
+        Assert.Equal(graph.Stages.Count, graph.Stages.Distinct(StringComparer.Ordinal).Count());
+        Assert.Equal(graph.Stages.SelectMany(id => new[] { id, id + "-action" }), executed);
     }
 
-    [Fact]
-    public async Task ExecutionGraphStopsAfterFirstFailure()
+    [Theory]
+    [InlineData("avalonia-layout-patch")]
+    [InlineData("dock-patch")]
+    [InlineData("restore")]
+    [InlineData("build")]
+    [InlineData("contracts")]
+    [InlineData("tests")]
+    [InlineData("packages")]
+    [InlineData("package-acceptance")]
+    public async Task 每一开发阶段失败均立即停止(string failure)
     {
-        var reachedLastStage = false;
-        var graph = new GateExecutionGraph()
-            .Add("tests", () => throw new GateFailureException("failed"))
-            .Add("packages", () => { reachedLastStage = true; return Task.CompletedTask; });
+        var executed = new List<string>();
+        var graph = GateExecutionPlan.ForProfile(GateProfile.Verify, id =>
+        {
+            executed.Add(id);
+            return id == failure ? Task.FromException(new GateFailureException("failed")) : Task.CompletedTask;
+        });
 
         await Assert.ThrowsAsync<GateFailureException>(() =>
             graph.ExecuteAsync((_, action) => action()));
 
-        Assert.False(reachedLastStage);
+        Assert.Equal(graph.Stages.TakeWhile(id => id != failure).Append(failure), executed);
+        Assert.DoesNotContain("coverage", executed);
+        Assert.DoesNotContain("windows-smoke", executed);
     }
 
     [Fact]
@@ -74,12 +85,11 @@ public sealed class GateInfrastructureTests
     {
         using var temporary = new TemporaryDirectory();
         var trx = Path.Combine(temporary.Path, "result.trx");
-        File.WriteAllText(trx,
-            "<TestRun><ResultSummary><Counters passed=\"3\" failed=\"0\" notExecuted=\"0\" /></ResultSummary></TestRun>");
+        TrxFixture.Create(passed: 3).Save(trx);
         var coverage = Path.Combine(temporary.Path, "coverage.xml");
         File.WriteAllText(coverage, "<coverage line-rate=\"0.85\" branch-rate=\"0.75\" />");
 
-        Assert.Equal(new TestCounts(3, 0, 0), TestEvidenceReader.ReadTrx(trx));
+        Assert.Equal(new TestCounts(3, 3, 3, 0, 0, 0), TestEvidenceReader.ReadTrx(trx).Counts);
         Assert.Equal(new CoverageEvidence(85, 75), TestEvidenceReader.ReadCoverage(coverage));
     }
 
@@ -88,10 +98,9 @@ public sealed class GateInfrastructureTests
     {
         using var temporary = new TemporaryDirectory();
         var trx = Path.Combine(temporary.Path, "result.trx");
-        File.WriteAllText(trx,
-            "<TestRun><ResultSummary><Counters passed=\"2\" failed=\"0\" notExecuted=\"1\" /></ResultSummary></TestRun>");
+        TrxFixture.Create(passed: 2, skipped: 1).Save(trx);
 
-        Assert.Equal(new TestCounts(2, 0, 1), TestEvidenceReader.ReadTrx(trx));
+        Assert.Equal(new TestCounts(3, 2, 2, 0, 1, 0), TestEvidenceReader.ReadTrx(trx).Counts);
     }
 
     [Fact]
