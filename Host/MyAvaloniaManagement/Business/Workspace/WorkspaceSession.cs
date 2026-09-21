@@ -134,14 +134,6 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
     /// <summary>取得当前活动 Document，不向调用方暴露 Root Dock 遍历。</summary>
     internal ManagedDocumentDockable? GetActiveDocument() => _publishedActiveDocument;
 
-    /// <summary>判断窗口关闭是否存在需要确认的脏 Document。</summary>
-    internal bool HasDirtyDocuments() =>
-        GetDocuments().Any(_documentCloseCoordinator.IsDirty);
-
-    /// <summary>汇总当前会话全部脏 Document 的窗口关闭确认。</summary>
-    internal Task<bool> ConfirmWindowCloseAsync() =>
-        _documentCloseCoordinator.ConfirmWindowCloseAsync(GetDocuments());
-
     /// <summary>冻结新建入口，排空全部文档命令；许可只到 Runtime 最终关闭或用户取消时释放。</summary>
     internal async Task<bool> PrepareApplicationCloseAsync()
     {

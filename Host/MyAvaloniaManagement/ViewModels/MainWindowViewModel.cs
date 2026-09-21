@@ -159,21 +159,6 @@ internal sealed partial class MainWindowViewModel : ObservableObject, IMainWindo
     }
 
     /// <summary>
-    /// 在主窗口真正退出前汇总处理全部脏 Document。
-    /// </summary>
-    internal Task<bool> ConfirmWindowCloseAsync()
-    {
-        return _workspace.ConfirmWindowCloseAsync();
-    }
-
-    /// <summary>
-    /// 同步判断窗口关闭是否需要进入异步确认。干净窗口保持 Avalonia 原生的一次关闭路径，
-    /// 避免无意义地取消后重入，也让布局保存和自动化退出保持同步可观察。
-    /// </summary>
-    internal bool HasDirtyDocuments() =>
-        _workspace.HasDirtyDocuments();
-
-    /// <summary>
     /// 解除当前瞬态窗口对根级协调对象的定向通知。
     /// </summary>
     public void Dispose()

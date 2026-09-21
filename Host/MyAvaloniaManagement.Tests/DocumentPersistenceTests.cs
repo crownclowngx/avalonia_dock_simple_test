@@ -294,7 +294,7 @@ public sealed class DocumentPersistenceTests
     }
 
     [Fact]
-    public async Task AcceptChanges异常不回滚主文件且关闭保存可继续()
+    public async Task AcceptChanges异常不回滚主文件但关闭须保留仍脏页面()
     {
         using var context = DocumentTestContext.Create();
         var path = Path.Combine(context.TempDirectory, "accept-warning.mamdoc");
@@ -307,7 +307,7 @@ public sealed class DocumentPersistenceTests
             new PluginBoundaryException("secret-accept");
         context.Interactions.CloseChoices.Enqueue(DocumentCloseChoice.Save);
 
-        Assert.True(await viewModel.ConfirmWindowCloseAsync());
+        Assert.False(await viewModel.PrepareWindowCloseAsync());
         Assert.Equal(Path.GetFullPath(path), context.GetDocumentFilePath(adapter));
         Assert.Equal(2, context.Storage.Writes.Count);
         Assert.Contains(context.Interactions.Errors, message => message.Contains("已保存", StringComparison.Ordinal));
@@ -457,9 +457,9 @@ public sealed class DocumentPersistenceTests
         Assert.False(Assert.IsType<TestSavableDocument>(recovered.Model).IsDirty);
         Assert.True(recovered.IsModified);
         Assert.Equal("备份（已恢复）", recovered.Title);
-        Assert.True(viewModel.HasDirtyDocuments());
+        Assert.True(context.PersistenceStates.IsDirty(recovered));
         context.Interactions.CloseChoices.Enqueue(DocumentCloseChoice.Cancel);
-        Assert.False(await viewModel.ConfirmWindowCloseAsync());
+        Assert.False(await viewModel.PrepareWindowCloseAsync());
 
         GetDocumentDock(context).ActiveDockable = recovered;
         context.Storage.SavePath = primary;

@@ -23,3 +23,11 @@ P0 两项风险均已通过确定性测试复现：`DocumentCloseTests.V19干净
 P1–P6 正在执行。各项真实测试方法、红绿结果、设计取舍和最终验证在完成对应工作后追加；本记录不提前声明覆盖或通过。
 
 恢复最小修复验证：DocumentPersistenceTests 21/21 通过，证据 artifacts/host-v19/p0-risk-reproduction/recovery-minimal-green.trx。
+
+## P1：关闭规则收敛
+
+`RequestDecisionAsync` 是唯一确认/保存规则，`VerifyFinalStateAsync` 是单页和范围排空后的共同许可条件。同步干净快速路径、一次性许可和精确单页接续浮窗范围均保留。删除 Coordinator、Session、MainWindowViewModel 的旧 `ConfirmWindowCloseAsync`、`HasDirtyDocuments` 及 `_windowRequestPending`；原测试迁移到 `PrepareRangeCloseAsync(isApplicationExit: true)` 或主窗 `PrepareWindowCloseAsync`。
+
+新增方法覆盖：`V19干净单页排空期间出现修改必须撤销关闭并重新开放命令`（C01/C09）；`V19单页保存后排空又修改必须保留_明确放弃可继续`（C02）；`V19所有关闭入口按最终脏状态区分确认修订警告与备份警告` 六组参数（C03）；`V19同步取消回调修改文档并排空也不能走干净快速关闭`（C04）；`V19范围放弃许可不能覆盖确认时干净而后来变脏的页面`（C02/C08）。原保存中新修订测试改为等待关闭收尾事件，消除“错误提示到达即认为 pending 已清理”的竞态；新增测试初稿误读展示脏状态也已改为读取真实模型事实。失败 TRX 原样保留。
+
+文档相关 Unit 99/99、关闭/浮窗/重启 Headless UI 75/75 通过，无跳过。证据：`artifacts/host-v19/p1-close/documents-final.trx`、`close-ui.trx`。既有测试继续验证原生首次/重试否决、CanClose、单页接续不扩大许可、目标集合变化、Scope 顺序和重启最终布局。保存警告行为修复已同步 `docs/reference/document-persistence.md`。

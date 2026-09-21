@@ -25,7 +25,6 @@ internal sealed class DocumentCloseCoordinator(
         "保存期间 Document 又发生了修改，请再次保存后再关闭。";
     private readonly HashSet<ManagedDocumentDockable> _approvedOnce = [];
     private readonly HashSet<ManagedDocumentDockable> _pending = [];
-    private bool _windowRequestPending;
     private bool _rangeRequestPending;
     private readonly WorkbenchDocumentCommandLeaseStore _commandLeases =
         commandLeases ?? throw new ArgumentNullException(nameof(commandLeases));
@@ -42,12 +41,9 @@ internal sealed class DocumentCloseCoordinator(
         }
     }
 
-    internal bool IsDirty(ManagedDocumentDockable document) =>
-        persistenceStates.IsDirty(document);
-
     /// <summary>页面定位遵守与关闭相同的事实，包括正在询问保存和等待命令排空的阶段。</summary>
     internal bool IsClosing(ManagedDocumentDockable document) =>
-        _windowRequestPending || _pending.Contains(document) || _approvedOnce.Contains(document) || _commandLeases.IsClosing(document);
+        _pending.Contains(document) || _approvedOnce.Contains(document) || _commandLeases.IsClosing(document);
 
     internal bool TryBeginDockClose(
         ManagedDocumentDockable document,
@@ -61,7 +57,7 @@ internal sealed class DocumentCloseCoordinator(
             return true;
         }
 
-        if (_windowRequestPending || _pending.Contains(document))
+        if (_pending.Contains(document))
         {
             return false;
         }
@@ -75,14 +71,16 @@ internal sealed class DocumentCloseCoordinator(
         }
 
         var drain = _commandLeases.BeginClose(document);
-        if (drain.IsCompletedSuccessfully)
+        // BeginClose 会同步调用命令取消回调，回调也可能修改文档并释放最后一个租约。
+        // 即使排空同步完成，也不能绕过这次实时检查；仍干净时保持 Dock 原生快速路径。
+        if (drain.IsCompletedSuccessfully && !persistenceStates.IsDirty(document))
         {
             return true;
         }
 
         _pending.Add(document);
         NotifyStateChanged();
-        _ = RetryAfterCommandDrainAsync(document, retryClose, drain);
+        _ = ConfirmDockCloseAsync(document, retryClose, drain);
         return false;
     }
 
@@ -108,22 +106,6 @@ internal sealed class DocumentCloseCoordinator(
         _commandLeases.CompleteClose(document);
     }
 
-    /// <summary>保留主窗口现有确认入口；正在关闭的浮窗范围必须先结束，避免两轮确认相互授权。</summary>
-    internal async Task<bool> ConfirmWindowCloseAsync(
-        IReadOnlyList<ManagedDocumentDockable> documents)
-    {
-        ArgumentNullException.ThrowIfNull(documents);
-        if (_windowRequestPending || _rangeRequestPending || documents.Any(_pending.Contains)) return false;
-        _windowRequestPending = true;
-        NotifyStateChanged();
-        try { return await RequestDecisionAsync(documents, isApplicationExit: true) is not null; }
-        finally
-        {
-            _windowRequestPending = false;
-            NotifyStateChanged();
-        }
-    }
-
     /// <summary>
     /// 为固定文档集合准备一次关闭许可。先完整确认和保存，再禁止新命令并等待所有目标排空；
     /// 这里不拆除标签、不取消 Document 最终生命周期，也不释放 Scope。调用者提交或撤销后
@@ -142,13 +124,13 @@ internal sealed class DocumentCloseCoordinator(
         // 单页最初还有相邻页面，因此先按单页协议确认；等待期间邻页可能被关闭/移走，重试时
         // 它已成为浮窗最后一项。此时借用已取得的一次性许可交给整窗收尾，不能再次申请范围
         // 确认而被自己的 pending/命令关闭状态拒绝。仅允许精确的一页接续，不扩大授权范围。
-        if (!isApplicationExit && !_windowRequestPending && !_rangeRequestPending &&
+        if (!isApplicationExit && !_rangeRequestPending &&
             targets is [var approved] && _approvedOnce.Contains(approved))
         {
             _rangeRequestPending = true;
             return new DocumentCloseApproval(() => ReleaseRange(targets));
         }
-        if (_windowRequestPending || _rangeRequestPending || targets.Any(IsClosing)) return null;
+        if (_rangeRequestPending || targets.Any(IsClosing)) return null;
         _rangeRequestPending = true;
         foreach (var document in targets) _pending.Add(document);
         NotifyStateChanged();
@@ -158,11 +140,7 @@ internal sealed class DocumentCloseCoordinator(
             var discarded = await RequestDecisionAsync(targets, isApplicationExit);
             if (discarded is null) return null;
             await Task.WhenAll(targets.Select(_commandLeases.BeginClose));
-            if (targets.Any(document => persistenceStates.IsDirty(document) && !discarded.Contains(document)))
-            {
-                await ShowErrorSafelyAsync(PendingChangesMessage);
-                return null;
-            }
+            if (!await VerifyFinalStateAsync(targets, discarded)) return null;
             foreach (var document in targets) _approvedOnce.Add(document);
             granted = true;
             return new DocumentCloseApproval(() => ReleaseRange(targets));
@@ -232,95 +210,61 @@ internal sealed class DocumentCloseCoordinator(
         }
     }
 
+    /// <summary>
+    /// 将单页同步回调接续到共同的决策和最终检查。已开始排空的干净页不补发放弃授权，
+    /// 只在排空后复核；否则用户从未确认过的新修改会被隐式丢弃。此方法不拥有文档资源。
+    /// </summary>
     private async Task ConfirmDockCloseAsync(
         ManagedDocumentDockable document,
-        Action retryClose)
+        Action retryClose,
+        Task? startedDrain = null)
     {
+        var granted = false;
         try
         {
-            var choice = await interactionService.ConfirmCloseAsync(
-                [GetDisplayName(document)],
-                isApplicationExit: false);
-            if (choice == DocumentCloseChoice.Cancel)
-            {
-                return;
-            }
-
-            if (choice == DocumentCloseChoice.Save)
-            {
-                var result = await saveService.SaveAsync(document);
-                if (!result.IsSaved)
-                {
-                    if (!string.IsNullOrWhiteSpace(result.Message))
-                    {
-                        await ShowErrorSafelyAsync(result.Message);
-                    }
-                    return;
-                }
-
-                if (result.HasPendingChanges)
-                {
-                    await ShowErrorSafelyAsync(CombineMessages(
-                        result.Message,
-                        PendingChangesMessage));
-                    return;
-                }
-
-                if (result.Status == DocumentSaveStatus.SavedWithWarning)
-                {
-                    await ShowErrorSafelyAsync(result.Message);
-                }
-            }
-
-            var drain = _commandLeases.BeginClose(document);
-            await drain;
+            var discarded = startedDrain is null
+                ? await RequestDecisionAsync([document], isApplicationExit: false)
+                : new HashSet<ManagedDocumentDockable>();
+            if (discarded is null) return;
+            await (startedDrain ?? _commandLeases.BeginClose(document));
+            if (!await VerifyFinalStateAsync([document], discarded)) return;
             _approvedOnce.Add(document);
             retryClose();
+            granted = true;
         }
         catch (Exception exception)
         {
-            // 此任务由同步 Dock 回调启动，不能把异常遗留为未观察任务。任何交互或重入失败
-            // 都维持 Document 打开，并清除 pending，允许用户稍后重新尝试。
+            // 同步 Dock 回调不会观察此任务；交互或重入失败必须就地处理，并在 finally 撤销许可。
             DocumentPersistenceErrorMapper.Report(
                 "DOCUMENT_DOCK_CLOSE_CALLBACK_FAILED",
                 exception);
-            _approvedOnce.Remove(document);
-            TryReopenCommands(document);
             await ShowErrorSafelyAsync("无法完成关闭确认。Document 保持打开。");
         }
         finally
         {
+            if (!granted)
+            {
+                _approvedOnce.Remove(document);
+                TryReopenCommands(document);
+            }
             _pending.Remove(document);
             NotifyStateChanged();
         }
     }
 
-    /// <summary>等待干净 Document 的在途命令退出，再授予一次性关闭许可并重试。</summary>
-    private async Task RetryAfterCommandDrainAsync(
-        ManagedDocumentDockable document,
-        Action retryClose,
-        Task drain)
+    /// <summary>
+    /// 所有异步关闭路径共用的最终许可规则：只有当前干净或被用户明确放弃的目标可以关闭。
+    /// 主文件提交成功与关闭获准是两件事；确认修订异常留下的脏状态同样必须保留页面。
+    /// 放弃集合仅包含确认当时的脏文档，不扩大到同范围中后来变脏的其他页面。
+    /// </summary>
+    private async Task<bool> VerifyFinalStateAsync(
+        IReadOnlyList<ManagedDocumentDockable> targets,
+        HashSet<ManagedDocumentDockable> discarded)
     {
-        try
-        {
-            await drain;
-            _approvedOnce.Add(document);
-            retryClose();
-        }
-        catch (Exception exception)
-        {
-            DocumentPersistenceErrorMapper.Report(
-                "DOCUMENT_COMMAND_DRAIN_CALLBACK_FAILED",
-                exception);
-            _approvedOnce.Remove(document);
-            TryReopenCommands(document);
-            await ShowErrorSafelyAsync("无法安全排空 Document 命令。Document 保持打开。");
-        }
-        finally
-        {
-            _pending.Remove(document);
-            NotifyStateChanged();
-        }
+        if (!targets.Any(document => persistenceStates.IsDirty(document) && !discarded.Contains(document)))
+            return true;
+        await ShowErrorSafelyAsync(PendingChangesMessage);
+        return false;
     }
 
     private void TryReopenCommands(ManagedDocumentDockable document)
