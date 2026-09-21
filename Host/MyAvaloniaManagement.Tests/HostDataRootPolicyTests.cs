@@ -7,7 +7,7 @@ using MyAvaloniaManagement.Business.Storage;
 namespace MyAvaloniaManagement.Tests;
 
 /// <summary>
-/// 验证 V3 代码线继续使用 V2 数据根，并保护既有 V2/V1 磁盘事实。
+/// 验证当前代码继续使用 v2 数据根，并保护既有文档协议和 v1 数据目录。
 /// </summary>
 /// <remarks>
 /// 这些测试只向纯 Policy 传入路径，不修改进程环境变量，避免并行测试互相污染。
@@ -53,7 +53,7 @@ public sealed class HostDataRootPolicyTests
     }
 
     [Fact]
-    public void V2存储不读取改写迁移或删除V1目录()
+    public void 现行存储不读取改写迁移或删除V1目录()
     {
         using var workspace = new TemporaryWorkspace();
         var legacyRoot = Path.Combine(
@@ -67,7 +67,7 @@ public sealed class HostDataRootPolicyTests
             AppearanceSettingsStore.SettingsFileName);
         var legacyLayoutPath = Path.Combine(
             legacyRoot,
-            DockLayoutStore.LayoutFileName);
+            "layout-v2.json");
         var legacyDiagnosticsDirectory = Path.Combine(legacyRoot, "Diagnostics");
         Directory.CreateDirectory(legacyDiagnosticsDirectory);
         var legacyDiagnosticPath = Path.Combine(
@@ -90,9 +90,7 @@ public sealed class HostDataRootPolicyTests
         var appearance = new AppearanceSettingsStore(Path.Combine(
             v2Root,
             AppearanceSettingsStore.SettingsFileName));
-        var layout = new DockLayoutStore(Path.Combine(
-            v2Root,
-            DockLayoutStore.LayoutFileName));
+        using var layout = new DockLayoutV3Store(v2Root);
 
         // V2 根中没有文件时必须使用默认值，不能回退到 V1 根探测或迁移旧数据。
         Assert.Equal(ApplicationThemeMode.System, appearance.Load());
@@ -121,32 +119,32 @@ public sealed class HostDataRootPolicyTests
     }
 
     [Fact]
-    public void V3可以读取既有V2文档与布局且不会改写源文件()
+    public void 现行存储读取V2文档与V3布局且不会改写源文件()
     {
         using var workspace = new TemporaryWorkspace();
         var dataRoot = HostDataRootPolicy.Resolve(null, workspace.Root);
         Directory.CreateDirectory(dataRoot);
         var documentPath = Path.Combine(dataRoot, "existing-v2.mamdoc");
-        var layoutPath = Path.Combine(dataRoot, DockLayoutStore.LayoutFileName);
+        var layoutPath = Path.Combine(dataRoot, DockLayoutV3Store.LayoutFileName);
         const string documentJson =
             "{\"schemaVersion\":2,\"pluginId\":\"myavalonia.plugin.g1-boundary\"," +
             "\"documentTypeId\":\"myavalonia.plugin.g1-boundary.document.sample\"," +
             "\"title\":\"V2 existing\",\"savedAtUtc\":\"2026-08-22T00:00:00+00:00\"," +
             "\"content\":{\"schemaVersion\":1,\"payload\":{\"value\":\"kept\"}}}";
-        const string layoutJson =
-            "{\"schemaVersion\":2,\"panes\":[],\"tools\":[],\"activeToolId\":null}";
+        var layoutJson = DockLayoutV3Tests.Write(DockLayoutV3Tests.Sample());
         File.WriteAllText(documentPath, documentJson);
         File.WriteAllText(layoutPath, layoutJson);
 
-        // G1 只允许读取既有格式，不允许用“升级主版本”为理由触发保存、迁移或隔离。
+        // 数据根、Document 与 Layout 各自拥有协议版本；布局退役不能改变文档读取边界。
         var envelope = new DocumentEnvelopeSerializer().Deserialize(
             File.ReadAllText(documentPath));
-        var layout = new DockLayoutStore(layoutPath).Load();
+        using var store = new DockLayoutV3Store(dataRoot);
+        var layout = store.Load();
 
         Assert.Equal("myavalonia.plugin.g1-boundary", envelope.PluginId.Value);
         Assert.Equal("kept", envelope.Content.Payload.GetProperty("value").GetString());
         Assert.NotNull(layout);
-        Assert.Equal(2, layout.SchemaVersion);
+        Assert.Equal(3, layout.SchemaVersion);
         Assert.Equal(documentJson, File.ReadAllText(documentPath));
         Assert.Equal(layoutJson, File.ReadAllText(layoutPath));
         Assert.Empty(Directory.GetFiles(dataRoot, "*.invalid.bak"));

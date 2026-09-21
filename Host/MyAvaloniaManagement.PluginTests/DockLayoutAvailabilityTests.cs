@@ -1,5 +1,4 @@
 using Avalonia.Controls;
-using Dock.Model.Core;
 using Dock.Model.Mvvm.Controls;
 using Microsoft.Extensions.DependencyInjection;
 using MyAvaloniaManagement.Business.Layout;
@@ -10,12 +9,12 @@ using MyAvaloniaManagement.PluginSdk.UI;
 namespace MyAvaloniaManagement.PluginTests;
 
 /// <summary>
-/// V3 把不可用工具保留为数据，当前窗口只投影可用项；只读迁移不隔离合法旧文件。
+/// V3 把不可用工具保留为数据，当前窗口只投影可用项；当前文件读取和保存不丢失缺失插件的恢复意图。
 /// </summary>
 public sealed class DockLayoutAvailabilityTests
 {
     [Fact]
-    public async Task 生命周期未就绪的工具不投影但保留可见意图和原V2字节()
+    public async Task 生命周期未就绪的工具不投影但保留V3可见意图()
     {
         using var workspace = new TemporaryWorkspace();
         using var services = new ServiceCollection()
@@ -47,12 +46,8 @@ public sealed class DockLayoutAvailabilityTests
         var tool = new Tool { Id = toolTypeId.Value, Title = "不可用测试 Tool" };
         ((Dictionary<string, Tool>)factory.CreatedTools).Add(tool.Id, tool);
         var diagnostics = new List<string>();
-        var store = new DockLayoutStore(
-            workspace.LayoutPath,
-            (code, stableId) => diagnostics.Add($"{code}:{stableId}"));
-        store.Save(CreateSnapshot(toolTypeId.Value, proportion: 0.73));
-        var original = File.ReadAllBytes(workspace.LayoutPath);
-        using var v3 = new DockLayoutV3Store(workspace.DirectoryPath);
+        using var v3 = new DockLayoutV3Store(workspace.DirectoryPath, (code, _) => diagnostics.Add(code));
+        v3.Save(CreateSnapshot(toolTypeId.Value, proportion: 0.73));
         using var lifecycle = new DockLayoutLifecycle(v3);
 
         lifecycle.Prepare(factory);
@@ -61,13 +56,15 @@ public sealed class DockLayoutAvailabilityTests
         lifecycle.Save(factory);
         await lifecycle.FlushAsync();
         Assert.Equal("visible", Assert.Single(v3.Load()!.Tools).State);
-        Assert.Equal(original, File.ReadAllBytes(workspace.LayoutPath));
+        Assert.Empty(diagnostics);
+        var savedGroup = Assert.Single(DockLayoutTree.Enumerate(v3.Load()!.MainWindow.Root), node => node.Kind == "tools");
+        Assert.Equal(0.73, savedGroup.Proportion, precision: 6);
         Assert.Empty(Directory.EnumerateFiles(workspace.DirectoryPath, "*.invalid.bak"));
         factory.Dispose();
     }
 
     [Fact]
-    public async Task 未注册工具保留在V3且不隔离合法V2输入()
+    public async Task 未注册工具不创建实例且保留V3恢复记录()
     {
         using var workspace = new TemporaryWorkspace();
         using var services = new ServiceCollection()
@@ -78,71 +75,33 @@ public sealed class DockLayoutAvailabilityTests
             registry,
             services.GetRequiredService<DocumentScopeManager>());
         var diagnostics = new List<string>();
-        var store = new DockLayoutStore(
-            workspace.LayoutPath,
-            (code, stableId) => diagnostics.Add($"{code}:{stableId}"));
-        store.Save(CreateSnapshot(
+        using var v3 = new DockLayoutV3Store(workspace.DirectoryPath, (code, _) => diagnostics.Add(code));
+        v3.Save(CreateSnapshot(
             "myavalonia.plugin.not-installed.tool.sample",
             proportion: 0.73));
-        var original = File.ReadAllBytes(workspace.LayoutPath);
-        using var v3 = new DockLayoutV3Store(workspace.DirectoryPath);
         using var lifecycle = new DockLayoutLifecycle(v3);
 
         lifecycle.Prepare(factory);
         lifecycle.ApplyPending(factory);
         lifecycle.Save(factory);
         await lifecycle.FlushAsync();
+        Assert.Empty(factory.CreatedTools);
         var retained = Assert.Single(v3.Load()!.Tools);
         Assert.Equal("myavalonia.plugin.not-installed.tool.sample", retained.Id);
         Assert.Equal("visible", retained.State);
-        Assert.Equal(original, File.ReadAllBytes(workspace.LayoutPath));
+        Assert.Empty(diagnostics);
+        var savedGroup = Assert.Single(DockLayoutTree.Enumerate(v3.Load()!.MainWindow.Root), node => node.Kind == "tools");
+        Assert.Equal(0.73, savedGroup.Proportion, precision: 6);
         Assert.Empty(Directory.EnumerateFiles(workspace.DirectoryPath, "*.invalid.bak"));
         factory.Dispose();
     }
 
-    private static DockLayoutSnapshotV2 CreateSnapshot(string toolId, double proportion) =>
-        new()
-        {
-            Panes = [new DockPaneSnapshotV2
-            {
-                Id = DockLayoutIds.LeftPane,
-                Proportion = proportion,
-            }],
-            Tools = [new DockToolSnapshotV2
-            {
-                Id = toolId,
-                DockId = DockLayoutIds.LeftTools,
-                Order = 0,
-                IsVisible = true,
-                IsPinned = false,
-            }],
-            ActiveToolId = toolId,
-        };
-
-    private static T FindDock<T>(IDock root, string id)
-        where T : class, IDock
-        => FindDockOrDefault<T>(root, id)
-           ?? throw new InvalidOperationException($"未找到 Dock：{id}。");
-
-    private static T? FindDockOrDefault<T>(IDock root, string id)
-        where T : class, IDock
-    {
-        if (root is T match && root.Id == id)
-        {
-            return match;
-        }
-
-        foreach (var child in root.VisibleDockables?.OfType<IDock>() ?? [])
-        {
-            var result = FindDockOrDefault<T>(child, id);
-            if (result is not null)
-            {
-                return result;
-            }
-        }
-
-        return null;
-    }
+    /// <summary>直接表达当前恢复记录；缺失工具仍占有组位置，但不会因此创建业务实例。</summary>
+    private static DockLayoutSnapshotV3 CreateSnapshot(string toolId, double proportion) => new(3,
+        new("main", DockWindowBounds.Default, DockLayoutNode.Split("split", "horizontal",
+            [DockLayoutNode.Group("group", [toolId], proportion, toolId),
+                DockLayoutNode.Documents() with { Proportion = 1 - proportion }])), [],
+        [new(toolId, "visible", DockLayoutIds.LeftTools, 0)]);
 
     private sealed class TestLifecycle : IPluginLifecycle
     {
@@ -158,11 +117,9 @@ public sealed class DockLayoutAvailabilityTests
                 Path.GetTempPath(),
                 $"myavalonia-layout-availability-tests-{Guid.NewGuid():N}");
             Directory.CreateDirectory(DirectoryPath);
-            LayoutPath = Path.Combine(DirectoryPath, DockLayoutStore.LayoutFileName);
         }
 
         internal string DirectoryPath { get; }
-        internal string LayoutPath { get; }
 
         public void Dispose()
         {

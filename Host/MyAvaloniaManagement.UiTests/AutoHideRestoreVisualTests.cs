@@ -32,25 +32,32 @@ public sealed class AutoHideRestoreVisualTests
     [InlineData(Alignment.Bottom, true)]
     public void 重启后边栏工具展开及固定均有可见内容(Alignment alignment, bool keepExpandedTool)
     {
-        DockLayoutSnapshotV2 snapshot;
+        DockLayoutSnapshotV3 snapshot;
         using (var original = new UiTestContext())
         {
-            snapshot = DockLayoutSnapshotMapper.Capture(original.Workspace.RootDock!, original.Workspace);
-            snapshot = snapshot with
+            // 使用实际会话捕获工具身份，测试输入只描述 V3 树和状态，不模拟旧格式转换。
+            var captured = original.Workspace.LayoutState.Capture(original.Workspace);
+            var tools = captured.Tools.OrderBy(tool => tool.Id == HostExtensionIds.PluginMenu.Value ? 0 : 1)
+                .Select((tool, index) => tool with
+                {
+                    ReturnDockId = ToolDockPlacement.GetDockId(alignment), ReturnOrder = index,
+                    State = !keepExpandedTool || tool.Id == HostExtensionIds.PluginMenu.Value ? "autoHidden" : "visible"
+                }).ToArray();
+            var group = DockLayoutNode.Group("edge-tools", tools.Select(tool => tool.Id), 0.25);
+            var documents = DockLayoutNode.Documents() with { Proportion = 0.75 };
+            var leading = alignment is Alignment.Left or Alignment.Top;
+            snapshot = captured with
             {
-                Tools = snapshot.Tools
-                    .OrderBy(tool => tool.Id == HostExtensionIds.PluginMenu.Value ? 0 : 1)
-                    .Select((tool, index) => tool with
-                    {
-                        DockId = ToolDockPlacement.GetDockId(alignment),
-                        Order = index,
-                        IsVisible = true,
-                        IsPinned = !keepExpandedTool || tool.Id == HostExtensionIds.PluginMenu.Value
-                    }).ToList()
+                Tools = tools,
+                MainWindow = captured.MainWindow with
+                {
+                    Root = DockLayoutNode.Split("edge-split", alignment is Alignment.Top or Alignment.Bottom ? "vertical" : "horizontal",
+                        leading ? [group, documents] : [documents, group])
+                }
             };
         }
 
-        using var context = new UiTestContext(initialLayout: snapshot);
+        using var context = new UiTestContext(initialLayoutV3: snapshot);
         var window = new MainWindow { Width = 1400, Height = 900, DataContext = context.ViewModel };
         var dockControl = window.GetLogicalDescendants().OfType<DockControl>().Single();
         ControlRecyclingDataTemplate.SetControlRecycling(

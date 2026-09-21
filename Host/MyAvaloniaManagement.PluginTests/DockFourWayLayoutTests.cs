@@ -261,7 +261,7 @@ public sealed partial class DockFourWayLayoutTests
     [Fact]
     public void HiddenBottomToolCanBeRestoredAfterLayoutRestart()
     {
-        DockLayoutSnapshotV2 snapshot;
+        DockLayoutSnapshotV3 snapshot;
         using (var firstContext = CreateFactory(("restartBottomTool", "Bottom")))
         {
             var firstFactory = firstContext.Factory;
@@ -274,9 +274,7 @@ public sealed partial class DockFourWayLayoutTests
             firstFactory.InitLayout(firstRoot);
 
             firstFactory.HideDockable(firstBottom);
-            snapshot = DockLayoutSnapshotMapper.Capture(
-                firstRoot,
-                firstFactory);
+            snapshot = firstFactory.LayoutState.Capture(firstFactory);
         }
 
         using var secondContext = CreateFactory(("restartBottomTool", "Bottom"));
@@ -289,14 +287,11 @@ public sealed partial class DockFourWayLayoutTests
             CreateDocumentDock(secondFactory));
         secondFactory.InitLayout(secondRoot);
 
-        DockLayoutSnapshotMapper.ApplySnapshot(
-            snapshot,
-            secondRoot,
-            secondFactory);
+        // V3 会提交新容器，必须继续观察 Session 返回的新根；Tool 实例仍属于当前会话。
+        secondRoot = secondFactory.LayoutState.Apply(secondFactory, snapshot);
 
-        Assert.NotNull(FindDockOrDefault<ToolDock>(
-            secondRoot,
-            DockLayoutIds.BottomTools));
+        Assert.Contains(secondBottom, secondRoot.HiddenDockables!);
+        Assert.Equal("hidden", Assert.Single(snapshot.Tools).State);
         Assert.True(secondFactory.RestoreTool(secondRoot, secondBottom));
 
         var restoredBottomDock = FindDock<ToolDock>(
@@ -327,7 +322,7 @@ public sealed partial class DockFourWayLayoutTests
         string expectedPaneId,
         string expectedDockId)
     {
-        DockLayoutSnapshotV2 snapshot;
+        DockLayoutSnapshotV3 snapshot;
         using (var firstContext = CreateFactory(
                    ("runtimeVerticalTool", "Right"),
                    ("rightSiblingTool", "Right")))
@@ -374,15 +369,18 @@ public sealed partial class DockFourWayLayoutTests
                 dock => !DockLayoutIds.IsToolDockId(dock.Id) &&
                         dock.Alignment == expectedAlignment);
 
-            snapshot = DockLayoutSnapshotMapper.Capture(
-                firstRoot,
-                firstFactory);
+            snapshot = firstFactory.LayoutState.Capture(firstFactory);
             Assert.Equal(
                 expectedDockId,
-                snapshot.Tools.Single(tool => tool.Id == movedTool.Id).DockId);
-            Assert.Contains(
-                snapshot.Panes,
-                pane => pane.Id == expectedPaneId);
+                snapshot.Tools.Single(tool => tool.Id == movedTool.Id).ReturnDockId);
+            var savedGroup = Assert.Single(DockLayoutTree.Enumerate(snapshot.MainWindow.Root),
+                node => node.ToolIds.Contains(movedTool.Id));
+            // 未经过 UI 测量的模型中，中间区域权重为 1，上下区域为 0.2。
+            // V3 保存归一化后的占比 1/6，不能把运行时权重直接当作线格式比例。
+            Assert.Equal(1.0 / 6, savedGroup.Proportion, precision: 6);
+            Assert.Equal("vertical", snapshot.MainWindow.Root.Orientation);
+            Assert.Same(savedGroup, operation == DockOperation.Top
+                ? snapshot.MainWindow.Root.Children[0] : snapshot.MainWindow.Root.Children[^1]);
         }
 
         using var secondContext = CreateFactory(
@@ -401,22 +399,21 @@ public sealed partial class DockFourWayLayoutTests
             secondRoot,
             expectedDockId));
 
-        DockLayoutSnapshotMapper.ApplySnapshot(
-            snapshot,
-            secondRoot,
-            secondFactory);
+        // V3 会提交新容器，必须继续观察 Session 返回的新根；Tool 实例仍属于当前会话。
+        secondRoot = secondFactory.LayoutState.Apply(secondFactory, snapshot);
 
-        var stableVerticalDock = FindDock<ToolDock>(
-            secondRoot,
-            expectedDockId);
+        var stableVerticalDock = Assert.IsType<ToolDock>(restoredTool.Owner);
+        Assert.Equal(expectedAlignment, stableVerticalDock.Alignment);
+        Assert.Equal(1.0 / 6, stableVerticalDock.Proportion, precision: 6);
         Assert.Contains(restoredTool, stableVerticalDock.VisibleDockables!);
         Assert.Same(stableVerticalDock, restoredTool.Owner);
         Assert.False(stableVerticalDock.IsEmpty);
-        Assert.Same(
-            FindDock<ProportionalDock>(
-                secondRoot,
-                DockLayoutIds.WorkspaceRows),
-            FindDock<ProportionalDock>(secondRoot, expectedPaneId).Owner);
+        var restoredRows = Assert.IsType<ProportionalDock>(stableVerticalDock.Owner);
+        Assert.Equal(Orientation.Vertical, restoredRows.Orientation);
+        var children = restoredRows.VisibleDockables!.Where(item => item is not IProportionalDockSplitter).ToArray();
+        Assert.Same(stableVerticalDock, operation == DockOperation.Top ? children[0] : children[^1]);
+        Assert.Contains(EnumerateDocks(restoredRows), dock => dock.Id == DockLayoutIds.Documents);
+        Assert.Same(restoredTool, secondFactory.CreatedTools[restoredTool.Id]);
     }
 
     [Theory]
@@ -429,7 +426,7 @@ public sealed partial class DockFourWayLayoutTests
         Alignment expectedAlignment,
         string expectedDockId)
     {
-        DockLayoutSnapshotV2 snapshot;
+        DockLayoutSnapshotV3 snapshot;
         using (var firstContext = CreateFactory(
                    ($"pinned{metadataAlignment}Tool", metadataAlignment)))
         {
@@ -448,11 +445,10 @@ public sealed partial class DockFourWayLayoutTests
             Assert.Contains(
                 firstTool,
                 GetPinnedDockables(owningRoot, expectedAlignment)!);
-            snapshot = DockLayoutSnapshotMapper.Capture(firstRoot, firstFactory);
+            snapshot = firstFactory.LayoutState.Capture(firstFactory);
             var state = Assert.Single(snapshot.Tools);
-            Assert.Equal(expectedDockId, state.DockId);
-            Assert.True(state.IsVisible);
-            Assert.True(state.IsPinned);
+            Assert.Equal(expectedDockId, state.ReturnDockId);
+            Assert.Equal("autoHidden", state.State);
         }
 
         using var secondContext = CreateFactory(
@@ -466,27 +462,25 @@ public sealed partial class DockFourWayLayoutTests
             CreateDocumentDock(secondFactory));
         secondFactory.InitLayout(secondRoot);
 
-        DockLayoutSnapshotMapper.ApplySnapshot(snapshot, secondRoot, secondFactory);
+        // V3 会提交新容器，必须继续观察 Session 返回的新根；Tool 实例仍属于当前会话。
+        secondRoot = secondFactory.LayoutState.Apply(secondFactory, snapshot);
 
         var restoredRoot = secondFactory.FindRoot(restoredTool, _ => true)!;
         Assert.Contains(
             restoredTool,
             GetPinnedDockables(restoredRoot, expectedAlignment)!);
         Assert.DoesNotContain(restoredTool, restoredRoot.HiddenDockables ?? []);
-        Assert.DoesNotContain(
-            restoredTool,
-            FindDock<ToolDock>(secondRoot, expectedDockId).VisibleDockables!);
-        var recaptured = DockLayoutSnapshotMapper.Capture(secondRoot, secondFactory);
+        Assert.False(DockTreeNavigator.IsDockableAttached(secondRoot, restoredTool));
+        var recaptured = secondFactory.LayoutState.Capture(secondFactory);
         var recapturedState = Assert.Single(recaptured.Tools);
-        Assert.True(recapturedState.IsVisible);
-        Assert.True(recapturedState.IsPinned);
-        Assert.Equal(expectedDockId, recapturedState.DockId);
+        Assert.Equal("autoHidden", recapturedState.State);
+        Assert.Equal(expectedDockId, recapturedState.ReturnDockId);
     }
 
     [Fact]
     public void ExpandedPinnedAndHiddenToolsPreserveDistinctStatesAndPinnedOrder()
     {
-        DockLayoutSnapshotV2 snapshot;
+        DockLayoutSnapshotV3 snapshot;
         using (var firstContext = CreateFactory(
                    ("expandedTool", "Left"),
                    ("pinnedFirstTool", "Left"),
@@ -505,15 +499,15 @@ public sealed partial class DockFourWayLayoutTests
             firstFactory.PinDockable(pinnedFirst);
             firstFactory.PinDockable(pinnedSecond);
             firstFactory.HideDockable(hidden);
-            snapshot = DockLayoutSnapshotMapper.Capture(firstRoot, firstFactory);
+            snapshot = firstFactory.LayoutState.Capture(firstFactory);
 
-            Assert.Equal((true, false), GetToolState(snapshot, expanded.Id));
-            Assert.Equal((true, true), GetToolState(snapshot, pinnedFirst.Id));
-            Assert.Equal((true, true), GetToolState(snapshot, pinnedSecond.Id));
-            Assert.Equal((false, false), GetToolState(snapshot, hidden.Id));
+            Assert.Equal("visible", GetToolState(snapshot, expanded.Id));
+            Assert.Equal("autoHidden", GetToolState(snapshot, pinnedFirst.Id));
+            Assert.Equal("autoHidden", GetToolState(snapshot, pinnedSecond.Id));
+            Assert.Equal("hidden", GetToolState(snapshot, hidden.Id));
             Assert.True(
-                snapshot.Tools.Single(tool => tool.Id == pinnedFirst.Id).Order <
-                snapshot.Tools.Single(tool => tool.Id == pinnedSecond.Id).Order);
+                snapshot.Tools.Single(tool => tool.Id == pinnedFirst.Id).ReturnOrder <
+                snapshot.Tools.Single(tool => tool.Id == pinnedSecond.Id).ReturnOrder);
         }
 
         using var secondContext = CreateFactory(
@@ -530,23 +524,26 @@ public sealed partial class DockFourWayLayoutTests
             CreateDocumentDock(secondFactory));
         secondFactory.InitLayout(secondRoot);
 
-        DockLayoutSnapshotMapper.ApplySnapshot(snapshot, secondRoot, secondFactory);
+        // V3 会提交新容器，必须继续观察 Session 返回的新根；Tool 实例仍属于当前会话。
+        secondRoot = secondFactory.LayoutState.Apply(secondFactory, snapshot);
 
-        var leftDock = FindDock<ToolDock>(secondRoot, DockLayoutIds.LeftTools);
+        var leftDock = Assert.IsType<ToolDock>(restoredExpanded.Owner);
+        Assert.Equal(Alignment.Left, leftDock.Alignment);
         Assert.Contains(restoredExpanded, leftDock.VisibleDockables!);
         var restoredRoot = secondFactory.FindRoot(restoredPinnedFirst, _ => true)!;
         Assert.Equal(
             new[] { restoredPinnedFirst, restoredPinnedSecond },
             GetPinnedDockables(restoredRoot, Alignment.Left));
-        Assert.Contains(restoredHidden, restoredRoot.HiddenDockables!);
+        Assert.Contains(restoredHidden, secondRoot.HiddenDockables!);
+        Assert.Same(restoredHidden, secondFactory.CreatedTools[restoredHidden.Id]);
     }
 
-    private static (bool IsVisible, bool IsPinned) GetToolState(
-        DockLayoutSnapshotV2 snapshot,
+    private static string GetToolState(
+        DockLayoutSnapshotV3 snapshot,
         string toolId)
     {
         var state = snapshot.Tools.Single(tool => tool.Id == toolId);
-        return (state.IsVisible, state.IsPinned);
+        return state.State;
     }
 
     private static DockLayoutSnapshotV2 CreateRuntimeSnapshot(

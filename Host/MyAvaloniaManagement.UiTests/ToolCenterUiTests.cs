@@ -350,17 +350,16 @@ public sealed class ToolCenterUiTests
     }
 
     [AvaloniaFact]
-    public void 旧布局定向迁移保留有效工具且新增工具默认隐藏并可全隐藏重启()
+    public void V3恢复可见工具且新增工具默认隐藏并可全隐藏重启()
     {
-        var old = new DockLayoutSnapshotV2
-        {
-            ActiveToolId = RetiredHostToolIds.PluginStatus,
-            Tools = [new() { Id = RetiredHostToolIds.ToolManagement, DockId = DockLayoutIds.RightTools, Order = 0, IsVisible = true },
-                new() { Id = HostExtensionIds.PluginMenu.Value, DockId = DockLayoutIds.RightTools, Order = 1, IsVisible = true, IsPinned = true },
-                new() { Id = RetiredHostToolIds.PluginStatus, DockId = DockLayoutIds.RightTools, Order = 2, IsVisible = true, IsPinned = true }]
-        };
+        // 快照只包含已经使用的工具；新注册工具不应因为恢复布局而自动显示。
+        var id = HostExtensionIds.PluginMenu.Value;
+        var initial = new DockLayoutSnapshotV3(3,
+            new("main", DockWindowBounds.Default, DockLayoutNode.Split("main-split", "horizontal",
+                [DockLayoutNode.Documents() with { Proportion = 0.7 }, DockLayoutNode.Group("menu", [id], 0.3)])),
+            [], [new(id, "autoHidden", DockLayoutIds.RightTools, 0)]);
         DockLayoutSnapshotV3 hidden;
-        using (var context = new UiTestContext(initialLayout: old))
+        using (var context = new UiTestContext(initialLayoutV3: initial))
         {
             context.ViewModel.ApplyPendingLayout();
             var states = context.Provider.GetRequiredService<ToolWorkspaceReadModel>().Capture();
@@ -371,7 +370,7 @@ public sealed class ToolCenterUiTests
             context.Workspace.HideAllTools();
             context.Provider.GetRequiredService<DockLayoutLifecycle>().Save(context.Workspace);
             context.Provider.GetRequiredService<DockLayoutLifecycle>().FlushAsync().GetAwaiter().GetResult();
-            Assert.True(File.Exists(Path.Combine(context.TempDirectory, DockLayoutStore.LayoutFileName)));
+            Assert.True(File.Exists(context.LayoutPath));
             using var reader = new DockLayoutV3Store(context.TempDirectory);
             hidden = reader.Load()!;
         }
