@@ -498,8 +498,10 @@ public sealed class DocumentPersistenceTests
         Assert.Empty(context.Storage.Writes);
     }
 
-    [Fact]
-    public async Task V19恢复确认异常必须立即释放候选且不改动输入文件()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task V19恢复确认异常必须立即释放候选且不改动输入文件(bool cleanupFails)
     {
         using var context = DocumentTestContext.Create();
         var primary = Path.Combine(context.TempDirectory, "confirmation-failed.mamdoc");
@@ -509,6 +511,8 @@ public sealed class DocumentPersistenceTests
         var files = context.Storage.Files.ToDictionary();
         var failure = new InvalidOperationException("recovery-dialog-failed");
         context.Interactions.ConfirmRecoveryException = failure;
+        if (cleanupFails) context.Provider.GetRequiredService<DocumentTestProbe>().DisposeException =
+            new InvalidOperationException("cleanup-failed");
         _ = context.CreateMainWindowViewModel();
 
         var actual = await Assert.ThrowsAsync<InvalidOperationException>(() =>
@@ -517,11 +521,61 @@ public sealed class DocumentPersistenceTests
         Assert.Same(failure, actual);
         Assert.Single(context.Interactions.RecoveryRequests);
         Assert.Empty(GetDocuments(context));
+        Assert.DoesNotContain(context.Workspace.GetDocuments(), page => page.Registration.Descriptor.DocumentTypeId == TestDocumentIds.TypeId);
         var probe = context.Provider.GetRequiredService<DocumentTestProbe>();
         Assert.Equal(1, probe.DisposeCount);
         Assert.True(probe.ClosingObservedDuringDispose);
         Assert.Empty(context.Storage.Writes);
         Assert.Equal(files.OrderBy(pair => pair.Key), context.Storage.Files.OrderBy(pair => pair.Key));
+    }
+
+    [Fact]
+    public async Task V19恢复确认等待期间退出仍由会话持有候选_发布拒绝后清除全部状态()
+    {
+        using var context = DocumentTestContext.Create();
+        _ = context.CreateMainWindowViewModel();
+        var primary = Path.Combine(context.TempDirectory, "shutdown-recovery.mamdoc");
+        context.Storage.AddFile(primary, "{broken");
+        context.Storage.AddFile(primary + DocumentRecoveryRegistry.BackupSuffix, Serialize("备份", "候选"));
+        var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        context.Interactions.PendingRecoveryChoice = decision;
+        var opening = context.Provider.GetRequiredService<DocumentPersistenceCoordinator>().OpenPathAsync(primary);
+        Assert.False(opening.IsCompleted);
+        var candidate = Assert.Single(context.Workspace.GetDocuments(), page => page.PersistableModel is not null);
+        Assert.True(context.PersistenceStates.TryGet(candidate, out _));
+        Assert.False(candidate.ClosingToken.IsCancellationRequested);
+        Assert.Empty(GetDocuments(context));
+        context.Workspace.BeginShutdown();
+        Assert.Equal(0, context.Provider.GetRequiredService<DocumentTestProbe>().DisposeCount);
+        decision.SetResult(true);
+        await Assert.ThrowsAsync<ObjectDisposedException>(() => opening);
+        Assert.Equal(1, context.Provider.GetRequiredService<DocumentTestProbe>().DisposeCount);
+        Assert.True(candidate.IsViewReleased);
+        Assert.False(context.PersistenceStates.TryGet(candidate, out _));
+        var recoveries = context.Provider.GetRequiredService<DocumentRecoveryRegistry>();
+        Assert.False(recoveries.TryGet(candidate, out _));
+        Assert.False(recoveries.TryGetBySourcePath(primary, out _));
+        Assert.DoesNotContain(candidate, context.Workspace.GetDocuments());
+        Assert.Empty(context.Storage.Writes);
+    }
+
+    [Fact]
+    public async Task V19候选发布成功后重复释放义务不释放已发布Scope()
+    {
+        using var context = DocumentTestContext.Create();
+        _ = context.CreateMainWindowViewModel();
+        using var pending = await context.Workspace.CreatePendingDocumentAsync(
+            TestDocumentIds.TypeId, new NewDocumentActivation("成功"));
+        var published = pending.Publish();
+        pending.Dispose();
+        pending.Dispose();
+        Assert.Same(pending.Document, published);
+        Assert.Same(published, Assert.Single(GetDocuments(context)));
+        Assert.Equal(0, context.Provider.GetRequiredService<DocumentTestProbe>().DisposeCount);
+        Assert.Throws<InvalidOperationException>(() => pending.Publish());
+        context.Workspace.DockFactory.CloseDockable(published);
+        Assert.Equal(1, context.Provider.GetRequiredService<DocumentTestProbe>().DisposeCount);
+        Assert.False(context.PersistenceStates.TryGet(published, out _));
     }
 
     private sealed class PluginBoundaryException(string message) : Exception(message);

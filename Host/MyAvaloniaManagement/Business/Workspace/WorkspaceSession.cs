@@ -269,7 +269,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         }
         catch
         {
-            ReleaseDocument(adapter);
+            RollbackPendingDocument(adapter);
             throw;
         }
     }
@@ -280,21 +280,29 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         DocumentActivation activation,
         DocumentCreationTarget? target = null)
     {
-        ManagedDocumentDockable? pending = await CreateDocumentAsync(documentTypeId, activation);
+        using var pending = await CreatePendingDocumentAsync(documentTypeId, activation);
+        return pending.Publish(target);
+    }
+
+    /// <summary>在返回候选前建立回滚义务；调用者从取得结果起必须用 using 覆盖全部准备阶段。</summary>
+    internal async ValueTask<PendingWorkspaceDocument> CreatePendingDocumentAsync(
+        DocumentTypeId documentTypeId, DocumentActivation activation) =>
+        new(this, await CreateDocumentAsync(documentTypeId, activation));
+
+    /// <summary>
+    /// 创建链失败的唯一回滚动作。优先撤销可能已部分插入的 Dock 内容，再交回原释放入口；
+    /// 两步分别兜底，确保清理异常不会取代初始化、确认或发布的原始失败。
+    /// </summary>
+    internal void RollbackPendingDocument(ManagedDocumentDockable document)
+    {
         try
         {
-            PublishDocument(pending, target);
-            var published = pending;
-            pending = null;
-            return published;
+            if (_rootDock is not null && DockTreeNavigator.FindDocumentDock(_rootDock, document) is not null)
+                DockFactory.RemoveDockable(document, collapse: false);
         }
-        finally
-        {
-            if (pending is not null)
-            {
-                ReleaseDocument(pending);
-            }
-        }
+        catch (Exception exception) { DocumentPersistenceErrorMapper.Report("DOCUMENT_PENDING_DETACH_FAILED", exception); }
+        try { ReleaseDocument(document); }
+        catch (Exception exception) { DocumentPersistenceErrorMapper.Report("DOCUMENT_PENDING_RELEASE_FAILED", exception); }
     }
 
     /// <summary>捕获来源窗口的文档组；只借用布局身份，面板结束后不保留这一请求。</summary>
@@ -340,7 +348,8 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         {
             if (ContainsDocument(documentDock, document))
             {
-                DockFactory.RemoveDockable(document, collapse: false);
+                try { DockFactory.RemoveDockable(document, collapse: false); }
+                catch (Exception exception) { DocumentPersistenceErrorMapper.Report("DOCUMENT_PUBLISH_DETACH_FAILED", exception); }
             }
             throw;
         }

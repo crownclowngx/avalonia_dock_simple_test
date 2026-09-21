@@ -50,6 +50,7 @@ internal sealed class DocumentTestProbe
     internal Exception? InitializeException { get; set; }
     internal Exception? CaptureException { get; set; }
     internal Exception? AcceptChangesException { get; set; }
+    internal Exception? DisposeException { get; set; }
     internal TaskCompletionSource? InitializeBlocker { get; set; }
     internal bool ReturnNullContent { get; set; }
     internal List<DocumentActivation> ActivationContexts { get; } = [];

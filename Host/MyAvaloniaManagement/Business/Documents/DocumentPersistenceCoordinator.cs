@@ -157,7 +157,7 @@ internal sealed class DocumentPersistenceCoordinator(
         ExceptionDispatchInfo primaryFailure;
         try
         {
-            var primary = await CreateLoadedDocumentAsync(primaryPath);
+            using var primary = await CreateLoadedDocumentAsync(primaryPath);
             PublishLoadedDocument(primary, recoverySourcePath: null);
             return;
         }
@@ -172,7 +172,7 @@ internal sealed class DocumentPersistenceCoordinator(
             primaryFailure.Throw();
         }
 
-        ManagedDocumentDockable backup;
+        PendingWorkspaceDocument backup;
         try
         {
             // 只有备份已经通过严格信封、Registry、模型初始化和 View 预构建后才询问用户，
@@ -186,31 +186,16 @@ internal sealed class DocumentPersistenceCoordinator(
                 exception);
         }
 
-        // 候选已持有真实 Scope。确认窗口既可能拒绝也可能抛出异常，必须从 await 前就承担
-        // 回滚义务；发布方法接管义务以后才清空本地候选，防止异常路径出现无人释放的间隙。
-        ManagedDocumentDockable? pending = backup;
-        try
+        // 同一候选义务覆盖确认和发布，中间不再通过清空局部变量交接清理责任。
+        using (backup)
         {
             if (!await interactionService.ConfirmRecoveryAsync(Path.GetFileName(primaryPath)))
                 primaryFailure.Throw();
-            pending = null;
             PublishLoadedDocument(backup, primaryPath);
-        }
-        finally
-        {
-            if (pending is not null)
-            {
-                try { workspace.ReleaseDocument(pending); }
-                catch (Exception exception)
-                {
-                    // 清理错误进入诊断，不覆盖导致本轮打开失败的原始异常。
-                    DocumentPersistenceErrorMapper.Report("DOCUMENT_RECOVERY_ROLLBACK_FAILED", exception);
-                }
-            }
         }
     }
 
-    private async Task<ManagedDocumentDockable> CreateLoadedDocumentAsync(string filePath)
+    private async Task<PendingWorkspaceDocument> CreateLoadedDocumentAsync(string filePath)
     {
         serializer.ValidateFileLength(storageService.GetFileLength(filePath));
         var json = await storageService.ReadAllTextAsync(filePath);
@@ -228,12 +213,12 @@ internal sealed class DocumentPersistenceCoordinator(
                 "Document 声明的插件所有者与当前 Registry 不匹配。");
         }
 
-        ManagedDocumentDockable? pending = null;
+        PendingWorkspaceDocument? pending = null;
         try
         {
             try
             {
-                pending = await workspace.CreateDocumentAsync(
+                pending = await workspace.CreatePendingDocumentAsync(
                     envelope.DocumentTypeId,
                     new RestoreDocumentActivation(
                         envelope.Title,
@@ -246,45 +231,29 @@ internal sealed class DocumentPersistenceCoordinator(
                     exception);
             }
 
-            persistenceStates.CommitFile(pending, filePath, envelope.Title);
-            var loaded = pending;
-            pending = null;
-            return loaded;
+            persistenceStates.CommitFile(pending.Document, filePath, envelope.Title);
+            return pending;
         }
-        finally
+        catch
         {
-            if (pending is not null)
-            {
-                workspace.ReleaseDocument(pending);
-            }
+            // 成功返回时交回同一份义务；登记失败时立即回滚，不把半准备的候选交给调用者。
+            pending?.Dispose();
+            throw;
         }
     }
 
     private void PublishLoadedDocument(
-        ManagedDocumentDockable document,
+        PendingWorkspaceDocument pending,
         string? recoverySourcePath)
     {
-        ManagedDocumentDockable? pending = document;
-        try
+        var document = pending.Document;
+        if (recoverySourcePath is not null)
         {
-            if (recoverySourcePath is not null)
-            {
-                var recoveredTitle = $"{document.HostTitle}（已恢复）";
-                persistenceStates.MarkRecovered(document, recoveredTitle);
-                recoveryRegistry.Register(document, recoverySourcePath);
-            }
-
-            workspace.PublishDocument(document);
-            pending = null;
+            var recoveredTitle = $"{document.HostTitle}（已恢复）";
+            persistenceStates.MarkRecovered(document, recoveredTitle);
+            recoveryRegistry.Register(document, recoverySourcePath);
         }
-        finally
-        {
-            if (pending is not null)
-            {
-                recoveryRegistry.Clear(pending);
-                workspace.ReleaseDocument(pending);
-            }
-        }
+        pending.Publish();
     }
 
     private static bool IsRecoverableOpenFailure(Exception exception) =>

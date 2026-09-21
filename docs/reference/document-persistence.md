@@ -86,6 +86,11 @@ internal `DocumentEnvelopeException`，用户只看到固定脱敏提示。
 未发布 Adapter、提交路径状态、原子发布。新建、打开和保存共享同一个串行门；并发打开同一路径时，
 后一个请求只激活已发布标签。批量打开逐文件隔离失败，不因一个坏文件跳过后续合法文件。
 
+新建与恢复用例通过 `WorkspaceSession.CreatePendingDocumentAsync` 取得已初始化候选，用同一
+`PendingWorkspaceDocument` 覆盖路径登记、恢复确认和最终发布。成功发布解除回滚义务；其余退出
+调用 Session 唯一回滚入口，撤销部分 Dock 插入并清理持久化/恢复登记。此对象不直接拥有模型、View
+或 Scope；这些资源仍属于 Session/DocumentScopeManager，退出排空期间候选也保持可追踪。
+
 主文件内容损坏时只尝试 `<主路径>.recovery.bak`，备份本身也必须是严格 V2，并在询问用户前完成插件
 初始化和 View 预构建。用户拒绝恢复或确认对话框异常时立即释放暂存 Scope，清理失败不覆盖原始打开异常。接受后，Host 清空主路径、设置
 `RequiresSave` 并记录损坏原件与备份路径；即使插件报告 `IsDirty == false`，关闭仍需确认且保存必须

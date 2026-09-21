@@ -251,6 +251,7 @@ internal sealed class TestDocumentInteractionService : IDocumentInteractionServi
     public List<string> RecoveryRequests { get; } = [];
     public List<string> Errors { get; } = [];
     public TaskCompletionSource<DocumentCloseChoice>? PendingCloseChoice { get; set; }
+    public TaskCompletionSource<bool>? PendingRecoveryChoice { get; set; }
     public TaskCompletionSource<string>? ErrorShown { get; set; }
     public Exception? ConfirmCloseException { get; set; }
     public Exception? ConfirmRecoveryException { get; set; }
@@ -280,6 +281,7 @@ internal sealed class TestDocumentInteractionService : IDocumentInteractionServi
     {
         RecoveryRequests.Add(fileName);
         if (ConfirmRecoveryException is { } exception) return Task.FromException<bool>(exception);
+        if (PendingRecoveryChoice is { } pending) return pending.Task;
         return Task.FromResult(
             RecoveryChoices.Count != 0 && RecoveryChoices.Dequeue());
     }
@@ -554,6 +556,7 @@ internal sealed class TestSavableDocument(
     {
         probe.ClosingObservedDuringDispose = lifetime.IsClosing;
         probe.DisposeCount++;
+        if (probe.DisposeException is { } exception) throw exception;
     }
 }
 
