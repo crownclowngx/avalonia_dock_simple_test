@@ -87,12 +87,12 @@ public sealed class HostToolVisualTests
             context.Workspace.CreatedTools[HostExtensionIds.PluginMenu.Value]);
         var prepared = Assert.IsAssignableFrom<Control>(tool.PreparedView);
         var recycling = context.Provider.GetRequiredService<DocumentControlRecycling>();
-        Assert.True(context.Workspace.ShowTool(HostExtensionIds.PluginMenu));
+        Assert.True(context.Workspace.OpenTool(HostExtensionIds.PluginMenu.Value).Succeeded);
 
         Assert.Same(prepared, recycling.Build(tool, null, null));
-        Assert.True(context.Workspace.TrySetToolVisibility(tool.Id, false));
+        Assert.True(context.Workspace.SetToolVisibility(tool.Id, false).Succeeded);
         Assert.Same(prepared, tool.PreparedView);
-        Assert.True(context.Workspace.TrySetToolVisibility(tool.Id, true));
+        Assert.True(context.Workspace.SetToolVisibility(tool.Id, true).Succeeded);
         Assert.Same(prepared, recycling.Build(tool, null, null));
         Assert.Same(prepared, tool.PreparedView);
     }

@@ -222,7 +222,7 @@ public sealed class ToolViewModelTests
         using var context = new TestHostContext();
         var main = context.CreateMainWindowViewModel();
         var id = HostExtensionIds.FileSystemTree;
-        Assert.True(context.Workspace.ShowTool(id));
+        Assert.True(context.Workspace.OpenTool(id.Value).Succeeded);
         var original = context.Workspace.CreatedTools[id.Value];
         var states = context.Provider.GetRequiredService<MyAvaloniaManagement.Business.Workspace.ToolWorkspaceReadModel>();
         var changes = 0;
@@ -260,7 +260,7 @@ public sealed class ToolViewModelTests
         using var context = new TestHostContext();
         var main = context.CreateMainWindowViewModel();
         var id = HostExtensionIds.PluginMenu;
-        context.Workspace.ShowTool(id);
+        context.Workspace.OpenTool(id.Value);
         var states = context.Provider.GetRequiredService<MyAvaloniaManagement.Business.Workspace.ToolWorkspaceReadModel>();
         var changes = 0;
         main.PropertyChanged += (_, args) => { if (args.PropertyName == nameof(main.Layout)) changes++; };
@@ -271,7 +271,7 @@ public sealed class ToolViewModelTests
             context.Workspace.DockFactory.HideDockable(tool);
         Assert.False(states.Capture().Single(item => item.ToolId == id.Value).IsVisible);
         Assert.Equal(1, changes);
-        Assert.True(context.Workspace.ShowTool(id));
+        Assert.True(context.Workspace.OpenTool(id.Value).Succeeded);
         Assert.True(states.Capture().Single(item => item.ToolId == id.Value).IsVisible);
         Assert.Equal(2, changes);
     }
@@ -282,7 +282,7 @@ public sealed class ToolViewModelTests
         using var context = new TestHostContext();
         _ = context.CreateMainWindowViewModel();
         var id = HostExtensionIds.FileSystemTree;
-        context.Workspace.ShowTool(id);
+        context.Workspace.OpenTool(id.Value);
         var tool = context.Workspace.CreatedTools[id.Value];
         var factory = context.Workspace.DockFactory;
         factory.PinDockable(tool);

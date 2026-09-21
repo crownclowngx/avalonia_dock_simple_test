@@ -55,3 +55,9 @@ Unit 125/125、Command/Palette/Startup Headless UI 31/31 通过，无跳过。�
 `V19指定功能查询严格区分默认入口和声明意图且不创建页面` 覆盖默认/明确/未知/跨类型意图及零创建（Q02/Q05）；`V19指定页面查询与真实展示一致并在关闭撤销移除和退出后即时重查` 覆盖成员及关闭变化、拒绝旧执行（Q03/Q05）；后台目录 DI 边界测试增加创建菜单读取（Q01）。原重复查询测试增加窄查询，仍验证零通知、零持久化、身份及创建释放次数不变。Q04 按调用链审查确认不构建其他页面展示；Q06 保留原目录分类、非法路径回退、排序和去重诊断测试。窄身份判定本身不产生分类诊断，诊断仍在真实目录读取时发生。
 
 Unit 181/181、相关 Headless UI 37/37 通过，无跳过；`artifacts/host-v19/p4-query/query-final.trx`、`query-ui.trx`。真实插件包目录验收已迁移到 WorkspaceCatalog，最终 verify 在生成本轮包后执行。
+
+## P5：工具意图与提交
+
+删除 Session.ShowTool、TrySetToolVisibility 和 ToolDockCoordinator.ShowTool；相关 Unit/UI 测试迁移到 OpenTool/SetToolVisibility 的结构化结果。Session 共用就绪、身份、可用性及原实例查找；恢复统一走浮窗位置恢复和 Dock 回退。OpenTool 保留可见时定位、自动收起预览、最小化恢复；SetToolVisibility 保留 CanClose、已满足与原生取消判断。底层恢复布尔值只描述 Dock 协议步骤，不再充当业务结果。
+
+`V19重复打开仍定位并记录一次访问_重复显隐不通知不记访问`（T05/T06）精确断言布局、访问和焦点通知计数；`V19批量隐藏保留逐项失败和成功且仅通知一次`（T02/T06）断言部分成功、逐项结果、原实例与一次通知。Unit 65/65、Tool/布局/Document 浮窗 Headless UI 124/124 通过，无跳过；`artifacts/host-v19/p5-tools/tools-final.trx`、`tools-ui.trx`。现有 UI 继续验证 T01/T03/T04 的自动收起、浮窗取消和原位置恢复，隐藏不释放 Tool 的生命周期政策保持。工具使用指南的可观察行为未改变，不加入内部实现细节。

@@ -238,7 +238,7 @@ public sealed class WorkspaceSessionAndDockFactoryTests
             secondChanges += args.PropertyName == nameof(MainWindowViewModel.Layout) ? 1 : 0;
         first.Dispose();
 
-        Assert.True(context.Workspace.ShowTool(HostExtensionIds.PluginMenu));
+        Assert.True(context.Workspace.OpenTool(HostExtensionIds.PluginMenu.Value).Succeeded);
         Assert.Equal(0, firstChanges);
         Assert.Equal(1, secondChanges);
     }
@@ -272,7 +272,8 @@ public sealed class WorkspaceSessionAndDockFactoryTests
         Assert.False(context.Workspace.IsRegisteredTool("not-a-tool-id"));
         Assert.False(context.Workspace.IsToolAvailable("not-a-tool-id"));
         var hideableTool = context.Workspace.CreatedTools.Values.First(tool => tool.CanClose);
-        Assert.False(context.Workspace.TrySetToolVisibility(hideableTool.Id, isVisible: true));
+        Assert.Equal(MyAvaloniaManagement.Business.Workspace.ToolOperationStatus.AlreadySatisfied,
+            context.Workspace.SetToolVisibility(hideableTool.Id, visible: true).Status);
 
         var tool = context.Workspace.CreatedTools[pluginMenuId];
         context.Workspace.DockFactory.OnDockableDocked(tool, DockOperation.Top);

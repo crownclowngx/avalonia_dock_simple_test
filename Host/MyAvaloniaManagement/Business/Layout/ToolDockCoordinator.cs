@@ -86,37 +86,6 @@ internal sealed class ToolDockCoordinator(
         return true;
     }
 
-    internal bool ShowTool(
-        IRootDock? root,
-        IReadOnlyDictionary<string, Tool> createdTools,
-        string toolId)
-    {
-        if (string.IsNullOrWhiteSpace(toolId) ||
-            root is null ||
-            !createdTools.TryGetValue(toolId, out var tool))
-        {
-            return false;
-        }
-
-        if (!DockTreeNavigator.IsDockableAttached(root, tool) &&
-            !DockTreeNavigator.IsToolPinned(root, tool))
-        {
-            if (!RestoreTool(root, tool))
-            {
-                return false;
-            }
-        }
-        else
-        {
-            factory.SetActiveDockable(tool);
-        }
-
-        if (DockTreeNavigator.IsToolPinned(root, tool)) factory.PreviewPinnedDockable(tool);
-        factory.SetFocusedDockable(factory.FindRoot(tool, _ => true) ?? root, tool);
-
-        return true;
-    }
-
     /// <summary>
     /// 只为主窗口文档区和稳定全局目标保留旧全宽约定；普通 ToolDock 或任意嵌套分割
     /// 不归一化。调用方已确认主窗口归属；ID 只用于取得主骨架引用，不用于匹配拖放目标。

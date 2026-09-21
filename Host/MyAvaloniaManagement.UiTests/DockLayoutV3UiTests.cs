@@ -51,7 +51,7 @@ public sealed class DockLayoutV3UiTests
             await Flush();
             Assert.Empty(DockTreeNavigator.EnumerateWindows(session.RootDock!));
             Assert.Equal("hidden", session.LayoutState.Capture(session).Tools.Single(item => item.Id == tool.Id).State);
-            Assert.True(session.ShowTool(HostExtensionIds.FileSystemTree));
+            Assert.True(session.OpenTool(HostExtensionIds.FileSystemTree.Value).Succeeded);
             await Flush();
             var restored = session.LayoutState.Capture(session);
             Assert.Equal("saved-window", Assert.Single(restored.FloatingWindows).Id);
@@ -85,7 +85,7 @@ public sealed class DockLayoutV3UiTests
             var captured = session.LayoutState.Capture(session);
             Assert.Equal(2, captured.FloatingWindows.Count);
             Assert.Equal("visible", captured.Tools.Single(tool => tool.Id == "missing.plugin.tool").State);
-            Assert.True(session.ShowTool(HostExtensionIds.FileSystemTree));
+            Assert.True(session.OpenTool(HostExtensionIds.FileSystemTree.Value).Succeeded);
             await Flush();
             Assert.Single(DockTreeNavigator.EnumerateWindows(session.RootDock!));
         }
@@ -139,8 +139,8 @@ public sealed class DockLayoutV3UiTests
         main.Show();
         try
         {
-            session.ShowTool(HostExtensionIds.FileSystemTree);
-            session.ShowTool(HostExtensionIds.PluginMenu);
+            session.OpenTool(HostExtensionIds.FileSystemTree.Value);
+            session.OpenTool(HostExtensionIds.PluginMenu.Value);
             var tool = (ManagedToolDockable)session.CreatedTools[HostExtensionIds.FileSystemTree.Value];
             var other = session.CreatedTools[HostExtensionIds.PluginMenu.Value];
             var originalDock = (IDock)tool.Owner!;
@@ -189,7 +189,7 @@ public sealed class DockLayoutV3UiTests
             var factory = session.DockFactory;
             var main = new MainWindow(factory.WindowContext) { DataContext = context.ViewModel };
             main.Show();
-            session.ShowTool(HostExtensionIds.FileSystemTree);
+            session.OpenTool(HostExtensionIds.FileSystemTree.Value);
             factory.FloatDockable(session.CreatedTools[HostExtensionIds.FileSystemTree.Value]);
             var document = session.GetDocuments().Single();
             var view = document.PreparedView;
@@ -283,7 +283,7 @@ public sealed class DockLayoutV3UiTests
         var factory = session.DockFactory;
         var main = new MainWindow(factory.WindowContext) { DataContext = context.ViewModel };
         main.Show();
-        session.ShowTool(HostExtensionIds.FileSystemTree);
+        session.OpenTool(HostExtensionIds.FileSystemTree.Value);
         var tool = session.CreatedTools[HostExtensionIds.FileSystemTree.Value];
         factory.FloatDockable(tool);
         var document = session.GetDocuments().Single();

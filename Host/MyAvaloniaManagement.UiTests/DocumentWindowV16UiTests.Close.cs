@@ -170,7 +170,7 @@ public sealed partial class DocumentWindowV16UiTests
         IDock other;
         if (tool)
         {
-            test.Workspace.ShowTool(HostExtensionIds.FileSystemTree);
+            test.Workspace.OpenTool(HostExtensionIds.FileSystemTree.Value);
             retained = test.Workspace.CreatedTools[HostExtensionIds.FileSystemTree.Value];
             other = new ToolDock { VisibleDockables = factory.CreateList<IDockable>() };
         }
@@ -277,7 +277,7 @@ public sealed partial class DocumentWindowV16UiTests
         var view = Assert.IsType<DocumentWindowTestContext.EditorView>(page.PreparedView);
         var host = await test.Float(page);
         var factory = test.Workspace.DockFactory;
-        test.Workspace.ShowTool(HostExtensionIds.FileSystemTree);
+        test.Workspace.OpenTool(HostExtensionIds.FileSystemTree.Value);
         var tool = Assert.IsType<ManagedToolDockable>(test.Workspace.CreatedTools[HostExtensionIds.FileSystemTree.Value]);
         var toolView = tool.PreparedView;
         var group = new ToolDock { VisibleDockables = factory.CreateList<IDockable>() };
@@ -290,7 +290,7 @@ public sealed partial class DocumentWindowV16UiTests
         Assert.Equal(1, model.DisposeCount);
         Assert.Equal(1, view.DisposeCount);
         Assert.DoesNotContain(page, test.Workspace.GetDocuments());
-        test.Workspace.ShowTool(HostExtensionIds.FileSystemTree);
+        test.Workspace.OpenTool(HostExtensionIds.FileSystemTree.Value);
         await DocumentWindowTestContext.Flush();
         Assert.Same(tool, test.Workspace.CreatedTools[HostExtensionIds.FileSystemTree.Value]);
         Assert.Same(toolView, tool.PreparedView);

@@ -41,29 +41,28 @@ public sealed class WelcomePageTests
         var pluginMenu = Assert.IsAssignableFrom<Tool>(
             workspace.CreatedTools[HostExtensionIds.PluginMenu.Value]);
 
-        Assert.True(workspace.ShowTool(HostExtensionIds.PluginMenu));
+        Assert.True(workspace.OpenTool(HostExtensionIds.PluginMenu.Value).Succeeded);
         Assert.Same(pluginMenu, Assert.IsAssignableFrom<IDock>(pluginMenu.Owner).ActiveDockable);
 
         workspace.DockFactory.HideDockable(pluginMenu);
-        Assert.True(workspace.ShowTool(HostExtensionIds.PluginMenu));
+        Assert.True(workspace.OpenTool(HostExtensionIds.PluginMenu.Value).Succeeded);
         Assert.Same(pluginMenu, Assert.IsAssignableFrom<IDock>(pluginMenu.Owner).ActiveDockable);
 
         workspace.DockFactory.PinDockable(pluginMenu);
         var owningRoot = workspace.DockFactory.FindRoot(pluginMenu, _ => true)!;
         Assert.Contains(pluginMenu, owningRoot.RightPinnedDockables!);
 
-        Assert.True(workspace.ShowTool(HostExtensionIds.PluginMenu));
+        Assert.True(workspace.OpenTool(HostExtensionIds.PluginMenu.Value).Succeeded);
         Assert.Contains(pluginMenu, owningRoot.RightPinnedDockables!);
     }
 
     [Fact]
-    public void ShowToolRejectsUnknownStronglyTypedToolId()
+    public void OpenToolRejectsUnknownToolId()
     {
         using var context = new TestHostContext();
         _ = context.CreateMainWindowViewModel();
 
-        Assert.False(context.Workspace.ShowTool(
-            new MyAvaloniaManagement.PluginSdk.ToolTypeId(
-                "myavalonia.host.tool.missing")));
+        Assert.Equal(MyAvaloniaManagement.Business.Workspace.ToolOperationStatus.NotFound,
+            context.Workspace.OpenTool("myavalonia.host.tool.missing").Status);
     }
 }

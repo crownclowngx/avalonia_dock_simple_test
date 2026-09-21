@@ -73,9 +73,9 @@ public sealed class ExternalPluginWorkspaceAcceptanceTests(ITestOutputHelper out
             {
                 var tool = Assert.IsType<ManagedToolDockable>(context.Workspace.CreatedTools[registration.Descriptor.ToolTypeId.Value]);
                 var view = Assert.IsAssignableFrom<Control>(tool.PreparedView);
-                Assert.True(context.Workspace.ShowTool(registration.Descriptor.ToolTypeId));
-                Assert.True(context.Workspace.TrySetToolVisibility(tool.Id, false));
-                Assert.True(context.Workspace.TrySetToolVisibility(tool.Id, true));
+                Assert.True(context.Workspace.OpenTool(registration.Descriptor.ToolTypeId.Value).Succeeded);
+                Assert.True(context.Workspace.SetToolVisibility(tool.Id, false).Succeeded);
+                Assert.True(context.Workspace.SetToolVisibility(tool.Id, true).Succeeded);
                 Dispatcher.UIThread.RunJobs();
                 Assert.Same(view, tool.PreparedView);
                 Assert.Same(tool.Model, view.DataContext);

@@ -66,7 +66,7 @@ public sealed partial class DocumentWindowV16UiTests
         var expected = second.Owner;
         if (toolFocus)
         {
-            test.Workspace.ShowTool(HostExtensionIds.FileSystemTree);
+            test.Workspace.OpenTool(HostExtensionIds.FileSystemTree.Value);
             var tool = test.Workspace.CreatedTools[HostExtensionIds.FileSystemTree.Value];
             if (floating)
             {
@@ -122,7 +122,7 @@ public sealed partial class DocumentWindowV16UiTests
         await DocumentWindowTestContext.Flush();
         test.Workspace.ActivateDockable(other);
         var factory = test.Workspace.DockFactory;
-        test.Workspace.ShowTool(HostExtensionIds.FileSystemTree);
+        test.Workspace.OpenTool(HostExtensionIds.FileSystemTree.Value);
         var tool = test.Workspace.CreatedTools[HostExtensionIds.FileSystemTree.Value];
         factory.FloatDockable(tool);
         var host = Assert.IsType<HostFloatingWindow>(DockTreeNavigator.FindWindow(test.Workspace.RootDock!, tool)!.Host);

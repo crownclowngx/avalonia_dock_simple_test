@@ -10,6 +10,56 @@ namespace MyAvaloniaManagement.Tests;
 /// <summary>通过生产目录、用例、原子存储验证工具中心，所有持久化均使用独立临时目录。</summary>
 public sealed class ToolCenterTests
 {
+    [Fact]
+    public void V19重复打开仍定位并记录一次访问_重复显隐不通知不记访问()
+    {
+        using var context = new TestHostContext();
+        _ = context.CreateMainWindowViewModel();
+        var actions = context.Provider.GetRequiredService<ToolCenterActions>();
+        var preferences = context.Provider.GetRequiredService<ToolCenterPreferences>();
+        Assert.True(actions.Open(First).Succeeded);
+        var original = context.Workspace.CreatedTools[First];
+        var layout = 0;
+        var access = 0;
+        var focus = 0;
+        context.Workspace.LayoutChanged += (_, _) => layout++;
+        preferences.Changed += (_, _) => access++;
+        actions.FocusRequested += (_, _) => focus++;
+        Assert.Equal(ToolOperationStatus.AlreadySatisfied, context.Workspace.SetToolVisibility(First, true).Status);
+        Assert.Equal((0, 0, 0), (layout, access, focus));
+        Assert.Equal(ToolOperationStatus.Changed, actions.Open(First, focus: true).Status);
+        Assert.Equal((1, 1, 1), (layout, access, focus));
+        Assert.Same(original, context.Workspace.CreatedTools[First]);
+        Assert.Equal(ToolOperationStatus.Changed, actions.Hide(First).Status);
+        Assert.Equal((2, 1, 1), (layout, access, focus));
+        Assert.Equal(ToolOperationStatus.AlreadySatisfied, actions.Hide(First).Status);
+        Assert.Equal((2, 1, 1), (layout, access, focus));
+        Assert.Same(original, context.Workspace.CreatedTools[First]);
+    }
+
+    [Fact]
+    public void V19批量隐藏保留逐项失败和成功且仅通知一次()
+    {
+        using var context = new TestHostContext();
+        _ = context.CreateMainWindowViewModel();
+        var first = context.Workspace.CreatedTools[First];
+        var second = context.Workspace.CreatedTools[Second];
+        Assert.True(context.Workspace.OpenTool(First).Succeeded);
+        Assert.True(context.Workspace.OpenTool(Second).Succeeded);
+        first.CanClose = false;
+        var notifications = 0;
+        context.Workspace.LayoutChanged += (_, _) => notifications++;
+        var batch = context.Workspace.HideAllTools();
+        Assert.Equal(1, batch.FailureCount);
+        Assert.Equal(ToolOperationStatus.Failed, batch.Results[First].Status);
+        Assert.Equal(ToolOperationStatus.Changed, batch.Results[Second].Status);
+        Assert.Equal(1, notifications);
+        Assert.True(DockTreeNavigator.IsDockableAttached(context.Workspace.RootDock!, first));
+        Assert.False(DockTreeNavigator.IsDockableAttached(context.Workspace.RootDock!, second));
+        Assert.Same(first, context.Workspace.CreatedTools[First]);
+        Assert.Same(second, context.Workspace.CreatedTools[Second]);
+    }
+
     private static readonly string First = HostExtensionIds.FileSystemTree.Value;
     private static readonly string Second = HostExtensionIds.PluginMenu.Value;
 

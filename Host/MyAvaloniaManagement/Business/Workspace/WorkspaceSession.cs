@@ -470,36 +470,23 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
     internal bool RestoreTool(IRootDock root, Tool tool) =>
         LayoutState.TryRestoreFloatingTool(this, tool) || _toolDockCoordinator.RestoreTool(root, tool);
 
-    /// <summary>显示并激活 Tool；只有完整成功后才发布一次布局变化。</summary>
-    internal bool ShowTool(ToolTypeId toolTypeId)
-    {
-        ArgumentNullException.ThrowIfNull(toolTypeId);
-        if (!CanOperateTools || !IsToolAvailable(toolTypeId.Value)) return false;
-        using var change = DockFactory.BeginLayoutChange();
-        if (_createdTools.TryGetValue(toolTypeId.Value, out var hiddenTool))
-            LayoutState.TryRestoreFloatingTool(this, hiddenTool);
-        var changed = _toolDockCoordinator.ShowTool(
-            _rootDock,
-            _createdTools,
-            toolTypeId.Value);
-        if (changed)
-        {
-            ActivateDockable(_createdTools[toolTypeId.Value]);
-            NotifyLayoutChanged();
-        }
-        return changed;
-    }
-
+    /// <summary>
+    /// 打开并定位原 Tool 实例。即使已经可见，也必须展开自动收起预览、还原承载窗口并更新焦点；
+    /// 这与幂等的设置显隐是两个用户意图，不能把 AlreadySatisfied 当作省略定位的理由。
+    /// </summary>
     internal ToolOperationResult OpenTool(string toolId)
     {
-        if (!CanOperateTools) return new(ToolOperationStatus.NotReady, "工作区尚未就绪或正在退出");
-        if (!IsRegisteredTool(toolId)) return new(ToolOperationStatus.NotFound, "工具已不存在");
-        if (!IsToolAvailable(toolId)) return new(ToolOperationStatus.Unavailable, "插件暂不可用");
-        if (!_createdTools.ContainsKey(toolId)) return new(ToolOperationStatus.Unavailable, "工具激活失败，请查看插件诊断");
+        if (ResolveToolFailure(toolId, requireAvailable: true, out var tool) is { } failure) return failure;
         try
         {
-            return ShowTool(new ToolTypeId(toolId)) ? new(ToolOperationStatus.Changed) :
-                new(ToolOperationStatus.Failed, "无法恢复工具");
+            using var change = DockFactory.BeginLayoutChange();
+            if (!IsToolVisible(tool) && !RestoreTool(_rootDock!, tool))
+                return new(ToolOperationStatus.Failed, "无法恢复工具");
+            DockFactory.SetActiveDockable(tool);
+            if (DockTreeNavigator.IsToolPinned(_rootDock!, tool)) DockFactory.PreviewPinnedDockable(tool);
+            ActivateDockable(tool);
+            NotifyLayoutChanged();
+            return new(ToolOperationStatus.Changed);
         }
         catch (Exception exception)
         {
@@ -509,18 +496,39 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         }
     }
 
+    /// <summary>
+    /// 只提交目标显隐状态；已满足时不抢焦点、不发通知。隐藏必须遵守 CanClose 及 Dock 原生
+    /// 可取消关闭，提交后重查真实挂接；隐藏不释放 Tool 模型或服务，恢复继续使用同一实例。
+    /// </summary>
     internal ToolOperationResult SetToolVisibility(string toolId, bool visible)
     {
-        if (!CanOperateTools) return new(ToolOperationStatus.NotReady, "工作区尚未就绪或正在退出");
-        if (!IsRegisteredTool(toolId)) return new(ToolOperationStatus.NotFound, "工具已不存在");
-        if (!_createdTools.TryGetValue(toolId, out var tool)) return new(ToolOperationStatus.Unavailable, "工具没有可用实例");
-        if (visible && !IsToolAvailable(toolId)) return new(ToolOperationStatus.Unavailable, "插件暂不可用");
-        var isVisible = DockTreeNavigator.IsDockableAttached(_rootDock!, tool) || DockTreeNavigator.IsToolPinned(_rootDock!, tool);
-        if (isVisible == visible) return new(ToolOperationStatus.AlreadySatisfied);
+        if (ResolveToolFailure(toolId, requireAvailable: visible, out var tool) is { } failure) return failure;
+        if (IsToolVisible(tool) == visible) return new(ToolOperationStatus.AlreadySatisfied);
+        if (!tool.CanClose) return new(ToolOperationStatus.Failed, "工具布局未接受显隐操作");
         try
         {
-            return TrySetToolVisibility(toolId, visible) ? new(ToolOperationStatus.Changed) :
-                new(ToolOperationStatus.Failed, "工具布局未接受显隐操作");
+            using var change = DockFactory.BeginLayoutChange();
+            if (visible)
+            {
+                if (!RestoreTool(_rootDock!, tool)) return new(ToolOperationStatus.Failed, "工具布局未接受显隐操作");
+            }
+            else
+            {
+                var currentDock = DockTreeNavigator.FindToolDock(_rootDock!, tool) as IDock ??
+                    DockTreeNavigator.FindDocumentDock(_rootDock!, tool);
+                var nextActive = currentDock?.VisibleDockables?.FirstOrDefault(candidate => !ReferenceEquals(candidate, tool));
+                _suppressToolHiddenNotification = true;
+                try
+                {
+                    DockFactory.HideDockable(tool);
+                    // 最后一个浮动工具仍挂接，说明原生窗口否决了隐藏；保留活动项并报告未提交。
+                    if (IsToolVisible(tool)) return new(ToolOperationStatus.Failed, "工具布局未接受显隐操作");
+                    if (currentDock is not null) currentDock.ActiveDockable = nextActive;
+                }
+                finally { _suppressToolHiddenNotification = false; }
+            }
+            NotifyLayoutChanged();
+            return new(ToolOperationStatus.Changed);
         }
         catch (Exception exception)
         {
@@ -530,6 +538,19 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         }
     }
 
+    /// <summary>两个业务意图共享身份、实例和就绪检查；隐藏不可用插件的既有实例仍然允许。</summary>
+    private ToolOperationResult? ResolveToolFailure(string toolId, bool requireAvailable, out Tool tool)
+    {
+        tool = null!;
+        if (!CanOperateTools) return new(ToolOperationStatus.NotReady, "工作区尚未就绪或正在退出");
+        if (!IsRegisteredTool(toolId)) return new(ToolOperationStatus.NotFound, "工具已不存在");
+        if (requireAvailable && !IsToolAvailable(toolId)) return new(ToolOperationStatus.Unavailable, "插件暂不可用");
+        if (!_createdTools.TryGetValue(toolId, out tool!)) return new(ToolOperationStatus.Unavailable, "工具没有可用实例，请查看插件诊断");
+        return null;
+    }
+
+    private bool IsToolVisible(Tool tool) => DockTreeNavigator.IsDockableAttached(_rootDock!, tool) ||
+        DockTreeNavigator.IsToolPinned(_rootDock!, tool);
     /// <summary>全量目标在提交前捕获；失败保留成功结果，最终只发布一次布局快照。</summary>
     internal ToolBatchResult HideAllTools()
     {
@@ -548,59 +569,6 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         try { _diagnostics?.Report(new HostDiagnosticDraft(HostDiagnosticCodes.ToolLayoutOperationFailed, HostDiagnosticPhase.Layout)
             { StableId = id, Exception = exception }); }
         catch { /* 诊断失败不能改变已经发生的布局提交。 */ }
-    }
-
-    /// <summary>把 Tool 管理器的目标显隐状态作为一次工作区提交执行。</summary>
-    internal bool TrySetToolVisibility(string toolId, bool isVisible)
-    {
-        if (!CanOperateTools || _rootDock is null ||
-            string.IsNullOrWhiteSpace(toolId) ||
-            !_createdTools.TryGetValue(toolId, out var tool) ||
-            !tool.CanClose || (isVisible && !IsToolAvailable(toolId)))
-        {
-            return false;
-        }
-
-        var currentDock = DockTreeNavigator.FindToolDock(_rootDock, tool) as IDock ?? DockTreeNavigator.FindDocumentDock(_rootDock, tool);
-        var isPinned = DockTreeNavigator.IsToolPinned(_rootDock, tool);
-        var currentVisibility = currentDock is not null || isPinned;
-        if (currentVisibility == isVisible)
-        {
-            return false;
-        }
-
-        using var change = DockFactory.BeginLayoutChange();
-        if (isVisible)
-        {
-            if (!RestoreTool(_rootDock, tool))
-            {
-                return false;
-            }
-            NotifyLayoutChanged();
-            return true;
-        }
-
-        var nextActive = currentDock?.VisibleDockables?
-            .FirstOrDefault(candidate => !ReferenceEquals(candidate, tool));
-        _suppressToolHiddenNotification = true;
-        try
-        {
-            DockFactory.HideDockable(tool);
-            // 最后一个浮动工具会先走可取消窗口关闭。仍在原树中意味着未提交隐藏，
-            // 此时不能清空活动项或向工具中心报告成功；模型、View 及原布局继续由本会话持有。
-            if (DockTreeNavigator.IsDockableAttached(_rootDock, tool) || DockTreeNavigator.IsToolPinned(_rootDock, tool))
-                return false;
-            if (currentDock is not null)
-            {
-                currentDock.ActiveDockable = nextActive;
-            }
-        }
-        finally
-        {
-            _suppressToolHiddenNotification = false;
-        }
-        NotifyLayoutChanged();
-        return true;
     }
 
     /// <summary>由 HostRuntime 先关闭创建入口，再开始释放 Adapter。</summary>

@@ -40,7 +40,7 @@ public sealed class DockToolWindowCloseUiTests
         var factory = session.DockFactory;
         var main = new MainWindow(factory.WindowContext) { DataContext = context.ViewModel };
         main.Show();
-        session.ShowTool(HostExtensionIds.FileSystemTree);
+        session.OpenTool(HostExtensionIds.FileSystemTree.Value);
         var tool = (ManagedToolDockable)session.CreatedTools[HostExtensionIds.FileSystemTree.Value];
         var originalModel = tool.Model;
         var originalView = tool.PreparedView;
@@ -88,7 +88,7 @@ public sealed class DockToolWindowCloseUiTests
                 Assert.Equal(saved.Id, remembered.Id);
                 Assert.Equal(saved.Root.Id, remembered.Root.Id);
                 Assert.Equal(saved.Bounds, remembered.Bounds);
-                Assert.True(session.ShowTool(HostExtensionIds.FileSystemTree));
+                Assert.True(session.OpenTool(HostExtensionIds.FileSystemTree.Value).Succeeded);
                 await Flush();
                 var reopened = Assert.Single(DockTreeNavigator.EnumerateWindows(session.RootDock!));
                 Assert.NotSame(native, reopened.Host);
@@ -114,8 +114,8 @@ public sealed class DockToolWindowCloseUiTests
         main.Show();
         try
         {
-            session.ShowTool(HostExtensionIds.FileSystemTree);
-            session.ShowTool(HostExtensionIds.PluginMenu);
+            session.OpenTool(HostExtensionIds.FileSystemTree.Value);
+            session.OpenTool(HostExtensionIds.PluginMenu.Value);
             var first = (ManagedToolDockable)session.CreatedTools[HostExtensionIds.FileSystemTree.Value];
             var second = (ManagedToolDockable)session.CreatedTools[HostExtensionIds.PluginMenu.Value];
             factory.MoveDockable((IDock)second.Owner!, (IDock)first.Owner!, second, null);
@@ -158,7 +158,7 @@ public sealed class DockToolWindowCloseUiTests
         main.Show();
         try
         {
-            session.ShowTool(HostExtensionIds.FileSystemTree);
+            session.OpenTool(HostExtensionIds.FileSystemTree.Value);
             var tool = session.CreatedTools[HostExtensionIds.FileSystemTree.Value];
             var document = session.GetDocuments().Single();
             var view = document.PreparedView;
@@ -203,7 +203,7 @@ public sealed class DockToolWindowCloseUiTests
         var factory = session.DockFactory;
         var main = new MainWindow(factory.WindowContext) { DataContext = context.ViewModel };
         main.Show();
-        session.ShowTool(HostExtensionIds.FileSystemTree);
+        session.OpenTool(HostExtensionIds.FileSystemTree.Value);
         var tool = session.CreatedTools[HostExtensionIds.FileSystemTree.Value];
         factory.FloatDockable(tool);
         await Flush();
@@ -251,7 +251,7 @@ public sealed class DockToolWindowCloseUiTests
             var session = context.Workspace;
             var main = new MainWindow(session.DockFactory.WindowContext) { DataContext = context.ViewModel };
             main.Show();
-            session.ShowTool(HostExtensionIds.FileSystemTree);
+            session.OpenTool(HostExtensionIds.FileSystemTree.Value);
             var tool = (ManagedToolDockable)session.CreatedTools[HostExtensionIds.FileSystemTree.Value];
             session.DockFactory.FloatDockable(tool);
             await Flush();
@@ -279,7 +279,7 @@ public sealed class DockToolWindowCloseUiTests
             await Flush();
             Assert.Empty(DockTreeNavigator.EnumerateWindows(restart.Workspace.RootDock!));
             Assert.Single(restart.Workspace.GetDocuments());
-            Assert.True(restart.Workspace.ShowTool(HostExtensionIds.FileSystemTree));
+            Assert.True(restart.Workspace.OpenTool(HostExtensionIds.FileSystemTree.Value).Succeeded);
             await Flush();
             var restored = Assert.Single(restart.Workspace.LayoutState.Capture(restart.Workspace).FloatingWindows);
             Assert.Equal(before.Id, restored.Id);
@@ -340,7 +340,7 @@ public sealed class DockToolWindowCloseUiTests
         var session = context.Workspace;
         var main = new MainWindow(session.DockFactory.WindowContext) { DataContext = context.ViewModel };
         main.Show();
-        session.ShowTool(HostExtensionIds.FileSystemTree);
+        session.OpenTool(HostExtensionIds.FileSystemTree.Value);
         var tool = (ManagedToolDockable)session.CreatedTools[HostExtensionIds.FileSystemTree.Value];
         session.DockFactory.FloatDockable(tool);
         await Flush();

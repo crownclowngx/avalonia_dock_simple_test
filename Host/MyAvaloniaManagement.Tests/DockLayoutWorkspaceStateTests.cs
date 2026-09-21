@@ -30,7 +30,7 @@ public sealed class DockLayoutWorkspaceStateTests
         var factory = session.DockFactory;
         // 此处验证纯模型捕获；实际原生窗口创建另由 HostFloatingWindow 的 Headless 场景覆盖。
         factory.HostWindowLocator![nameof(IDockWindow)] = () => null;
-        Assert.True(session.ShowTool(HostExtensionIds.FileSystemTree));
+        Assert.True(session.OpenTool(HostExtensionIds.FileSystemTree.Value).Succeeded);
         session.LayoutState.Capture(session);
         var tool = session.CreatedTools[HostExtensionIds.FileSystemTree.Value];
         factory.RemoveDockable(tool, collapse: false);
@@ -67,7 +67,7 @@ public sealed class DockLayoutWorkspaceStateTests
         {
             Layout = new RootDock { VisibleDockables = factory.CreateList<IDockable>(documentDock), ActiveDockable = documentDock },
         });
-        Assert.True(session.ShowTool(HostExtensionIds.FileSystemTree));
+        Assert.True(session.OpenTool(HostExtensionIds.FileSystemTree.Value).Succeeded);
         var tool = session.CreatedTools[HostExtensionIds.FileSystemTree.Value];
         factory.PinDockable(tool);
         var snapshot = session.LayoutState.Capture(session);

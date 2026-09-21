@@ -250,7 +250,7 @@ public sealed class ToolCenterUiTests
         Assert.False(Assert.Single(vm.VisibleItems).IsVisible);
         vm.Dispose();
         var snapshot = vm.VisibleItems;
-        context.Workspace.ShowTool(HostExtensionIds.FileSystemTree);
+        context.Workspace.OpenTool(HostExtensionIds.FileSystemTree.Value);
         await Flush();
         Assert.Same(snapshot, vm.VisibleItems);
         vm.OpenToolCommand.Execute(original); vm.HideToolCommand.Execute(original); vm.HideAllCommand.Execute(null);

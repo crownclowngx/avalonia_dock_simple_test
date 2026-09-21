@@ -21,6 +21,11 @@ V19 的 `DocumentCreationMenuQuery` 直接依赖 `WorkspaceCatalog`，读取纯�
 只检查请求身份及实时状态，Palette 的可用性和焦点复核不再生成全量分类树/页面展示列表。
 完整展示查询继续保留原排序、分类诊断和单次布局快照；不新增长期缓存或第二份页面索引。
 
+工具业务只保留 `OpenTool`、`SetToolVisibility` 和批量 `HideAllTools`。Session 共用身份及当前实例
+检查和原位置恢复，ToolDockCoordinator 只处理 Dock 恢复与布局协议；删除重复 ShowTool 分发与
+TrySetToolVisibility 业务布尔入口。打开已可见工具仍执行定位/预览，设置已满足的显隐状态则无副作用。
+原生浮窗否决后返回失败并保留活动项；批量操作保留逐项结果并只发一次最终通知。
+
 `ServiceCollectionExtensions.AddApplicationServices` 在入口确定共享 Builder、Provider 所有者、Scope 目录和退出参与者；同类私有方法分别登记布局、导航工具、看板、Host 交互、Workflow、文档用例、Registry、命令、插件生命周期、工作区激活和 Session。所有调用保持原始注册顺序，简单的 WorkspaceCatalog 合并工厂仍直接可见；每个工厂继续在原解析时机创建对象，成功交付前记录实际参与者。同实例接口映射与 Session.DockFactory 别名不产生第二份所有权。
 
 V14 自动重启在 Program 入口先分流无插件助手；正常 Host 由 `HostRestartCoordinator` 协调单次请求，复用 MainWindow、工作区关闭许可和最终布局保存。`PluginEnablementService` 持有设置冻结门，`RestartHandoffSession` 由 Program 持有并借给 DI，避免 Runtime 释放时丢失交接。Program 检查 Shutdown 结构化结果及诊断关闭后才发送最终许可；助手确认许可并等旧进程实际退出后创建一次新 Host。职责、取消和诊断详见[自动重启契约](../../../../docs/reference/host-restart.md)。

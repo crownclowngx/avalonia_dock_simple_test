@@ -112,7 +112,7 @@ public sealed class DockToolSplitUiTests
                 Assert.Empty(saved.FloatingWindows);
                 var groupId = ((IDock)moved.Owner!).Id;
                 factory.HideDockable(moved);
-                Assert.True(session.ShowTool(HostExtensionIds.FileSystemTree));
+                Assert.True(session.OpenTool(HostExtensionIds.FileSystemTree.Value).Succeeded);
                 await Flush();
                 Assert.Equal(groupId, moved.Owner!.Id);
                 AssertLocalOrder(moved, target, operation);

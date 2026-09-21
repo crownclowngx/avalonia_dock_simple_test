@@ -60,8 +60,8 @@ public sealed class MyPlugTestV3UiTests
 
         // Tool 的关闭语义是隐藏而不是释放。通过 Workspace 的显隐提交入口往返一次，
         // 可同时证明 Session 没有绕过插件 Provider 重建 singleton 模型。
-        Assert.True(workspace.TrySetToolVisibility(toolId, false));
-        Assert.True(workspace.TrySetToolVisibility(toolId, true));
+        Assert.True(workspace.SetToolVisibility(toolId, false).Succeeded);
+        Assert.True(workspace.SetToolVisibility(toolId, true).Succeeded);
         Assert.Same(tool, workspace.CreatedTools[toolId]);
         Assert.Same(originalModel, tool.Model);
     }
