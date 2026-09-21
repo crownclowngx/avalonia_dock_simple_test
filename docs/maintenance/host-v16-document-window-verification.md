@@ -133,7 +133,7 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 
 按失败定位、修复及最终收口选择执行顺序，不要求每次微调都重复全部项目。最终完整 verify 不可由专项替代；若最后已经修改源码或嵌入帮助文档，旧 verify 不作为最终输入的通过证据。不要同时运行 Gate 自测和 Gate 主工具，避免重建正在执行的工具。
 
-`verify` 依据 [Gate 执行图](../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs)，包含固定 Avalonia/Dock 补丁准备、locked restore、Release 零警告构建、已有测试集合、契约/API、MyPlugTest 打包及真实 ZIP 验收。它不添加 coverage 或 windows-smoke 阶段。补丁准备的详细前提见 [主仓验证说明](verification.md)；不通过修改包缓存代替准备步骤。
+`verify` 依据 [Gate 顺序计划](../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs)，包含固定 Avalonia/Dock 补丁准备、locked restore、Release 零警告构建、契约/API、已有测试集合、MyPlugTest 打包及真实 ZIP 验收。它不添加 coverage 或 windows-smoke 阶段。补丁准备的详细前提见 [主仓验证说明](verification.md)；不通过修改包缓存代替准备步骤。
 
 单独运行 PluginTests 时排除 `PackageAcceptance`，完整 verify 负责提供真实包输入并执行包验收；不以专项排除项为由删掉最终包验收。SDK、MyPlugTest 及契约检查继续由最终 verify 覆盖。
 

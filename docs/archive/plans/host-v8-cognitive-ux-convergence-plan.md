@@ -46,7 +46,7 @@
 | [ManagedDocumentDockable](../../../Host/MyAvaloniaManagement/Business/Docking/ManagedDocumentDockable.cs) | 已有标题通知、修改标记与保存后 Host 标题权威性 | 已打开页面查询读取最终展示事实，不改写标题所有权 |
 | [HelpContentCatalog](../../../Host/MyAvaloniaManagement/Business/Help/HelpContentCatalog.cs) | 帮助包含产品、工作台、架构与理论；搜索遍历固定章节 | 本轮同步直接使用说明，不承诺完整插件帮助索引 |
 | [HostWorkbenchCommandPresentation](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/HostWorkbenchCommandPresentation.cs) | F1 已经绑定帮助入口 | 本轮保留 F1，不把“新增 F1”列为交付 |
-| [GateExecutionGraph](../../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs) | `verify` 不包含覆盖率与 Windows Smoke；`seal` 包含 | 完整 verify 加独立本地覆盖率，禁止借 seal 补覆盖率 |
+| [当前 Gate 顺序计划](../../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs) | `verify` 不包含覆盖率与 Windows Smoke；`seal` 包含 | 完整 verify 加独立本地覆盖率，禁止借 seal 补覆盖率 |
 
 代码事实优先于历史阶段文档。理论文档中存在已退役类型的历史描述，不能将其直接当成 V8 的实现依赖。
 

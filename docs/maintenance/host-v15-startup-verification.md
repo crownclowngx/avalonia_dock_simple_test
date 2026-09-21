@@ -59,3 +59,7 @@ UI 测试在 `Host/MyAvaloniaManagement.UiTests/bin/Release/net10.0/TestResults/
 | M07 | 与源码匹配的既有单文件样本 | 羽毛无需旁置文件，区分解包/平台启动与插件耗时；不为验证触发发布 |
 
 未执行项如实标记，不以自动化成功、源码支持或交叉构建代替。安装目录部署及正式发布另行记录。
+
+## V21 测试基础设施更新
+
+现行夹具、等待和证据目录约定见[V21 专用开发验证](host-v21-gate-and-test-efficiency-verification.md)。真实进程仍按用例独立复制和持有 PID；UI 动作等待实际就绪/完成，不以固定休眠判定成功。Gate 附件归入本轮套件目录，旧记录中的固定 TestResults 路径仅代表当时产物；没有改变本页保护的启动、关闭、取消、布局或所有权协议。

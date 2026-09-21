@@ -10,7 +10,7 @@ SOLID 优先，设计模式朴素使用；中文注释与设计思路属于必�
 
 本开发验证流程不使用 AIFLOW、Windows CI、seal、发布 Windows Smoke、发布覆盖率或发布重复性门禁；不部署安装目录或发布包。后续本机交付按[本机部署流程](local-deployment.md)单独记录，正式发布仍执行原发布政策，不降低阈值或删除发布检查。
 
-本地完整 `verify` 的事实源为 [Gate 执行图](../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs)及[主仓验证](verification.md)：固定补丁准备、locked restore、Release 零警告构建、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约和已发布 API 比较、MyPlugTest 打包及真实 ZIP 验收。开发打包和本地包验收不等于公开发布。verify 不执行 coverage/windows-smoke。
+本地完整 `verify` 的事实源为 [Gate 顺序计划](../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs)及[主仓验证](verification.md)：固定补丁准备、locked restore、Release 零警告构建、契约和已发布 API 比较、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、MyPlugTest 打包及真实 ZIP 验收。开发打包和本地包验收不等于公开发布。verify 不执行 coverage/windows-smoke。
 
 本文“既有落点”指已存在的测试类，**不表示其中已有本行全部断言**。P0 必须逐项核对方法和参数；后续记录每个矩阵编号对应的真实测试或审查证据。没有执行的项目保持待验证。
 

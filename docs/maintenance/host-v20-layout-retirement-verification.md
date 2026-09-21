@@ -12,7 +12,7 @@ SOLID 是首要规定，设计模式朴素使用，详细中文注释与设计�
 
 可执行范围是本机 Unit、Plugin、Headless UI、Gate 工具自测、仅操作临时目录及专属子进程的 Writer Lease 专项，以及完整开发 `verify`。Gate 的发布产物检查可修改并通过共享检查方法的单测验证，不能以测试名义启动发布流程。
 
-`verify` 的执行范围以[开发门禁说明](verification.md)与 [GateExecutionGraph](../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs) 为准：固定补丁准备、locked restore、Release 零警告构建、SDK/Host/Plugin/Headless/MyPlugTest 测试、契约及已发布 API 比较、MyPlugTest 打包与真实 ZIP 验收。它不执行发布 Windows Smoke，也不自动证明 Gate 新增检查的覆盖。
+`verify` 的执行范围以[开发门禁说明](verification.md)与 [当前 Gate 顺序计划](../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs) 为准：固定补丁准备、locked restore、Release 零警告构建、契约及已发布 API 比较、SDK/Host/Plugin/Headless/MyPlugTest 测试、MyPlugTest 打包与真实 ZIP 验收。它不执行发布 Windows Smoke，也不自动证明 Gate 新增检查的覆盖。
 
 ## 2. 基线与测试迁移纪律
 

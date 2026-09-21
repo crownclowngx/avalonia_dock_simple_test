@@ -12,7 +12,7 @@ SOLID、详细中文注释、单一事实源和原有执行路径是首要审查
 
 开发允许本机 `dotnet test` 和既有 `verify`。**不使用 AIFLOW、Windows CI、`seal`、发布 Windows Smoke、发布覆盖率、发布重复性门禁，不部署或发布产物。** 本机在 Windows 上运行单元测试或 Headless 测试不等同于 Windows CI；不改动或放宽发布政策。
 
-[Gate 执行图](../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs) 中 `verify` 只包含补丁准备、restore、build、tests、contracts、packages 和 package-acceptance；coverage 与 windows-smoke 只属于 Seal。开发阶段的 MyPlugTest 打包及本地包验收不是公开发布。
+[Gate 顺序计划](../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs) 中 `verify` 只包含补丁准备、restore、build、contracts、tests、packages 和 package-acceptance；coverage 与 windows-smoke 只属于 Seal。开发阶段的 MyPlugTest 打包及本地包验收不是公开发布。
 
 ## 2. 测试落点和补测原则
 

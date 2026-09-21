@@ -10,7 +10,7 @@
 dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 ```
 
-`verify` 允许未提交修改，只使用本仓源码。它先经过 `avalonia-layout-patch` 和 `dock-patch`，准备[布局运行时补丁](../../patches/avalonia-cross-window-layout/README.md)及[固定 Dock 补丁](../../patches/dock-area-fill/README.md)，再执行 locked restore、Release 零警告构建和输出 DLL 摘要检查、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约及已发布 API 比较、MyPlugTest 打包和真实 ZIP 验收。不采集覆盖率，不启动 Windows Smoke，不授予发布资格。首次补丁构建需要 Git、PowerShell 7、SDK 10.0.302 及上游下载；首次 API 比较需要下载已记录摘要的三个公共基线包，后续使用校验后的缓存。跨窗崩溃的回归矩阵见[专项指南](dock-cross-window-layout-verification.md)。
+`verify` 允许未提交修改，只使用本仓源码。它先经过 `avalonia-layout-patch` 和 `dock-patch`，准备[布局运行时补丁](../../patches/avalonia-cross-window-layout/README.md)及[固定 Dock 补丁](../../patches/dock-area-fill/README.md)，再执行 locked restore、Release 零警告构建和输出 DLL 摘要检查、契约及已发布 API 比较、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、MyPlugTest 打包和真实 ZIP 验收。不采集覆盖率，不启动 Windows Smoke，不授予发布资格。首次补丁构建需要 Git、PowerShell 7、SDK 10.0.302 及上游下载；首次 API 比较需要下载已记录摘要的三个公共基线包，后续使用校验后的缓存。跨窗崩溃的回归矩阵见[专项指南](dock-cross-window-layout-verification.md)。
 
 `--scope host` 和 `--scope all` 都执行完整本仓验证。`workflow`、`workbench` scope 以及旧外部仓库参数均已退役；外部插件业务验证由各仓库独立负责。
 
@@ -55,7 +55,7 @@ V19 已实施：[复杂度收敛专用验证](host-v19-complexity-verification.m
 
 V20 已实施：[归档方案](../archive/plans/host-v20-layout-retirement-plan.md)、[专用开发验证](host-v20-layout-retirement-verification.md)与[开发记录](../archive/records/host-v20/development-acceptance.md)覆盖有效布局测试迁至 V3、Writer Lease、Gate 产物检查自测、旧查询及文档收口。仅执行本机专项和完整 `verify`，不使用 AIFLOW、Windows CI 或发布门禁。
 
-待实施的 [V21 开发门禁与测试效能收敛方案](../roadmap/host-v21-gate-and-test-efficiency-plan.md)配有[专用开发验证计划](../roadmap/host-v21-gate-and-test-efficiency-verification.md)，覆盖夹具、UI 等待、测试去向和 Gate 证据。V21 尚未改变本页现行命令、阶段顺序与发布政策；其开发验收不执行下述发布门禁。
+已实施的 [V21 开发门禁与测试效能收敛方案](../archive/plans/host-v21-gate-and-test-efficiency-plan.md)配有[专用开发验证计划](host-v21-gate-and-test-efficiency-verification.md)，覆盖夹具、UI 等待、测试去向和 Gate 证据。V21 将开发契约前置到构建和必需 DLL 身份核对之后、测试之前；兼容 scope 和发布政策保持。实际结果见[开发记录](../archive/records/host-v21/development-acceptance.md)，其开发验收不执行下述发布门禁。
 
 ## 正式 Host 封板
 
@@ -77,7 +77,9 @@ seal 只支持 Windows x64，要求干净工作树，固定 global.json 的 SDK 
 
 ## 证据与工具自测
 
-输出位于 `artifacts/gate/<run-id>/`，包含 summary、阶段日志、TRX、覆盖率及包证据。失败工作区保留供排查；成功后仅清理 Gate 自己标记的临时目录。对外保留结论前，保存源码身份、实际命令、失败/跳过数及必要摘要；产物清理后注明原路径已失效。
+输出位于 `artifacts/gate/<run-id>/`，包含 schema 2 summary、阶段日志、TRX 及包证据；覆盖率仅在发布 profile 生成。每个 pass 的 `tests/summary.json` 关联源码身份、完整命令、过滤器、退出码、TRX 摘要、计数、运行时间与最慢十项；尚未执行标为 `not-run`，不补零。`wallMilliseconds` 是命令及读取证据总耗时，`result.milliseconds` 来自 TRX 起止时间。
+
+测试附属文件位于 `pass-N/tests/<suite>/attachments/<scenario>/`，由 `MYAVALONIA_TEST_EVIDENCE_DIRECTORY` 传递。独立运行时必需附件写入测试输出下唯一的 `TestResults/run-*`；可选截图仍支持原环境变量。截图导出与像素断言分开，保存 PNG 本身不是视觉验证。失败工作区保留供排查；成功后仅清理 Gate 自己标记的临时目录。对外保留结论前，保存源码身份、实际命令、失败/跳过数及必要摘要；产物清理后注明原路径已失效。
 
 Gate 自测独立运行，避免重建正在执行的工具：
 

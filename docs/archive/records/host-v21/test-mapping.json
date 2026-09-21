@@ -1,0 +1,3046 @@
+{
+  "schemaVersion": 1,
+  "note": "受影响测试方法/参数映射；迁出及归并的断言责任见 test-matrix.md，最终完整输入以 development-evidence.json 为准。",
+  "cases": [
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"event\", native: False)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"event\", native: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2同组工具逐项关闭仅最后一项回收窗口(entry: \"button\")",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2同组工具逐项关闭仅最后一项回收窗口(entry: \"button\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C09单页等待期间变成最后一页可把已确认许可交给整窗",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C09单页等待期间变成最后一页可把已确认许可交给整窗",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.真实保存携带页面约束而全局入口无页面约束并保留创建意图",
+      "current": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.真实保存携带页面约束而全局入口无页面约束并保留创建意图",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"same\", operation: Top)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"same\", operation: Top)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Left, keepExpandedTool: False)",
+      "current": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Left, keepExpandedTool: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"cancel\", closed: False)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"cancel\", closed: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.主文档区工具上下分屏使用全宽预览而工具与浮窗目标保持局部(operation: Bottom)",
+      "current": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.主文档区工具上下分屏使用全宽预览而工具与浮窗目标保持局部(operation: Bottom)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.菜单打开非模态单实例窗口且显隐收藏通过真实按钮提交",
+      "current": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.菜单打开非模态单实例窗口且显隐收藏通过真实按钮提交",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1从V3恢复后文档区及其拆分子组仍全宽停靠(operation: Top, splitDocument: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1从V3恢复后文档区及其拆分子组仍全宽停靠(operation: Top, splitDocument: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.配置错误时管理窗口可打开且开关只读",
+      "current": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.配置错误时管理窗口可打开且开关只读",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.搜索定位分割区域页面后文档目标和输入焦点一致",
+      "current": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.搜索定位分割区域页面后文档目标和输入焦点一致",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: False, keepSource: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: False, keepSource: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N05初始化或串行门等待期间切窗不改变落点(queued: False)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N05初始化或串行门等待期间切窗不改变落点(queued: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2同组工具逐项关闭仅最后一项回收窗口(entry: \"close\")",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2同组工具逐项关闭仅最后一项回收窗口(entry: \"close\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.隐藏期间真实后台任务继续处理且恢复展示原状态",
+      "current": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.隐藏期间真实后台任务继续处理且恢复展示原状态",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Left, keepExpandedTool: True)",
+      "current": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Left, keepExpandedTool: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.保存期间禁用重复操作且关窗不撤销已接受提交",
+      "current": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.保存期间禁用重复操作且关窗不撤销已接受提交",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Bottom, keepExpandedTool: False)",
+      "current": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Bottom, keepExpandedTool: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.外部写冲突恢复开关且重新读取后可操作并验证窄窗口主题",
+      "current": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.外部写冲突恢复开关且重新读取后可操作并验证窄窗口主题",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"last\", native: False)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"last\", native: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: False, targetFirst: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: False, targetFirst: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02N03多分组与工具焦点使用同窗最近活动文档组(floating: True, toolFocus: False)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02N03多分组与工具焦点使用同窗最近活动文档组(floating: True, toolFocus: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C01最后文档标签按钮关闭后回收浮窗和文档资源",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C01最后文档标签按钮关闭后回收浮窗和文档资源",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"close\", cancel: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"close\", cancel: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"save-cancel\", closed: False)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"save-cancel\", closed: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档内容区合并保留原模型视图和作用域且关闭源空窗(wholeGroup: True, targetFloating: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档内容区合并保留原模型视图和作用域且关闭源空窗(wholeGroup: True, targetFloating: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N09跨窗切换面板会话不会沿用上次来源",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N09跨窗切换面板会话不会沿用上次来源",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档标签栏和工具标题不属于默认合并正文(tool: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档标签栏和工具标题不属于默认合并正文(tool: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.大目录使用虚拟化且重激活读取最新数据并尊重命令取消",
+      "current": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.大目录使用虚拟化且重激活读取最新数据并尊重命令取消",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C10确认期间新增页面使旧关闭请求失效",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C10确认期间新增页面使旧关闭请求失效",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.主文档区工具上下分屏使用全宽预览而工具与浮窗目标保持局部(operation: Top)",
+      "current": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.主文档区工具上下分屏使用全宽预览而工具与浮窗目标保持局部(operation: Top)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"float-back\", operation: Top)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"float-back\", operation: Top)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.应用工具布局不重开文档且把已有浮动文档原实例安全回停",
+      "current": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.应用工具布局不重开文档且把已有浮动文档原实例安全回停",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"menu\", cancel: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"menu\", cancel: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.关闭重开释放窗口模型并由Owner退出关闭",
+      "current": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.关闭重开释放窗口模型并由Owner退出关闭",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N10迟到焦点恢复不能覆盖切页关页或新面板会话(change: \"page\")",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N10迟到焦点恢复不能覆盖切页关页或新面板会话(change: \"page\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.看板开关保存并改回取消待重启且重开保留选择",
+      "current": "MyAvaloniaManagement.UiTests.PluginEnablementUiTests.看板开关保存并改回取消待重启且重开保留选择",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.分类编辑全局搜索与清空恢复并保持来源约束",
+      "current": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.分类编辑全局搜索与清空恢复并保持来源约束",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2异步重试被窗口或Factory取消后仍可再次正常关闭(factoryCancellation: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2异步重试被窗口或Factory取消后仍可再次正常关闭(factoryCancellation: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"save-fail\", closed: False)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"save-fail\", closed: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"cross\", operation: Top)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"cross\", operation: Top)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Top, keepExpandedTool: True)",
+      "current": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Top, keepExpandedTool: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N05初始化或串行门等待期间切窗不改变落点(queued: True)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N05初始化或串行门等待期间切窗不改变落点(queued: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.HelpWindowTests.ModelessHelpIsSinglePerRuntimeAndMainCloseCancellationKeepsItOpen",
+      "current": "MyAvaloniaManagement.UiTests.HelpWindowTests.ModelessHelpIsSinglePerRuntimeAndMainCloseCancellationKeepsItOpen",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.菜单和命令面板打开同一非模态窗口且不产生工具或文档",
+      "current": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.菜单和命令面板打开同一非模态窗口且不产生工具或文档",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"last\", native: True)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"last\", native: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.可用性刷新绑定不会被误认为用户切换分类而清空搜索(category: \"闲才业务工具\")",
+      "current": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.可用性刷新绑定不会被误认为用户切换分类而清空搜索(category: \"闲才业务工具\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.同类型两个创建入口按原意图各自新建而不会复用同名已有页面(intent: \"profile\", name: \"个人内容来源\")",
+      "current": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.同类型两个创建入口按原意图各自新建而不会复用同名已有页面(intent: \"profile\", name: \"个人内容来源\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档内容区合并保留原模型视图和作用域且关闭源空窗(wholeGroup: False, targetFloating: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档内容区合并保留原模型视图和作用域且关闭源空窗(wholeGroup: False, targetFloating: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.欢迎开始使用与文件菜单打开同一功能中心且旧目录保持隐藏",
+      "current": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.欢迎开始使用与文件菜单打开同一功能中心且旧目录保持隐藏",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2关闭命令遵守工具能力和框架取消(restriction: \"capability\")",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2关闭命令遵守工具能力和框架取消(restriction: \"capability\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"float-back\", operation: Bottom)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"float-back\", operation: Bottom)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.正文回收器跨窗口转交保留旧根布局队列时仍可完成布局(duringArrange: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.正文回收器跨窗口转交保留旧根布局队列时仍可完成布局(duringArrange: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.工具合并回主窗口或浮窗后保持实例和可恢复的V3布局(targetFloating: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.工具合并回主窗口或浮窗后保持实例和可恢复的V3布局(targetFloating: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C07其他文档组或工具仍在时仅回收空组(tool: False)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C07其他文档组或工具仍在时仅回收空组(tool: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"discard\", closed: True)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"discard\", closed: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1浮窗内部连续上下分割不访问主窗口稳定停靠点(operation: Bottom)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1浮窗内部连续上下分割不访问主窗口稳定停靠点(operation: Bottom)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2异步重试被窗口或Factory取消后仍可再次正常关闭(factoryCancellation: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2异步重试被窗口或Factory取消后仍可再次正常关闭(factoryCancellation: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.状态刷新保留身份顺序和滚动而查询更改采用新的默认项",
+      "current": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.状态刷新保留身份顺序和滚动而查询更改采用新的默认项",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.搜索异步失败保留查询选择并阻止重复输入和窗口假取消且重试成功后交还焦点",
+      "current": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.搜索异步失败保留查询选择并阻止重复输入和窗口假取消且重试成功后交还焦点",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"capability\", native: False)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"capability\", native: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.UiTests.UiTestWaitTests.超时包含场景且观察异常原样传播",
+      "layer": "ui",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1从V3恢复后文档区及其拆分子组仍全宽停靠(operation: Bottom, splitDocument: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1从V3恢复后文档区及其拆分子组仍全宽停靠(operation: Bottom, splitDocument: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.功能中心单窗口搜索分类实际图标和创建成功闭环",
+      "current": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.功能中心单窗口搜索分类实际图标和创建成功闭环",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.组标题不增加键盘步骤或执行入口且中文预编辑回车只交给输入控件",
+      "current": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.组标题不增加键盘步骤或执行入口且中文预编辑回车只交给输入控件",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"hide\", cancel: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"hide\", cancel: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: True, width: 640)",
+      "current": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: True, width: 640)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Right, keepExpandedTool: True)",
+      "current": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Right, keepExpandedTool: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: True, targetFirst: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: True, targetFirst: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.HelpWindowTests.MenuF1AndPaletteShareHelpCommandWithoutAnActiveDocument",
+      "current": "MyAvaloniaManagement.UiTests.HelpWindowTests.MenuF1AndPaletteShareHelpCommandWithoutAnActiveDocument",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C06原生首次或重试取消后仍可重新关闭(rejectedAttempt: 2)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C06原生首次或重试取消后仍可重新关闭(rejectedAttempt: 2)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N10迟到焦点恢复不能覆盖切页关页或新面板会话(change: \"close\")",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N10迟到焦点恢复不能覆盖切页关页或新面板会话(change: \"close\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N08浮窗初始化失败不新增标签且原查询可重试",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N08浮窗初始化失败不新增标签且原查询可重试",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1内容全屏期间分割入口不迁移工具或改变布局",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1内容全屏期间分割入口不迁移工具或改变布局",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.V3恢复可见工具且新增工具默认隐藏并可全隐藏重启",
+      "current": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.V3恢复可见工具且新增工具默认隐藏并可全隐藏重启",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.StartupSplashUiTests.浅深主题与真实进度绑定_保存羽毛首屏截图",
+      "current": "MyAvaloniaManagement.UiTests.StartupSplashUiTests.浅深主题与真实进度绑定_保存羽毛首屏截图",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"center\", cancel: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"center\", cancel: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.主窗等待干净文档命令后被原生取消会恢复命令与创建入口",
+      "current": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.主窗等待干净文档命令后被原生取消会恢复命令与创建入口",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: True)",
+      "current": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N10迟到焦点恢复不能覆盖切页关页或新面板会话(change: \"session\")",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N10迟到焦点恢复不能覆盖切页关页或新面板会话(change: \"session\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.命令面板工具使用独立身份打开隐藏或自动收起项并记录访问",
+      "current": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.命令面板工具使用独立身份打开隐藏或自动收起项并记录访问",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Top, keepExpandedTool: False)",
+      "current": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Top, keepExpandedTool: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1浮窗内部连续上下分割不访问主窗口稳定停靠点(operation: Top)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1浮窗内部连续上下分割不访问主窗口稳定停靠点(operation: Top)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.重置被原生窗口拒绝时回滚已关闭的其他窗口并保留全部原实例",
+      "current": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.重置被原生窗口拒绝时回滚已关闭的其他窗口并保留全部原实例",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗真实标签拖入已有浮窗正文后两窗可继续布局(keepAnotherDocument: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗真实标签拖入已有浮窗正文后两窗可继续布局(keepAnotherDocument: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2同组工具逐项关闭仅最后一项回收窗口(entry: \"center\")",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2同组工具逐项关闭仅最后一项回收窗口(entry: \"center\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.搜索筛选刷新和复制通过真实控件工作并验证深浅主题与窄窗口",
+      "current": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.搜索筛选刷新和复制通过真实控件工作并验证深浅主题与窄窗口",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: False)",
+      "current": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"center\", cancel: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"center\", cancel: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N09同一共享动作的并发请求分别保留目标",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N09同一共享动作的并发请求分别保留目标",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.所有内置图标均可解析且不同控件复用几何而不复用控件",
+      "current": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.所有内置图标均可解析且不同控件复用几何而不复用控件",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C02关闭入口回收同一原生浮窗(entry: \"command\")",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C02关闭入口回收同一原生浮窗(entry: \"command\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.HelpWindowTests.TwentyCloseCyclesDisposeEveryReaderAndReleaseWindows",
+      "current": "MyAvaloniaManagement.UiTests.HelpWindowTests.TwentyCloseCyclesDisposeEveryReaderAndReleaseWindows",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N06创建提交前原组移走或来源关闭按规则回退(change: \"window\")",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N06创建提交前原组移走或来源关闭按规则回退(change: \"window\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.可用性撤回同步更新两种Tool与功能中心且已关闭会话不再刷新",
+      "current": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.可用性撤回同步更新两种Tool与功能中心且已关闭会话不再刷新",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗真实标签拖入已有浮窗正文后两窗可继续布局(keepAnotherDocument: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗真实标签拖入已有浮窗正文后两窗可继续布局(keepAnotherDocument: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N01主窗和两个浮窗的新建互不串组(source: 1)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N01主窗和两个浮窗的新建互不串组(source: 1)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Bottom, keepExpandedTool: True)",
+      "current": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Bottom, keepExpandedTool: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"group\", operation: Top)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"group\", operation: Top)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.HelpWindowTests.ClosingAndFastNavigationIgnoreStaleRendererCompletion",
+      "current": "MyAvaloniaManagement.UiTests.HelpWindowTests.ClosingAndFastNavigationIgnoreStaleRendererCompletion",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档内容区合并保留原模型视图和作用域且关闭源空窗(wholeGroup: True, targetFloating: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档内容区合并保留原模型视图和作用域且关闭源空窗(wholeGroup: True, targetFloating: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"save\", closed: True)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"save\", closed: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N01浮窗快捷键新建进入发起文档组且逐页关闭回收窗口",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N01浮窗快捷键新建进入发起文档组且逐页关闭回收窗口",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"event\", native: True)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"event\", native: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档标签栏和工具标题不属于默认合并正文(tool: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档标签栏和工具标题不属于默认合并正文(tool: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"cross\", operation: Bottom)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"cross\", operation: Bottom)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.同类型两个创建入口按原意图各自新建而不会复用同名已有页面(intent: \"link\", name: \"链接下载\")",
+      "current": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.同类型两个创建入口按原意图各自新建而不会复用同名已有页面(intent: \"link\", name: \"链接下载\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.同一正文和同窗交接不清空当前Presenter",
+      "current": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.同一正文和同窗交接不清空当前Presenter",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.取消不创建且重复打开关闭释放会话",
+      "current": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.取消不创建且重复打开关闭释放会话",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02N03多分组与工具焦点使用同窗最近活动文档组(floating: True, toolFocus: True)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02N03多分组与工具焦点使用同窗最近活动文档组(floating: True, toolFocus: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"menu\", cancel: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"menu\", cancel: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"same\", operation: Bottom)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"same\", operation: Bottom)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N04纯工具浮窗新建回到主窗活动组且不改造工具窗口",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N04纯工具浮窗新建回到主窗活动组且不改造工具窗口",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.一百个工具虚拟化搜索不重复创建视图且图标保持Owner",
+      "current": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.一百个工具虚拟化搜索不重复创建视图且图标保持Owner",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.可用性撤回保留解释禁用打开并且关闭会话不再订阅",
+      "current": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.可用性撤回保留解释禁用打开并且关闭会话不再订阅",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: True, options: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: True, options: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.默认跨禁用项选择可用结果且全部禁用和空查询结果不误执行",
+      "current": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.默认跨禁用项选择可用结果且全部禁用和空查询结果不误执行",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: False, keepSource: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: False, keepSource: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C07其他文档组或工具仍在时仅回收空组(tool: True)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C07其他文档组或工具仍在时仅回收空组(tool: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.创建中重复输入及窗口关闭不会遗失在途会话",
+      "current": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.创建中重复输入及窗口关闭不会遗失在途会话",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C02关闭入口回收同一原生浮窗(entry: \"menu\")",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C02关闭入口回收同一原生浮窗(entry: \"menu\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C08主窗最后文档关闭后可重新新建",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C08主窗最后文档关闭后可重新新建",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.百入口长名称与不同主题可滚动且查询不创建插件(dark: True)",
+      "current": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.百入口长名称与不同主题可滚动且查询不创建插件(dark: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"close\", cancel: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"close\", cancel: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C09最后文档等待命令排空并去重关闭请求",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C09最后文档等待命令排空并去重关闭请求",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N06创建提交前原组移走或来源关闭按规则回退(change: \"group\")",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N06创建提交前原组移走或来源关闭按规则回退(change: \"group\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.工具更多菜单捕获原行且来源可清除并由整理菜单全局隐藏",
+      "current": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.工具更多菜单捕获原行且来源可清除并由整理菜单全局隐藏",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C11整窗关闭混合内容后工具原实例可恢复而文档只释放一次",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C11整窗关闭混合内容后工具原实例可恢复而文档只释放一次",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.可用性刷新绑定不会被误认为用户切换分类而清空搜索(category: \"帮助\")",
+      "current": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.可用性刷新绑定不会被误认为用户切换分类而清空搜索(category: \"帮助\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.最终布局写入失败保留窗口与命令且重试成功后可以退出",
+      "current": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.最终布局写入失败保留窗口与命令且重试成功后可以退出",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02N03多分组与工具焦点使用同窗最近活动文档组(floating: False, toolFocus: False)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02N03多分组与工具焦点使用同窗最近活动文档组(floating: False, toolFocus: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.全屏限制在预览查询阶段生效并在退出后恢复",
+      "current": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.全屏限制在预览查询阶段生效并在退出后恢复",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.真实标签鼠标输入在内容区松开完成回停",
+      "current": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.真实标签鼠标输入在内容区松开完成回停",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C06原生首次或重试取消后仍可重新关闭(rejectedAttempt: 1)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C06原生首次或重试取消后仍可重新关闭(rejectedAttempt: 1)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: True, keepSource: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: True, keepSource: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.UiTests.UiTestWaitTests.已满足条件同步完成且只观察一次",
+      "layer": "ui",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.UiTests.UiTestWaitTests.等待队列完成不重复发送业务动作",
+      "layer": "ui",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02N03多分组与工具焦点使用同窗最近活动文档组(floating: False, toolFocus: True)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02N03多分组与工具焦点使用同窗最近活动文档组(floating: False, toolFocus: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"button\", cancel: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"button\", cancel: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2按钮关闭写入V3后重启不产生空窗且按原窗口恢复工具",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2按钮关闭写入V3后重启不产生空窗且按原窗口恢复工具",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.百入口长名称与不同主题可滚动且查询不创建插件(dark: False)",
+      "current": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.百入口长名称与不同主题可滚动且查询不创建插件(dark: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N06创建提交前原组移走或来源关闭按规则回退(change: \"closing\")",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N06创建提交前原组移走或来源关闭按规则回退(change: \"closing\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"button\", cancel: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"button\", cancel: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.工具浮窗恢复复用原模型和View且关闭后按原组只显示目标工具",
+      "current": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.工具浮窗恢复复用原模型和View且关闭后按原组只显示目标工具",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: False, targetFirst: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: False, targetFirst: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2关闭命令遵守工具能力和框架取消(restriction: \"event\")",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2关闭命令遵守工具能力和框架取消(restriction: \"event\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.标题栏关闭最后一个工具后可从工具中心反复显示且复用视图",
+      "current": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.标题栏关闭最后一个工具后可从工具中心反复显示且复用视图",
+      "layer": "ui",
+      "change": "两个工具各三轮改两轮；保留首次/重开、身份及位置断言",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N11辅助窗口不作为来源且跨窗已有页只定位原实例",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N11辅助窗口不作为来源且跨窗已有页只定位原实例",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: False, width: 800)",
+      "current": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: False, width: 800)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.正文回收器跨窗口转交保留旧根布局队列时仍可完成布局(duringArrange: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.正文回收器跨窗口转交保留旧根布局队列时仍可完成布局(duringArrange: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.同名页面选择按实例切换并保留编辑内容且消失目标不新建",
+      "current": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.同名页面选择按实例切换并保留编辑内容且消失目标不新建",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2关闭命令遵守工具能力和框架取消(restriction: \"last\")",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2关闭命令遵守工具能力和框架取消(restriction: \"last\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.全隐藏或插件缺失的浮窗不创建空窗口但保留恢复记录",
+      "current": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.全隐藏或插件缺失的浮窗不创建空窗口但保留恢复记录",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.工具合并回主窗口或浮窗后保持实例和可恢复的V3布局(targetFloating: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.工具合并回主窗口或浮窗后保持实例和可恢复的V3布局(targetFloating: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: False, options: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: False, options: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2同组工具逐项关闭仅最后一项回收窗口(entry: \"hide\")",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2同组工具逐项关闭仅最后一项回收窗口(entry: \"hide\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2主窗或混合浮窗隐藏Tool保留Document原实例(floating: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2主窗或混合浮窗隐藏Tool保留Document原实例(floating: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02点击另一组已选中页面仍更新新建落点",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N02点击另一组已选中页面仍更新新建落点",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: True, targetFirst: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.主窗文档合并到已有浮窗后旧布局任务不会越过窗口边界(keepAnotherDocument: True, targetFirst: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: True, options: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: True, options: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N01主窗和两个浮窗的新建互不串组(source: 2)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N01主窗和两个浮窗的新建互不串组(source: 2)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"hide\", cancel: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2最后工具关闭获准后回收窗口且取消时保留内容(entry: \"hide\", cancel: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.重开取消Owner关闭和Runtime释放均遵循窗口所有权且各Runtime隔离",
+      "current": "MyAvaloniaManagement.UiTests.PluginStatusWindowTests.重开取消Owner关闭和Runtime释放均遵循窗口所有权且各Runtime隔离",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1从V3恢复后文档区及其拆分子组仍全宽停靠(operation: Top, splitDocument: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1从V3恢复后文档区及其拆分子组仍全宽停靠(operation: Top, splitDocument: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"capability\", native: True)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C05单页和整窗关闭均遵守能力及可取消事件(restriction: \"capability\", native: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C02关闭入口回收同一原生浮窗(entry: \"native\")",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C02关闭入口回收同一原生浮窗(entry: \"native\")",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1从V3恢复后文档区及其拆分子组仍全宽停靠(operation: Bottom, splitDocument: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1从V3恢复后文档区及其拆分子组仍全宽停靠(operation: Bottom, splitDocument: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.选中身份在执行前消失时本次回车不执行自动补选项且错误不被底部提示覆盖",
+      "current": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.选中身份在执行前消失时本次回车不执行自动补选项且错误不被底部提示覆盖",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档内容区合并保留原模型视图和作用域且关闭源空窗(wholeGroup: False, targetFloating: True)",
+      "current": "MyAvaloniaManagement.UiTests.DockAreaFillUiTests.文档内容区合并保留原模型视图和作用域且关闭源空窗(wholeGroup: False, targetFloating: True)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.StartupSplashUiTests.用户关闭只提交取消意图_协调器允许后才真正关闭",
+      "current": "MyAvaloniaManagement.UiTests.StartupSplashUiTests.用户关闭只提交取消意图_协调器允许后才真正关闭",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.原Tool双模式模板绑定独立展开并可以直接创建Host文档",
+      "current": "MyAvaloniaManagement.UiTests.PluginNavigationUiTests.原Tool双模式模板绑定独立展开并可以直接创建Host文档",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N01主窗和两个浮窗的新建互不串组(source: 0)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.N01主窗和两个浮窗的新建互不串组(source: 0)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: False, options: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.四个浮动入口走真实窗口且回停不重建工具(group: False, options: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"save-edit\", closed: False)",
+      "current": "MyAvaloniaManagement.UiTests.DocumentWindowV16UiTests.C03C04保存决策只在成功后拆除文档(choice: \"save-edit\", closed: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.主窗口退出先保存可见浮窗再拆除且重启不恢复文档",
+      "current": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.主窗口退出先保存可见浮窗再拆除且重启不恢复文档",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.StartupSplashUiTests.V19工作台执行绑定在UI线程且后台附接先于服务解析被拒绝",
+      "current": "MyAvaloniaManagement.UiTests.StartupSplashUiTests.V19工作台执行绑定在UI线程且后台附接先于服务解析被拒绝",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2主窗或混合浮窗隐藏Tool保留Document原实例(floating: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2主窗或混合浮窗隐藏Tool保留Document原实例(floating: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Right, keepExpandedTool: False)",
+      "current": "MyAvaloniaManagement.UiTests.AutoHideRestoreVisualTests.重启后边栏工具展开及固定均有可见内容(alignment: Right, keepExpandedTool: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"group\", operation: Bottom)",
+      "current": "MyAvaloniaManagement.UiTests.DockToolSplitUiTests.P1恢复后单项和整组局部分割保持实例且最终布局可重启(mode: \"group\", operation: Bottom)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.批量隐藏部分失败保留成功结果并显示对应工具错误",
+      "current": "MyAvaloniaManagement.UiTests.ToolCenterUiTests.批量隐藏部分失败保留成功结果并显示对应工具错误",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.内容全屏阻止迁移且重置保留文档实例并关闭浮窗",
+      "current": "MyAvaloniaManagement.UiTests.DockLayoutV3UiTests.内容全屏阻止迁移且重置保留文档实例并关闭浮窗",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: True, keepSource: False)",
+      "current": "MyAvaloniaManagement.UiTests.DockCrossWindowLayoutUiTests.浮窗移出正文后按剩余文档决定保留或关闭源窗(targetFloating: True, keepSource: False)",
+      "layer": "ui",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.三次新进程证明禁用与重新启用且所有贡献随重启变化",
+      "current": "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.三次新进程证明禁用与重新启用且所有贡献随重启变化",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.初始化失败与成功均推进实际计数且保持执行顺序",
+      "current": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.初始化失败与成功均推进实际计数且保持执行顺序",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式(dotnet: True)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式(dotnet: True)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartLifecycleTests.关闭结果保留释放异常且重复关闭不重复释放(fail: True)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartLifecycleTests.关闭结果保留释放异常且重复关闭不重复释放(fail: True)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.注册失败不妨碍后继插件_计数来自真实Provider组合",
+      "current": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.注册失败不妨碍后继插件_计数来自真实Provider组合",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.DLL损坏报告失败且已处理数到达总数",
+      "current": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.DLL损坏报告失败且已处理数到达总数",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"crash\", error: False)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"crash\", error: False)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.PluginTests.RestartHarnessFilesTests.实际构建副本保留运行资产与托管符号且排除原生调试符号",
+      "layer": "plugin",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"ordinary\", error: False)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"ordinary\", error: False)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.扫描时取消不进入任何DLL加载",
+      "current": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.扫描时取消不进入任何DLL加载",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-empty\", exitCode: 0)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-empty\", exitCode: 0)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-cancel-loading\", exitCode: 1)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-cancel-loading\", exitCode: 1)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartLifecycleTests.关闭结果保留释放异常且重复关闭不重复释放(fail: False)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartLifecycleTests.关闭结果保留释放异常且重复关闭不重复释放(fail: False)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-disabled\", exitCode: 0)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-disabled\", exitCode: 0)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.最终许可已确认但旧进程仍存活时不能提前拉起",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.最终许可已确认但旧进程仍存活时不能提前拉起",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.独立进程验收入口",
+      "current": "MyAvaloniaManagement.PluginTests.PluginEnablementRestartTests.独立进程验收入口",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.PluginTests.RestartHarnessFilesTests.两个副本文件可独立修改且收据对应实际字节",
+      "layer": "plugin",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"bad-exit\", error: True)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"bad-exit\", error: True)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.PluginTests.RestartHarnessFilesTests.缺少入口在创建副本前失败",
+      "layer": "plugin",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式(dotnet: False)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.新进程禁用再启用并交接布局锁_两种启动形式(dotnet: False)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.实际程序集加载报告开始和完成_缓存读取不伪造再次加载",
+      "current": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.实际程序集加载报告开始和完成_缓存读取不伪造再次加载",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-warning\", exitCode: 0)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-warning\", exitCode: 0)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"cancel\", error: False)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"cancel\", error: False)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartLifecycleTests.无法关闭文档Scope时保留Provider且不伪装成功",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartLifecycleTests.无法关闭文档Scope时保留Provider且不伪装成功",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.初始化超时报告失败_迟到成功不回写启动进度",
+      "current": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.初始化超时报告失败_迟到成功不回写启动进度",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-slow\", exitCode: 0)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-slow\", exitCode: 0)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-cancel\", exitCode: 1)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-cancel\", exitCode: 1)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-failure\", exitCode: 1)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.V15启动首屏取消失败与空插件沿同一生产链收尾(mode: \"startup-failure\", exitCode: 1)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"kill\", error: False)",
+      "current": "MyAvaloniaManagement.PluginTests.HostRestartProcessTests.无许可或未成功退出不能产生后继Host(mode: \"kill\", error: False)",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.空生命周期阶段不虚构插件执行",
+      "current": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.空生命周期阶段不虚构插件执行",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.禁用插件只报告跳过而不构造加载上下文",
+      "current": "MyAvaloniaManagement.PluginTests.StartupPluginProgressTests.禁用插件只报告跳过而不构造加载上下文",
+      "layer": "plugin",
+      "change": "保留原方法和参数；只改共享准备、等待或证据机制",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p1-process/p1.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Ui程序集不引用Dock和Newtonsoft且注册接口没有独立AddView",
+      "current": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Ui程序集不引用Dock和Newtonsoft且注册接口没有独立AddView",
+      "layer": "sdk",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.可持久化Document只暴露修订快照与有参确认",
+      "current": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.可持久化Document只暴露修订快照与有参确认",
+      "layer": "sdk",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.窗口交互端口只暴露路径选择和剪贴板结果",
+      "current": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.窗口交互端口只暴露路径选择和剪贴板结果",
+      "layer": "sdk",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Tests.PublicApiContractTests.PluginSdk不再公开通用事件总线或旧消息包装器",
+      "current": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Ui程序集不公开旧消息包装器或消息框架签名",
+      "layer": "sdk",
+      "change": "UI 包装器迁入 SDK；Core 旧总线归 SDK Core 边界",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.扫描覆盖新增项目与模板但不进入生成目录或嵌套仓库",
+      "layer": "sdk",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Core程序集只引用框架程序集且不存在旧公共面",
+      "current": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Core程序集只引用框架程序集且不存在旧公共面",
+      "layer": "sdk",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.全屏端口只负责内容所有权迁移和恢复",
+      "current": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.全屏端口只负责内容所有权迁移和恢复",
+      "layer": "sdk",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Legacy项目已删除且活动项目没有旧引用",
+      "current": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.Legacy项目已删除且活动项目没有旧引用",
+      "layer": "sdk",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.生命周期接口只有启动和停止且不再暴露顺序",
+      "current": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.生命周期接口只有启动和停止且不再暴露顺序",
+      "layer": "sdk",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.注册泛型约束固定模型生命周期和AvaloniaView边界",
+      "current": "MyAvaloniaManagement.PluginSdk.Tests.SdkBoundaryTests.注册泛型约束固定模型生命周期和AvaloniaView边界",
+      "layer": "sdk",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Tests.InternalRefactorTests.Host内部直接协作消费者不依赖Sdk事件总线",
+      "current": "MyAvaloniaManagement.Tests.InternalRefactorTests.Host内部直接协作消费者不依赖Sdk事件总线",
+      "layer": "unit",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p4-unit/unit.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Tests.PublicApiContractTests.Host程序集不再包含V2Facade总线或伪插件所有者",
+      "current": "MyAvaloniaManagement.Tests.PublicApiContractTests.Host程序集不再包含V2Facade总线或伪插件所有者",
+      "layer": "unit",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p4-unit/unit.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"total\", value: null)",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.OwnedDirectoryRejectsParentAndSibling",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.OwnedDirectoryRejectsParentAndSibling",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.PackageRejectsMalformedManifestOrWrongIdentity(manifest: \"{\\\"schemaVersion\\\":2,\\\"pluginId\\\":\\\"wrong.plugin\\\"\"···)",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.PackageRejectsMalformedManifestOrWrongIdentity(manifest: \"{\\\"schemaVersion\\\":2,\\\"pluginId\\\":\\\"wrong.plugin\\\"\"···)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.必需消费输出缺失时也必须提交身份核对(assembly: \"Dock.Avalonia.dll\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.RetiredExternalOptionsExplainLocalScope(option: \"--classic-game\", value: \"C:/game\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.RetiredExternalOptionsExplainLocalScope(option: \"--classic-game\", value: \"C:/game\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.非成功辅助计数不能被全通过主计数掩盖(name: \"warning\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.非成功辅助计数不能被全通过主计数掩盖(name: \"passedButRunAborted\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"notExecuted\", value: \"1\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.MainRepositoryStillRequiresCommitForGateEvidence",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.MainRepositoryStillRequiresCommitForGateEvidence",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.PackageAcceptanceRequiresExactlyOnePassedTest(passed: 0, failed: 1, skipped: 0)",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.PackageAcceptanceRequiresExactlyOnePassedTest(passed: 0, failed: 1, skipped: 0)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.SummaryV2ContainsOnlyLocalSourcesAndNoIntegrationClaim",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.SummaryV2ContainsOnlyLocalSourcesAndNoIntegrationClaim",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.通过用例必须包含有效身份和时间(attribute: \"executionId\", value: null)",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.ExecutionGraphStopsAfterFirstFailure",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.每一开发阶段失败均立即停止(failure: \"packages\")",
+      "layer": "gate",
+      "change": "失败停止扩展到八个阶段",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.ExecutionGraphStopsAfterFirstFailure",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.每一开发阶段失败均立即停止(failure: \"package-acceptance\")",
+      "layer": "gate",
+      "change": "失败停止扩展到八个阶段",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.通过用例必须包含有效身份和时间(attribute: \"duration\", value: null)",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.未完成或非成功运行不能只看通过计数(outcome: \"Failed\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.当前V3产物通过且文件不会被修改",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.当前V3产物通过且文件不会被修改",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationRejectsIncompleteOrExternalInputs(problem: \"external-path\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationRejectsIncompleteOrExternalInputs(problem: \"external-path\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.ExecutionGraphStopsAfterFirstFailure",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.每一开发阶段失败均立即停止(failure: \"build\")",
+      "layer": "gate",
+      "change": "失败停止扩展到八个阶段",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.构建后核对补丁DLL原字节而不只依赖包号(mode: \"missing\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.构建后核对补丁DLL原字节而不只依赖包号(mode: \"missing\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.非成功辅助计数不能被全通过主计数掩盖(name: \"notRunnable\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.结构完整仍需满足全部通过且命令成功(mode: \"other-result\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{\\\"schemaVersion\\\":2}\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{\\\"schemaVersion\\\":2}\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.结构完整仍需满足全部通过且命令成功(mode: \"skipped\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"missing-dll\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"missing-dll\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.非成功辅助计数不能被全通过主计数掩盖(name: \"pending\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.关键节点缺失或重复均拒绝(node: \"Results\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.ExecutionGraphStopsAfterFirstFailure",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.每一开发阶段失败均立即停止(failure: \"avalonia-layout-patch\")",
+      "layer": "gate",
+      "change": "失败停止扩展到八个阶段",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.ProcessRunnerPropagatesNonZeroExitCode",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.ProcessRunnerPropagatesNonZeroExitCode",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"passed\", value: null)",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.缺少当前产物时不能以旧文件代替(oldName: null)",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.缺少当前产物时不能以旧文件代替(oldName: null)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.完整结果提供同一文件摘要计数运行时间与最慢十项(namespaced: False)",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.EvidenceUsesSingleCamelCaseSchema",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.EvidenceUsesSingleCamelCaseSchema",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"old-dll\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"old-dll\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.构建后核对补丁DLL原字节而不只依赖包号(mode: \"matching\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.构建后核对补丁DLL原字节而不只依赖包号(mode: \"matching\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.非成功辅助计数不能被全通过主计数掩盖(name: \"inProgress\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.缺少当前产物时不能以旧文件代替(oldName: \"layout-v1.json\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.缺少当前产物时不能以旧文件代替(oldName: \"layout-v1.json\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.TRX必须恰好执行一个用例(total: 1, passed: 0, failed: 1, valid: True)",
+      "current": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.TRX必须恰好执行一个用例(total: 1, passed: 0, failed: 1, valid: True)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.InvalidCombinationsAreRejected(arguments: [\"verify\", \"--scope\"])",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.InvalidCombinationsAreRejected(arguments: [\"verify\", \"--scope\"])",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.PackageValidatorAcceptsStrictManifestAndRequiredPayload",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.PackageValidatorAcceptsStrictManifestAndRequiredPayload",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{\\\"schemaVersion\\\":4}\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{\\\"schemaVersion\\\":4}\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.未完成或非成功运行不能只看通过计数(outcome: \"InProgress\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.缺少当前产物时不能以旧文件代替(oldName: \"layout-v2.json\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.缺少当前产物时不能以旧文件代替(oldName: \"layout-v2.json\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.PackageAcceptanceRequiresExactlyOnePassedTest(passed: 0, failed: 0, skipped: 0)",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.PackageAcceptanceRequiresExactlyOnePassedTest(passed: 0, failed: 0, skipped: 0)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{broken:private-input}\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{broken:private-input}\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationRejectsIncompleteOrExternalInputs(problem: \"schema\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationRejectsIncompleteOrExternalInputs(problem: \"schema\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.TrxReaderKeepsSkippedTestsVisible",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.TrxReaderKeepsSkippedTestsVisible",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"old-cache\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"old-cache\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.文件缺失坏XML及错误根节点被拒绝(content: null)",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"total\", value: \"2\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"passed\", value: \"-1\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.ExecutionGraphStopsAfterFirstFailure",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.每一开发阶段失败均立即停止(failure: \"tests\")",
+      "layer": "gate",
+      "change": "失败停止扩展到八个阶段",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.FailedRunPreservesFailedPassAndNeverGrantsReleaseEligibility",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.FailedRunPreservesFailedPassAndNeverGrantsReleaseEligibility",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{\\\"schemaVersion\\\":\\\"3\\\"}\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{\\\"schemaVersion\\\":\\\"3\\\"}\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"null\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"null\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"[]\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"[]\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.非成功辅助计数不能被全通过主计数掩盖(name: \"disconnected\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.HostCoverageRejectsOtherAssembliesAndEmptyReports",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.HostCoverageRejectsOtherAssembliesAndEmptyReports",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.取消和超时终止子进程并保留日志(cancel: False)",
+      "current": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.取消和超时终止子进程并保留日志(cancel: False)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationRejectsIncompleteOrExternalInputs(problem: \"duplicate-suite\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationRejectsIncompleteOrExternalInputs(problem: \"duplicate-suite\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.不完整运行结构被拒绝(mode: \"missing-detail\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.结构完整仍需满足全部通过且命令成功(mode: \"abnormal-counter\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.通过用例必须包含有效身份和时间(attribute: \"duration\", value: \"invalid\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.不完整运行结构被拒绝(mode: \"invalid-time\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.TRX必须恰好执行一个用例(total: 2, passed: 2, failed: 0, valid: False)",
+      "current": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.TRX必须恰好执行一个用例(total: 2, passed: 2, failed: 0, valid: False)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.SealAcceptsRepeat",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.SealAcceptsRepeat",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{\\\"schemaVersion\\\":3.5}\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{\\\"schemaVersion\\\":3.5}\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"failed\", value: \"1\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.套件证据区分失败与未运行并保留结果身份",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.不完整运行结构被拒绝(mode: \"missing-outcome\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.关键节点缺失或重复均拒绝(node: \"Counters\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"passed\", value: \"2147483648\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"passed\", value: \"1.5\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.取消和超时终止子进程并保留日志(cancel: True)",
+      "current": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.取消和超时终止子进程并保留日志(cancel: True)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"executed\", value: \"0\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.DocumentationChecksLocalLinksWithoutRequiringNeighborRepositories",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.DocumentationChecksLocalLinksWithoutRequiringNeighborRepositories",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.通过用例必须包含有效身份和时间(attribute: \"outcome\", value: null)",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.ExecutionGraphStopsAfterFirstFailure",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.每一开发阶段失败均立即停止(failure: \"contracts\")",
+      "layer": "gate",
+      "change": "失败停止扩展到八个阶段",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.TRX必须恰好执行一个用例(total: 1, passed: 1, failed: 0, valid: True)",
+      "current": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.TRX必须恰好执行一个用例(total: 1, passed: 1, failed: 0, valid: True)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"passed\", value: \"\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationContainsAllFiveSuitesAndOnlyMyPlugTest",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationContainsAllFiveSuitesAndOnlyMyPlugTest",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.ExecutionGraphStopsAfterFirstFailure",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.每一开发阶段失败均立即停止(failure: \"dock-patch\")",
+      "layer": "gate",
+      "change": "失败停止扩展到八个阶段",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"zero-tests\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"zero-tests\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.PackageRejectsMalformedManifestOrWrongIdentity(manifest: \"{\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.PackageRejectsMalformedManifestOrWrongIdentity(manifest: \"{\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.FailedPackageAcceptancePreventsCoverageAndSmoke",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.FailedPackageAcceptancePreventsCoverageAndSmoke",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.结构完整仍需满足全部通过且命令成功(mode: \"exit-code\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.结构完整仍需满足全部通过且命令成功(mode: \"zero\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.未完成或非成功运行不能只看通过计数(outcome: \"Unknown\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationRejectsIncompleteOrExternalInputs(problem: \"wrong-plugin\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationRejectsIncompleteOrExternalInputs(problem: \"wrong-plugin\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.InvalidCombinationsAreRejected(arguments: [\"unknown\"])",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.InvalidCombinationsAreRejected(arguments: [\"unknown\"])",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.结构完整仍需满足全部通过且命令成功(mode: \"aborted\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{\\\"schemaVersion\\\":2147483648}\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{\\\"schemaVersion\\\":2147483648}\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.新建Smoke目录不能同时产生已退役文件(oldName: \"layout-v1.json\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.新建Smoke目录不能同时产生已退役文件(oldName: \"layout-v1.json\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.PackageAcceptanceRequiresExactlyOnePassedTest(passed: 2, failed: 0, skipped: 0)",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.PackageAcceptanceRequiresExactlyOnePassedTest(passed: 2, failed: 0, skipped: 0)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.参数拒绝隐式业务范围及重复输入",
+      "current": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.参数拒绝隐式业务范围及重复输入",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.构建后核对补丁DLL原字节而不只依赖包号(mode: \"old-dll\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.构建后核对补丁DLL原字节而不只依赖包号(mode: \"old-dll\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"matching\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"matching\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.未完成或非成功运行不能只看通过计数(outcome: \"Timeout\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationRejectsIncompleteOrExternalInputs(problem: \"missing-suite\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationRejectsIncompleteOrExternalInputs(problem: \"missing-suite\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.RepeatabilityComparisonIgnoresPathsButRejectsArtifactDrift",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.RepeatabilityComparisonIgnoresPathsButRejectsArtifactDrift",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.进程非零退出不被转换为成功",
+      "current": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.进程非零退出不被转换为成功",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.RetiredExternalOptionsExplainLocalScope(option: \"--workflow-studio\", value: \"C:/studio\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.RetiredExternalOptionsExplainLocalScope(option: \"--workflow-studio\", value: \"C:/studio\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.TRX必须恰好执行一个用例(total: 0, passed: 0, failed: 0, valid: False)",
+      "current": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.TRX必须恰好执行一个用例(total: 0, passed: 0, failed: 0, valid: False)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.InvalidCombinationsAreRejected(arguments: [\"verify\", \"--repeat\"])",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.InvalidCombinationsAreRejected(arguments: [\"verify\", \"--repeat\"])",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.ExecutionGraphStopsAfterFirstFailure",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.每一开发阶段失败均立即停止(failure: \"restore\")",
+      "layer": "gate",
+      "change": "失败停止扩展到八个阶段",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"missing-receipt\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"missing-receipt\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.关键节点缺失或重复均拒绝(node: \"ResultSummary\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{}\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.损坏内容和错误版本均明确拒绝(json: \"{}\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.PackageValidatorRejectsMissingPayloadOrInvalidManifest(includeAssembly: True, schemaVersion: 1)",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.PackageValidatorRejectsMissingPayloadOrInvalidManifest(includeAssembly: True, schemaVersion: 1)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.不完整运行结构被拒绝(mode: \"reverse-time\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.补丁验证失败必须阻断依赖还原和后续构建",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.补丁验证失败必须阻断依赖还原和后续构建",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.非成功辅助计数不能被全通过主计数掩盖(name: \"inconclusive\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.文件缺失坏XML及错误根节点被拒绝(content: \"<Other />\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.ExecutionGraphDeduplicatesStagesInRegistrationOrder",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.顺序计划每个阶段只执行一次且保留阶段包装器",
+      "layer": "gate",
+      "change": "固定顺序契约替代旧容器去重实现",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.不完整运行结构被拒绝(mode: \"missing-time\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.CoverageAttachmentCopiesAreDeduplicatedButDifferentReportsFail",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.CoverageAttachmentCopiesAreDeduplicatedButDifferentReportsFail",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"notExecuted\", value: null)",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.必需消费输出缺失时也必须提交身份核对(assembly: \"Avalonia.Base.dll\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.通过用例必须包含有效身份和时间(attribute: \"testName\", value: null)",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ProfileRunsLocalStagesAndCoverageFollowsPackageAcceptance(seal: True)",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ProfileRunsLocalStagesAndCoverageFollowsPackageAcceptance(seal: True)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.结构完整仍需满足全部通过且命令成功(mode: \"failed\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.TrxAndCoberturaReadersUseMachineReadableCounters",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.TrxAndCoberturaReadersUseMachineReadableCounters",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"failed\", value: null)",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.RetiredExternalOptionsExplainLocalScope(option: \"--scope\", value: \"workbench\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.RetiredExternalOptionsExplainLocalScope(option: \"--scope\", value: \"workbench\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.不完整运行结构被拒绝(mode: \"duplicate-id\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.完整结果提供同一文件摘要计数运行时间与最慢十项(namespaced: True)",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.真实包要求恰好一项通过而普通套件允许多项",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"executed\", value: null)",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.非成功辅助计数不能被全通过主计数掩盖(name: \"error\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.通过用例必须包含有效身份和时间(attribute: \"duration\", value: \"-00:00:01\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.非成功辅助计数不能被全通过主计数掩盖(name: \"timeout\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.未完成或非成功运行不能只看通过计数(outcome: \"NotExecuted\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.非成功辅助计数不能被全通过主计数掩盖(name: \"aborted\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.PackageAcceptanceRequiresExactlyOnePassedTest(passed: 1, failed: 0, skipped: 1)",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.PackageAcceptanceRequiresExactlyOnePassedTest(passed: 1, failed: 0, skipped: 1)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.VerifyAcceptsLocalAliases(scope: \"all\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.VerifyAcceptsLocalAliases(scope: \"all\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"skipped-tests\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"skipped-tests\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"passed\", value: \"abc\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.FingerprintChangesWithPathOrContent",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.FingerprintChangesWithPathOrContent",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ProfileRunsLocalStagesAndCoverageFollowsPackageAcceptance(seal: False)",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ProfileRunsLocalStagesAndCoverageFollowsPackageAcceptance(seal: False)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.VerifyAcceptsLocalAliases(scope: \"host\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.VerifyAcceptsLocalAliases(scope: \"host\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.文件缺失坏XML及错误根节点被拒绝(content: \"<broken\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.PackageValidatorRejectsMissingPayloadOrInvalidManifest(includeAssembly: False, schemaVersion: 2)",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateInfrastructureTests.PackageValidatorRejectsMissingPayloadOrInvalidManifest(includeAssembly: False, schemaVersion: 2)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.VerifyDefaultsToCompleteLocalScope",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.VerifyDefaultsToCompleteLocalScope",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.InvalidCombinationsAreRejected(arguments: [\"seal\", \"--scope\", \"host\"])",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.InvalidCombinationsAreRejected(arguments: [\"seal\", \"--scope\", \"host\"])",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.布局补丁失败阻断全部后续阶段",
+      "current": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.布局补丁失败阻断全部后续阶段",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.关键节点缺失或重复均拒绝(node: \"Times\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": null,
+      "current": "MyAvaloniaManagement.Gate.Tests.TestEvidenceReaderTests.计数缺失非法或不匹配不能补零(attribute: \"timeout\", value: \"broken\")",
+      "layer": "gate",
+      "change": "新增边界或负向验证",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"failed-tests\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.AvaloniaLayoutPatchTests.固定摘要和通过收据共同约束实际运行文件(mode: \"failed-tests\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.TRX必须恰好执行一个用例(total: 1, passed: 0, failed: 0, valid: False)",
+      "current": "MyAvaloniaManagement.Gate.Tests.CompatibilityToolTests.TRX必须恰好执行一个用例(total: 1, passed: 0, failed: 0, valid: False)",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.新建Smoke目录不能同时产生已退役文件(oldName: \"layout-v2.json\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LayoutArtifactTests.新建Smoke目录不能同时产生已退役文件(oldName: \"layout-v2.json\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationRejectsIncompleteOrExternalInputs(problem: \"external\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.LocalGateTests.ConfigurationRejectsIncompleteOrExternalInputs(problem: \"external\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    },
+    {
+      "old": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.RetiredExternalOptionsExplainLocalScope(option: \"--scope\", value: \"workflow\")",
+      "current": "MyAvaloniaManagement.Gate.Tests.GateOptionsTests.RetiredExternalOptionsExplainLocalScope(option: \"--scope\", value: \"workflow\")",
+      "layer": "gate",
+      "change": "保留契约",
+      "outcome": "Passed",
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx"
+    }
+  ]
+}

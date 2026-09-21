@@ -1,0 +1,880 @@
+{
+  "schemaVersion": 1,
+  "status": "pending-final-verify",
+  "planCommit": "08ed2c68f0c600b67a3745adc1538a09f69d47d9",
+  "implementationCommits": [
+    "17c3a557a9d41c1834beff5c4e41d0d961f85e8c",
+    "3ad7b268a5fa352b52341c20d42eef50a591952d"
+  ],
+  "developmentOnly": true,
+  "aiflowUsed": false,
+  "windowsCiExecuted": false,
+  "releaseGatesExecuted": false,
+  "deploymentPerformed": false,
+  "manualAcceptanceAdded": false,
+  "benchmark": {
+    "before": {
+      "phase": "before",
+      "revision": "08ed2c68f0c600b67a3745adc1538a09f69d47d9",
+      "sdk": "10.0.302",
+      "platform": "Microsoft Windows 10.0.26200",
+      "startedUtc": "2026-09-21T10:19:26.0842598Z",
+      "samples": [
+        {
+          "suite": "process",
+          "iteration": 1,
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.PluginTests",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "FullyQualifiedName~HostRestartProcessTests",
+            "--logger",
+            "trx;LogFileName=result.trx",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\before\\process-1"
+          ],
+          "exitCode": 0,
+          "wallSeconds": 64.7102938,
+          "trx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\before\\process-1\\result.trx",
+          "counts": {
+            "total": "15",
+            "failed": "0",
+            "passed": "15",
+            "skipped": "0"
+          },
+          "trxSha256": "0BB1EA004CE5E955955ADC5F14BEE63482CBFB6CCCC3CDA272089C5B547A71AC"
+        },
+        {
+          "suite": "ui",
+          "iteration": 1,
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.UiTests",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "FullyQualifiedName~DocumentWindowV16UiTests|FullyQualifiedName~ToolCenterUiTests|FullyQualifiedName~AutoHideRestoreVisualTests|FullyQualifiedName~DockToolWindowCloseUiTests",
+            "--logger",
+            "trx;LogFileName=result.trx",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\before\\ui-1"
+          ],
+          "exitCode": 0,
+          "wallSeconds": 53.7039431,
+          "trx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\before\\ui-1\\result.trx",
+          "counts": {
+            "total": "88",
+            "failed": "0",
+            "passed": "88",
+            "skipped": "0"
+          },
+          "trxSha256": "2446C26F3B8AA38902200CC0C7AB2CB5BD5D87E1BB143E4DCD47151A8A68C5F7"
+        },
+        {
+          "suite": "process",
+          "iteration": 2,
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.PluginTests",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "FullyQualifiedName~HostRestartProcessTests",
+            "--logger",
+            "trx;LogFileName=result.trx",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\before\\process-2"
+          ],
+          "exitCode": 0,
+          "wallSeconds": 69.9453101,
+          "trx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\before\\process-2\\result.trx",
+          "counts": {
+            "total": "15",
+            "failed": "0",
+            "passed": "15",
+            "skipped": "0"
+          },
+          "trxSha256": "19831457B5249B51F6F3240409B29A7CA396DDBD58F5F1C825B40C8AD7DCEAF2"
+        },
+        {
+          "suite": "ui",
+          "iteration": 2,
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.UiTests",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "FullyQualifiedName~DocumentWindowV16UiTests|FullyQualifiedName~ToolCenterUiTests|FullyQualifiedName~AutoHideRestoreVisualTests|FullyQualifiedName~DockToolWindowCloseUiTests",
+            "--logger",
+            "trx;LogFileName=result.trx",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\before\\ui-2"
+          ],
+          "exitCode": 0,
+          "wallSeconds": 51.9391185,
+          "trx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\before\\ui-2\\result.trx",
+          "counts": {
+            "total": "88",
+            "failed": "0",
+            "passed": "88",
+            "skipped": "0"
+          },
+          "trxSha256": "60959A8CCFC2B0AF4EFAB6A8E628DF31189EDFC14185E68F063C37BF1C357545"
+        },
+        {
+          "suite": "process",
+          "iteration": 3,
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.PluginTests",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "FullyQualifiedName~HostRestartProcessTests",
+            "--logger",
+            "trx;LogFileName=result.trx",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\before\\process-3"
+          ],
+          "exitCode": 0,
+          "wallSeconds": 72.7872136,
+          "trx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\before\\process-3\\result.trx",
+          "counts": {
+            "total": "15",
+            "failed": "0",
+            "passed": "15",
+            "skipped": "0"
+          },
+          "trxSha256": "A046B3479EF80DAC8BDD97E684D33B50B17FE6C23A482E7C52242088E6C419DF"
+        },
+        {
+          "suite": "ui",
+          "iteration": 3,
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.UiTests",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "FullyQualifiedName~DocumentWindowV16UiTests|FullyQualifiedName~ToolCenterUiTests|FullyQualifiedName~AutoHideRestoreVisualTests|FullyQualifiedName~DockToolWindowCloseUiTests",
+            "--logger",
+            "trx;LogFileName=result.trx",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\before\\ui-3"
+          ],
+          "exitCode": 0,
+          "wallSeconds": 68.6918772,
+          "trx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\before\\ui-3\\result.trx",
+          "counts": {
+            "total": "88",
+            "failed": "0",
+            "passed": "88",
+            "skipped": "0"
+          },
+          "trxSha256": "DF131578E761586954BDAE0A7C154B254C5874923316945F8F843130A072A591"
+        }
+      ],
+      "assemblies": [
+        {
+          "path": "Host\\MyAvaloniaManagement.PluginTests\\bin\\Release\\net10.0\\MyAvaloniaManagement.PluginTests.dll",
+          "sha256": "4592DD6FE1CD9B491B693BA7ADD5383E1F28D53A6A3A3F75FD426D78E939A187"
+        },
+        {
+          "path": "Host\\MyAvaloniaManagement.UiTests\\bin\\Release\\net10.0\\MyAvaloniaManagement.UiTests.dll",
+          "sha256": "64A0E61D7693FD20F2B43AC36476DD2B95A0296AFB79E677D7D929A6BA92A77C"
+        }
+      ]
+    },
+    "after": {
+      "phase": "after",
+      "revision": "08ed2c68f0c600b67a3745adc1538a09f69d47d9",
+      "sdk": "10.0.302",
+      "platform": "Microsoft Windows 10.0.26200",
+      "startedUtc": "2026-09-21T10:46:31.4710258Z",
+      "samples": [
+        {
+          "suite": "process",
+          "iteration": 1,
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.PluginTests",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "FullyQualifiedName~HostRestartProcessTests",
+            "--logger",
+            "trx;LogFileName=result.trx",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\after\\process-1"
+          ],
+          "exitCode": 0,
+          "wallSeconds": 70.7922478,
+          "trx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\after\\process-1\\result.trx",
+          "counts": {
+            "passed": "15",
+            "skipped": "0",
+            "total": "15",
+            "failed": "0"
+          },
+          "trxSha256": "BE2FB0D937D541A5BFA70D6F294C7F4B233A615405DD3AF1315605905B64D495"
+        },
+        {
+          "suite": "ui",
+          "iteration": 1,
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.UiTests",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "FullyQualifiedName~DocumentWindowV16UiTests|FullyQualifiedName~ToolCenterUiTests|FullyQualifiedName~AutoHideRestoreVisualTests|FullyQualifiedName~DockToolWindowCloseUiTests",
+            "--logger",
+            "trx;LogFileName=result.trx",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\after\\ui-1"
+          ],
+          "exitCode": 0,
+          "wallSeconds": 40.6817717,
+          "trx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\after\\ui-1\\result.trx",
+          "counts": {
+            "passed": "88",
+            "skipped": "0",
+            "total": "88",
+            "failed": "0"
+          },
+          "trxSha256": "A803F942F31BD33ABF09FD3B5C6430EA3C6C6235A1454D780E497113A4507919"
+        },
+        {
+          "suite": "process",
+          "iteration": 2,
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.PluginTests",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "FullyQualifiedName~HostRestartProcessTests",
+            "--logger",
+            "trx;LogFileName=result.trx",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\after\\process-2"
+          ],
+          "exitCode": 0,
+          "wallSeconds": 69.3816555,
+          "trx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\after\\process-2\\result.trx",
+          "counts": {
+            "passed": "15",
+            "skipped": "0",
+            "total": "15",
+            "failed": "0"
+          },
+          "trxSha256": "70A2052212005D8DDBFF3571DEB534A532A20A2097FD1C3CF7F2C97365B48251"
+        },
+        {
+          "suite": "ui",
+          "iteration": 2,
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.UiTests",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "FullyQualifiedName~DocumentWindowV16UiTests|FullyQualifiedName~ToolCenterUiTests|FullyQualifiedName~AutoHideRestoreVisualTests|FullyQualifiedName~DockToolWindowCloseUiTests",
+            "--logger",
+            "trx;LogFileName=result.trx",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\after\\ui-2"
+          ],
+          "exitCode": 0,
+          "wallSeconds": 42.606133,
+          "trx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\after\\ui-2\\result.trx",
+          "counts": {
+            "passed": "88",
+            "skipped": "0",
+            "total": "88",
+            "failed": "0"
+          },
+          "trxSha256": "C0F468EC15E03AA9DC5D6EF88DA85EC64968ADC61964D23FF2BAAF67B57CA4E3"
+        },
+        {
+          "suite": "process",
+          "iteration": 3,
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.PluginTests",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "FullyQualifiedName~HostRestartProcessTests",
+            "--logger",
+            "trx;LogFileName=result.trx",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\after\\process-3"
+          ],
+          "exitCode": 0,
+          "wallSeconds": 70.4393799,
+          "trx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\after\\process-3\\result.trx",
+          "counts": {
+            "passed": "15",
+            "skipped": "0",
+            "total": "15",
+            "failed": "0"
+          },
+          "trxSha256": "4A93F7D547FB99698550B38E634E3ABC487140CB2C93E4FA1FC14B77F7D587CA"
+        },
+        {
+          "suite": "ui",
+          "iteration": 3,
+          "command": [
+            "dotnet",
+            "test",
+            "Host/MyAvaloniaManagement.UiTests",
+            "-c",
+            "Release",
+            "--no-build",
+            "--no-restore",
+            "-m:1",
+            "--filter",
+            "FullyQualifiedName~DocumentWindowV16UiTests|FullyQualifiedName~ToolCenterUiTests|FullyQualifiedName~AutoHideRestoreVisualTests|FullyQualifiedName~DockToolWindowCloseUiTests",
+            "--logger",
+            "trx;LogFileName=result.trx",
+            "--results-directory",
+            "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\after\\ui-3"
+          ],
+          "exitCode": 0,
+          "wallSeconds": 43.5564884,
+          "trx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v21\\after\\ui-3\\result.trx",
+          "counts": {
+            "passed": "88",
+            "skipped": "0",
+            "total": "88",
+            "failed": "0"
+          },
+          "trxSha256": "E2DED03E9DB2A7D7E64CB850F66CF9D48EA8FABE547CBC6B9CD93B2DDEBD2DE8"
+        }
+      ],
+      "assemblies": [
+        {
+          "path": "Host\\MyAvaloniaManagement.PluginTests\\bin\\Release\\net10.0\\MyAvaloniaManagement.PluginTests.dll",
+          "sha256": "730889CCD495414967C90F069A58B9F60CB2E45252FEA535D69154D6698D3492"
+        },
+        {
+          "path": "Host\\MyAvaloniaManagement.UiTests\\bin\\Release\\net10.0\\MyAvaloniaManagement.UiTests.dll",
+          "sha256": "89946A25CF9429742C723CB39920D17D060A2C27E4C0B93DB1194415A573DD56"
+        }
+      ]
+    },
+    "comparison": {
+      "process": {
+        "beforeSeconds": [
+          64.7102938,
+          69.9453101,
+          72.7872136
+        ],
+        "afterSeconds": [
+          70.7922478,
+          69.3816555,
+          70.4393799
+        ],
+        "beforeMedian": 69.9453101,
+        "afterMedian": 70.4393799,
+        "medianChangePercent": 0.7063658725561917
+      },
+      "ui": {
+        "beforeSeconds": [
+          53.7039431,
+          51.9391185,
+          68.6918772
+        ],
+        "afterSeconds": [
+          40.6817717,
+          42.606133,
+          43.5564884
+        ],
+        "beforeMedian": 53.7039431,
+        "afterMedian": 42.606133,
+        "medianChangePercent": -20.664795654455393
+      }
+    },
+    "afterFixtureTimings": {
+      "samples": 45,
+      "remainingDirectories": 0,
+      "copyMilliseconds": {
+        "median": 866.4365,
+        "min": 596.1894,
+        "max": 1057.6839,
+        "sum": 38304.1063
+      },
+      "scenarioMilliseconds": {
+        "median": 2990.896,
+        "min": 1189.6588,
+        "max": 9289.4199,
+        "sum": 164693.2528
+      },
+      "cleanupMilliseconds": {
+        "median": 40.2547,
+        "min": 33.8963,
+        "max": 68.3404,
+        "sum": 1867.853
+      },
+      "startupReadyMilliseconds": {
+        "samples": 51,
+        "median": 2598.4291,
+        "min": 1329.4075,
+        "max": 5059.0512,
+        "scope": "仅完成启动的 Host，包含故障注入/重启场景；生产诊断计时不是整个进程墙钟"
+      }
+    },
+    "copyVolume": {
+      "beforeFiles": 260,
+      "beforeMiBApproximate": 597.0,
+      "afterFiles": 221,
+      "afterBytes": 66515911
+    },
+    "limitations": [
+      "没有控制系统后台负载；不从样本推导固定速度门槛。",
+      "旧实现未记录逐次复制 Stopwatch，只有前后墙钟与体积可比较。",
+      "UI 两侧可选截图均关闭；after UI 撤去新通用目录变量。最终完整专项与 Gate 单独核验附件开启路径。",
+      "after 已包含子进程补丁摘要与计时证据开销；未测得进程总耗时改善。"
+    ]
+  },
+  "specializedRuns": [
+    {
+      "trx": "artifacts/host-v21/p1-process/p1.trx",
+      "sha256": "CC5BEF15E4CDD1F44BCADF674101E6C1F75A0885E20FEC9090F505923C5D3938",
+      "outcome": "Completed",
+      "counts": {
+        "total": 31,
+        "executed": 31,
+        "passed": 31,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "times": {
+        "creation": "2026-09-21T18:26:56.0590915+08:00",
+        "queuing": "2026-09-21T18:26:56.0590921+08:00",
+        "start": "2026-09-21T18:26:55.2271054+08:00",
+        "finish": "2026-09-21T18:28:13.1257149+08:00"
+      },
+      "failures": []
+    },
+    {
+      "trx": "artifacts/host-v21/p2-ui/p2.trx",
+      "sha256": "A4F650950C74CB7E066F82894DCC1950129D9D0720A250112C89C88C142C2EB7",
+      "outcome": "Failed",
+      "counts": {
+        "total": 292,
+        "executed": 292,
+        "passed": 291,
+        "failed": 1,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "times": {
+        "creation": "2026-09-21T18:28:17.1507226+08:00",
+        "queuing": "2026-09-21T18:28:17.1507228+08:00",
+        "start": "2026-09-21T18:28:13.9386372+08:00",
+        "finish": "2026-09-21T18:29:51.7598356+08:00"
+      },
+      "failures": [
+        {
+          "name": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: False)",
+          "message": "Assert.Equal() Failure: Values differ\r\nExpected: False\r\nActual:   True"
+        }
+      ]
+    },
+    {
+      "trx": "artifacts/host-v21/p2-ui-fixed/ui.trx",
+      "sha256": "C416FA52C45A8223BB13AAEB79263A1798BF8DF1442E1D0465B9108888E377F9",
+      "outcome": "Failed",
+      "counts": {
+        "total": 292,
+        "executed": 292,
+        "passed": 291,
+        "failed": 1,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "times": {
+        "creation": "2026-09-21T18:38:04.0247807+08:00",
+        "queuing": "2026-09-21T18:38:04.0247813+08:00",
+        "start": "2026-09-21T18:38:02.3948703+08:00",
+        "finish": "2026-09-21T18:39:13.3375191+08:00"
+      },
+      "failures": [
+        {
+          "name": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: False)",
+          "message": "System.TimeoutException : Headless 等待超时：多组浮窗关闭完成；最后一次条件仍为 false。"
+        }
+      ]
+    },
+    {
+      "trx": "artifacts/host-v21/p2-close-ready/close.trx",
+      "sha256": "B32C6E320B4F2AF880740FCB7BD9FADA46B1E5F57889DEC4C6E7CA50EF3A33AC",
+      "outcome": "Failed",
+      "counts": {
+        "total": 24,
+        "executed": 24,
+        "passed": 23,
+        "failed": 1,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "times": {
+        "creation": "2026-09-21T18:40:41.2503185+08:00",
+        "queuing": "2026-09-21T18:40:41.2503192+08:00",
+        "start": "2026-09-21T18:40:37.6508157+08:00",
+        "finish": "2026-09-21T18:40:50.8525062+08:00"
+      },
+      "failures": [
+        {
+          "name": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: False)",
+          "message": "System.TimeoutException : Headless 等待超时：多组浮窗关闭完成；最后一次条件仍为 false。"
+        }
+      ]
+    },
+    {
+      "trx": "artifacts/host-v21/p2-close-trace/trace.trx",
+      "sha256": "267EC65003EDE494B1300E9B068250FEE22942B8108B210732045A3E3EF2F657",
+      "outcome": "Failed",
+      "counts": {
+        "total": 2,
+        "executed": 2,
+        "passed": 1,
+        "failed": 1,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "times": {
+        "creation": "2026-09-21T18:41:41.3916331+08:00",
+        "queuing": "2026-09-21T18:41:41.3916333+08:00",
+        "start": "2026-09-21T18:41:38.1052285+08:00",
+        "finish": "2026-09-21T18:41:42.8370789+08:00"
+      },
+      "failures": [
+        {
+          "name": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: False)",
+          "message": "System.TimeoutException : Headless 等待超时：多组浮窗关闭完成；最后一次条件仍为 false。"
+        }
+      ]
+    },
+    {
+      "trx": "artifacts/host-v21/p2-close-trace2/trace.trx",
+      "sha256": "AA53B237A55E582A1D0C74E23839E3AA4110A65CA2333330A9CA3CD9D0A09CC8",
+      "outcome": "Failed",
+      "counts": {
+        "total": 2,
+        "executed": 2,
+        "passed": 1,
+        "failed": 1,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "times": {
+        "creation": "2026-09-21T18:42:47.2427965+08:00",
+        "queuing": "2026-09-21T18:42:47.2427968+08:00",
+        "start": "2026-09-21T18:42:43.9695641+08:00",
+        "finish": "2026-09-21T18:42:49.7164547+08:00"
+      },
+      "failures": [
+        {
+          "name": "MyAvaloniaManagement.UiTests.DockToolWindowCloseUiTests.P2多组整窗关闭保留比例和位置且取消不隐藏任何成员(cancel: False)",
+          "message": "System.InvalidOperationException : READY visible=True window=True factory=True layout=True; NATIVE closing cancel=False"
+        }
+      ]
+    },
+    {
+      "trx": "artifacts/host-v21/p2-close-layout/trace.trx",
+      "sha256": "0A657686EBFDC41AA45C3F548569A7489163EF8922FE38AF9D7C8FA3408E03A0",
+      "outcome": "Completed",
+      "counts": {
+        "total": 2,
+        "executed": 2,
+        "passed": 2,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "times": {
+        "creation": "2026-09-21T18:43:34.8324473+08:00",
+        "queuing": "2026-09-21T18:43:34.8324479+08:00",
+        "start": "2026-09-21T18:43:31.8830098+08:00",
+        "finish": "2026-09-21T18:43:34.8366492+08:00"
+      },
+      "failures": []
+    },
+    {
+      "trx": "artifacts/host-v21/p2-ui-final/ui.trx",
+      "sha256": "0242D12011C382BC8379FAEB4149A944E4F9938A73150010991232F4D120F770",
+      "outcome": "Completed",
+      "counts": {
+        "total": 292,
+        "executed": 292,
+        "passed": 292,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "times": {
+        "creation": "2026-09-21T18:44:28.1549231+08:00",
+        "queuing": "2026-09-21T18:44:28.1549236+08:00",
+        "start": "2026-09-21T18:44:24.1427939+08:00",
+        "finish": "2026-09-21T18:45:34.4537497+08:00"
+      },
+      "failures": []
+    },
+    {
+      "trx": "artifacts/host-v21/p3-gate/gate-tests.trx",
+      "sha256": "ABF16BCA2E30219545733AB038DF3F9A64015151F70ADF7D0ABACA08058499DA",
+      "outcome": "Completed",
+      "counts": {
+        "total": 137,
+        "executed": 137,
+        "passed": 137,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "times": {
+        "creation": "2026-09-21T18:36:45.9753962+08:00",
+        "queuing": "2026-09-21T18:36:45.9753968+08:00",
+        "start": "2026-09-21T18:36:45.4496844+08:00",
+        "finish": "2026-09-21T18:36:47.3537433+08:00"
+      },
+      "failures": []
+    },
+    {
+      "trx": "artifacts/host-v21/p3-gate-final/gate.trx",
+      "sha256": "278DBCB1DB3C06504BAFA959DD04BA83D3D926894A33AB0ABB982F5CEEB1EDB7",
+      "outcome": "Completed",
+      "counts": {
+        "total": 152,
+        "executed": 152,
+        "passed": 152,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "times": {
+        "creation": "2026-09-21T18:46:29.7923496+08:00",
+        "queuing": "2026-09-21T18:46:29.7923503+08:00",
+        "start": "2026-09-21T18:46:29.2442746+08:00",
+        "finish": "2026-09-21T18:46:31.1930440+08:00"
+      },
+      "failures": []
+    },
+    {
+      "trx": "artifacts/host-v21/p4-sdk/sdk.trx",
+      "sha256": "FE8A7999A140DF477A6AFBFA28A9C080542BF9CD8C3002AC7BDC7040375C14C5",
+      "outcome": "Completed",
+      "counts": {
+        "total": 93,
+        "executed": 93,
+        "passed": 93,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "times": {
+        "creation": "2026-09-21T18:46:24.8477095+08:00",
+        "queuing": "2026-09-21T18:46:24.8477097+08:00",
+        "start": "2026-09-21T18:46:24.2880956+08:00",
+        "finish": "2026-09-21T18:46:24.9028469+08:00"
+      },
+      "failures": []
+    },
+    {
+      "trx": "artifacts/host-v21/p4-unit/unit.trx",
+      "sha256": "1FB984573B3D23AEFA837F4CAEB7575D062802C015532F83C1D63160F5D9D9CA",
+      "outcome": "Completed",
+      "counts": {
+        "total": 652,
+        "executed": 652,
+        "passed": 652,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      },
+      "times": {
+        "creation": "2026-09-21T18:46:26.4482098+08:00",
+        "queuing": "2026-09-21T18:46:26.4482103+08:00",
+        "start": "2026-09-21T18:46:25.8136071+08:00",
+        "finish": "2026-09-21T18:46:27.7758279+08:00"
+      },
+      "failures": []
+    }
+  ],
+  "staleFileCheck": {
+    "probe": "D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.PluginTests\\bin\\Release\\net10.0\\RestartHarness\\v21-stale-probe.txt",
+    "passed": true,
+    "description": "构建移除测试副本旧文件，源输出未改动"
+  }
+}

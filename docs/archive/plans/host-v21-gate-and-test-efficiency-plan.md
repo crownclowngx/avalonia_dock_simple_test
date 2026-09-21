@@ -1,9 +1,9 @@
 # V21：Host 开发门禁与测试效能收敛方案
 
 > 用途：减少 Host 开发验证中的重复文件复制、重复交互和多处规则维护，提高失败反馈速度与证据可读性，同时保持有效行为覆盖。
-> 状态：待实施；本次仅编写方案与专用验证计划。日期：2026-09-21。
+> 状态：方案已实施并归档；实际范围、测量限制及最终开发验收以[开发记录](../records/host-v21/development-acceptance.md)和非嵌入证据为准。日期：2026-09-21。
 > 调研基线：`83f7aeaad048874439d0133f5a4cb233cb14c081`，编写前工作树干净；实施前重新核对 HEAD、差异和实际测试输入。
-> 配套：[V21 专用开发验证计划](host-v21-gate-and-test-efficiency-verification.md)。当前执行入口继续以[主仓验证](../maintenance/verification.md)和现行代码为准。
+> 配套：[V21 专用开发验证计划](../../maintenance/host-v21-gate-and-test-efficiency-verification.md)。当前执行入口继续以[主仓验证](../../maintenance/verification.md)和现行代码为准。
 
 V21 是 Host 改造序号，不修改产品、程序集、SDK、NuGet 包、Document Envelope 或 Layout schema 的版本。下文区分已有审视事实与拟实施行为，不把历史通过记录算作 V21 实施结果。
 
@@ -19,11 +19,11 @@ V21 是 Host 改造序号，不修改产品、程序集、SDK、NuGet 包、Docu
 6. **不使用 AIFLOW**，不读取或维护其上下文、任务记录及更新候选。
 7. **不使用 Windows CI 与发布门禁。** 开发阶段仅执行本机专项、工具自测和既有 `verify`；不执行 `seal`、发布 Windows Smoke、发布覆盖率或发布重复性门禁，不修改 CI、不部署安装目录、不上传包或创建发布标签。发布时再使用发布门禁，既有政策和阈值保持。
 
-当前请求只授权形成文档。本次不修改生产代码、测试实现、Gate 或脚本，不把本方案写入已实现能力。
+本方案最初按文档请求形成；随后项目所有者授权按文档实施及 Git 提交。以下保留评审时的设计与验收要求，实际取舍以开发记录为准。
 
 ## 2. 已有依据与适用限制
 
-以下为 2026-09-21 审视快照。时间取自已有 Gate run `20260921-090510-cbce3ea96ab0` 的 summary/TRX，来源及计数可核对 [V20 开发证据](../archive/records/host-v20/development-evidence.json)。该轮输入为 `cbce3ea96ab04551177bcfca62c614329ca03f40`；与调研 HEAD 的差异为文档和证据更新。没有为本次审视重新运行测试。
+以下为 2026-09-21 审视快照。时间取自已有 Gate run `20260921-090510-cbce3ea96ab0` 的 summary/TRX，来源及计数可核对 [V20 开发证据](../records/host-v20/development-evidence.json)。该轮输入为 `cbce3ea96ab04551177bcfca62c614329ca03f40`；与调研 HEAD 的差异为文档和证据更新。没有为本次审视重新运行测试。
 
 | 已观察事实 | 对 V21 的含义 |
 | --- | --- |
@@ -37,7 +37,7 @@ V21 是 Host 改造序号，不修改产品、程序集、SDK、NuGet 包、Docu
 
 上述套件时间来自 TRX，不包含全部命令启动开销；当前目录体积也不是历史 run 的采样数据。已有多轮总耗时约 178–255 秒，但输入提交不同，不能据此计算 V21 的性能提升或稳定性结论。
 
-主要实现依据：[进程夹具](../../Host/MyAvaloniaManagement.PluginTests/HostRestartProcessTests.cs)、[夹具构建](../../Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj)、[UI 应用配置](../../Host/MyAvaloniaManagement.UiTests/TestAppBuilder.cs)、[Gate 执行](../../tools/MyAvaloniaManagement.Gate/GateApplication.cs)、[TRX reader](../../tools/MyAvaloniaManagement.Gate/TestEvidenceReader.cs)。
+主要实现依据：[进程夹具](../../../Host/MyAvaloniaManagement.PluginTests/HostRestartProcessTests.cs)、[夹具构建](../../../Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj)、[UI 应用配置](../../../Host/MyAvaloniaManagement.UiTests/TestAppBuilder.cs)、[Gate 执行](../../../tools/MyAvaloniaManagement.Gate/GateApplication.cs)、[TRX reader](../../../tools/MyAvaloniaManagement.Gate/TestEvidenceReader.cs)。
 
 ## 3. 范围与不变量
 
@@ -191,7 +191,7 @@ Vxx 测试名可在归并时按行为改名，历史映射保留；不为统一�
 | P4 | 重复边界归并与源码扫描范围 | 同一规则有清楚责任方，活动项目不漏检 |
 | P5 | 文档、帮助与完整开发验收 | 专项证据齐全，最终输入的完整 verify 通过 |
 
-每阶段只运行必要专项，实际命令及行为矩阵见[专用开发验证计划](host-v21-gate-and-test-efficiency-verification.md)。本轮不承诺固定百分比提速；未证明收益的复杂优化应撤回，只保留有价值的职责或校验改进。
+每阶段只运行必要专项，实际命令及行为矩阵见[专用开发验证计划](../../maintenance/host-v21-gate-and-test-efficiency-verification.md)。本轮不承诺固定百分比提速；未证明收益的复杂优化应撤回，只保留有价值的职责或校验改进。
 
 ## 12. 文档与最终交付
 

@@ -93,3 +93,7 @@ dotnet run --project Host/MyAvaloniaManagement -c Release --no-build
 最终验证前先定稿 MD：这些文档会嵌入 Host DLL。最终运行 ID、TRX 摘要、源码差异与产物哈希记录在非嵌入的 `docs/archive/records/host-v11/final-development-evidence.json`，不要在验证后修改嵌入文档并继续沿用旧产物哈希。
 
 V11-P1 使用独立的 [p1-final-development-evidence.json](../archive/records/host-v11/p1-final-development-evidence.json)，不覆盖 V11 原证据；安装目录部署也不包含在 P1 源码补丁验证中。
+
+## V21 测试基础设施更新
+
+现行夹具、等待和证据目录约定见[V21 专用开发验证](host-v21-gate-and-test-efficiency-verification.md)。真实进程仍按用例独立复制和持有 PID；UI 动作等待实际就绪/完成，不以固定休眠判定成功。Gate 附件归入本轮套件目录，旧记录中的固定 TestResults 路径仅代表当时产物；没有改变本页保护的启动、关闭、取消、布局或所有权协议。

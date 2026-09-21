@@ -12,7 +12,7 @@
 
 实施时从仓库根目录运行本地测试与既有 `verify`。不使用 AIFLOW、Windows CI、`seal`、发布 Windows Smoke、发布覆盖率或发布重复性门禁，不部署安装目录或发布包。不删除、绕过或放宽已有发布条件。
 
-依据 [Gate 执行图](../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs)，`verify` 包含固定补丁准备、locked restore、Release 零警告构建、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约与已发布 API 比较、MyPlugTest 打包和真实 ZIP 验收；没有 coverage 和 windows-smoke 阶段。运行前提见 [主仓验证](verification.md)。开发打包与本地包验收不表示上传或发布。
+依据 [Gate 顺序计划](../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs)，`verify` 包含固定补丁准备、locked restore、Release 零警告构建、契约与已发布 API 比较、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、MyPlugTest 打包和真实 ZIP 验收；没有 coverage 和 windows-smoke 阶段。运行前提见 [主仓验证](verification.md)。开发打包与本地包验收不表示上传或发布。
 
 ## 2. 测试选择与新增原则
 

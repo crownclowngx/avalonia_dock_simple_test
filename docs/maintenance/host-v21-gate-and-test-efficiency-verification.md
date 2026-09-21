@@ -1,8 +1,8 @@
-# V21：Host 开发门禁与测试效能专用验证计划
+# V21：Host 开发门禁与测试效能专用验证
 
-> 用途：验证 [V21 收敛方案](host-v21-gate-and-test-efficiency-plan.md)中的夹具复制、UI 等待、测试去向和 Gate 可靠性。
-> 状态：待实施配套计划，以下矩阵为验收要求，不表示用例已经补齐或 V21 已通过。日期：2026-09-21。
-> 当前入口：[主仓验证](../maintenance/verification.md)。调研基线、既有计时口径与首要规定见方案，避免在本页再维护一份数字快照。
+> 用途：验证 [V21 收敛方案](../archive/plans/host-v21-gate-and-test-efficiency-plan.md)中的夹具复制、UI 等待、测试去向和 Gate 可靠性。
+> 状态：已实施的可复用验证矩阵；本轮实际结果、命令与失败记录见[开发记录](../archive/records/host-v21/development-acceptance.md)及其非嵌入证据。日期：2026-09-21。
+> 当前入口：[主仓验证](verification.md)。调研基线、既有计时口径与首要规定见方案，避免在本页再维护一份数字快照。
 
 ## 1. 执行边界与证据规则
 
@@ -112,7 +112,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Release 构建失败' }
 
 ```powershell
 # P1：进程夹具、启动与重启交接。输出保留实际计数和耗时。
-dotnet test Host/MyAvaloniaManagement.PluginTests -c Release --no-build --no-restore -m:1 --filter '(FullyQualifiedName~HostRestartProcessTests|FullyQualifiedName~PluginEnablementRestartTests|FullyQualifiedName~StartupPluginProgressTests|FullyQualifiedName~HostRestartLifecycleTests)&Category!=PackageAcceptance' --logger 'trx;LogFileName=p1-process.trx' --results-directory "$v21Results/p1-process"
+dotnet test Host/MyAvaloniaManagement.PluginTests -c Release --no-build --no-restore -m:1 --filter '(FullyQualifiedName~HostRestartProcessTests|FullyQualifiedName~RestartHarnessFilesTests|FullyQualifiedName~PluginEnablementRestartTests|FullyQualifiedName~StartupPluginProgressTests|FullyQualifiedName~HostRestartLifecycleTests)&Category!=PackageAcceptance' --logger 'trx;LogFileName=p1-process.trx' --results-directory "$v21Results/p1-process"
 if ($LASTEXITCODE -ne 0) { throw 'P1 进程专项失败' }
 
 # P2：UI 夹具为共享设施，修改后运行完整本仓 UI 集合，避免过滤遗漏调用者。
@@ -148,7 +148,7 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 if ($LASTEXITCODE -ne 0) { throw '最终完整开发 verify 失败' }
 ```
 
-另核对本次新文档及修改导航的嵌入原文与实际渲染，现有 HelpContentTests 不自动证明所有新增页面已逐份验证。链接检查须包含未跟踪的新文件，不能只检查 git diff 中的已有文件。上方最终完整 verify 是代码实施完成的验收入口，不作为本次仅编写文档的隐含实施动作。
+另核对本次新文档及修改导航的嵌入原文与实际渲染，现有 HelpContentTests 不自动证明所有新增页面已逐份验证。链接检查须包含未跟踪的新文件，不能只检查 git diff 中的已有文件。上方最终完整 verify 是代码实施完成的验收入口；运行后的最终数据保存在非嵌入 JSON，避免再修改 Markdown 导致输入身份漂移。
 
 ## 7. 性能比较与完成标准
 

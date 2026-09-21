@@ -6,6 +6,8 @@
 
 ## 方案与评审
 
+- [V21：开发门禁与测试效能收敛](plans/host-v21-gate-and-test-efficiency-plan.md)，见[开发记录](records/host-v21/development-acceptance.md)、[测试去向](records/host-v21/test-matrix.md)与[专用开发验证](../maintenance/host-v21-gate-and-test-efficiency-verification.md)。
+
 - [V20：历史布局退役与现行入口收敛](plans/host-v20-layout-retirement-plan.md)，见[开发记录](records/host-v20/development-acceptance.md)、[测试去向](records/host-v20/test-matrix.md)及[专用开发验证](../maintenance/host-v20-layout-retirement-verification.md)。
 
 - [V19：Host 复杂度收敛方案](plans/host-v19-complexity-reduction-plan.md)，实际实施见[开发记录](records/host-v19/development-acceptance.md)与[逐项测试映射](records/host-v19/test-matrix.md)。
@@ -56,6 +58,11 @@
 - [2026-09-20 Host 人工验收确认](records/host/manual-acceptance-20260920.md)
 - [2026-09-20 文档整理、漂移修正及处置清单](records/documentation/reorganization-20260920.md)
 - [2026-09-16 文档重组与原始处置清单](records/documentation/reorganization-20260916.md)
+
+### host-v21
+
+- [开发门禁与测试效能记录](records/host-v21/development-acceptance.md)、[最终开发证据](records/host-v21/development-evidence.json)
+- [逐项测试去向](records/host-v21/test-matrix.md)、[用例参数明细](records/host-v21/test-mapping.json)
 
 ### host-v20
 

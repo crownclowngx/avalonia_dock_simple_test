@@ -12,7 +12,7 @@ V19 复杂度收敛的实际开发验证见[V19 开发记录](docs/archive/recor
 
 当前源码已实施 [V20 历史布局退役与现行入口收敛](docs/archive/plans/host-v20-layout-retirement-plan.md)：Layout 只支持 V3，旧文件不参与恢复，旧文档创建分组查询已删除。实际验证与逐项去向见[开发记录](docs/archive/records/host-v20/development-acceptance.md)及[专用开发验证](docs/maintenance/host-v20-layout-retirement-verification.md)。后续本机交付见[专用说明](docs/archive/records/host-v20/local-deployment-guide.md)，完成状态以部署 JSON 为准，不扩展 V19 的人工验收范围。
 
-[V21 开发门禁与测试效能收敛](docs/roadmap/host-v21-gate-and-test-efficiency-plan.md)及[专用开发验证计划](docs/roadmap/host-v21-gate-and-test-efficiency-verification.md)已形成，状态为待实施；范围是夹具复制、UI 等待、测试职责和 Gate 证据，开发阶段仅使用本机验证。
+[V21 开发门禁与测试效能收敛](docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md)及[专用开发验证计划](docs/maintenance/host-v21-gate-and-test-efficiency-verification.md)已实施；夹具复制、UI 等待、测试职责和 Gate 证据的实际结果见[开发记录](docs/archive/records/host-v21/development-acceptance.md)。开发阶段仅使用本机验证。
 
 ## 最短启动步骤
 

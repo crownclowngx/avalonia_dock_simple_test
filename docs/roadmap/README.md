@@ -8,10 +8,11 @@
 
 | 事项 | 状态 / 范围 | 依据与完成条件 |
 | --- | --- | --- |
-| V21 开发门禁与测试效能收敛 | 待实施；本次仅完成方案和专用验证计划 / Host、测试与 Gate | [方案](host-v21-gate-and-test-efficiency-plan.md)、[专用开发验证计划](host-v21-gate-and-test-efficiency-verification.md)：优化夹具复制和 UI 等待、归并重复断言、增强 Gate 证据；SOLID 优先，保留有效场景，最终执行本机完整 verify；不使用 AIFLOW、Windows CI 或发布门禁 |
 | V19 后续实机体验 | 代码实施及本机交付已完成；人工体验与交付分别留证 | [开发记录](../archive/records/host-v19/development-acceptance.md)、[部署证据](../archive/records/host-v19/local-deployment-20260921.json)、[回归矩阵](../maintenance/host-v19-complexity-verification.md)：后续按实际改动需要核对主窗/浮窗、保存和恢复、自动收起及多屏体验，不用部署结果扩展既有人工验收范围 |
 
 V19 方案已[归档](../archive/plans/host-v19-complexity-reduction-plan.md)，本机单文件交付已完成，实际源码与产物身份以部署 JSON 为准。V20 实现与专项已完成，方案已[归档](../archive/plans/host-v20-layout-retirement-plan.md)，最终开发结果见[记录](../archive/records/host-v20/development-acceptance.md)。Layout V2 已退役，后续实机体验仍按实际需要留证；本轮未部署或发布。
+
+V21 已实施并[归档方案](../archive/plans/host-v21-gate-and-test-efficiency-plan.md)；夹具裁剪、条件等待、Gate 证据与单测归并见[开发记录](../archive/records/host-v21/development-acceptance.md)和[专用开发验证](../maintenance/host-v21-gate-and-test-efficiency-verification.md)。最终自动验证以记录中的 JSON 为准，没有新增部署或人工验收结论。
 
 ## 发布与外部验证
 

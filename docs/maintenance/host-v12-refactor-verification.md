@@ -4,7 +4,7 @@
 
 > 用途：为 [V12 重构方案](../archive/plans/host-v12-internal-refactor-plan.md)提供专项测试矩阵、开发门禁与证据规范。
 > 状态：P0–P3 专项验证已执行；结果见[开发记录](../archive/records/host-v12/development-acceptance.md)，完整 verify 见[最终开发证据](../archive/records/host-v12/final-development-evidence.json)。核对日期：2026-09-21。
-> 事实源：现有 Host 测试、[Gate 执行图](../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs)、[Gate 配置](../../tools/MyAvaloniaManagement.Gate/gate.config.json)与[主仓验证](verification.md)。
+> 事实源：现有 Host 测试、[Gate 顺序计划](../../tools/MyAvaloniaManagement.Gate/GateExecutionPlan.cs)、[Gate 配置](../../tools/MyAvaloniaManagement.Gate/gate.config.json)与[主仓验证](verification.md)。
 
 ## 1. 验证边界
 
