@@ -116,10 +116,12 @@ flowchart TB
     Storage --> Atomic["AtomicFileTransaction"]
 
     MainVM --> Layout["DockLayoutLifecycle<br/>Prepare / Apply / Save"]
-    Layout --> Mapper["DockLayoutWorkspaceState"]
-    Layout --> Codec["DockLayoutV3Json"]
-    Layout --> Validator["DockLayoutRuntimeValidator"]
+    Layout --> LayoutState["DockLayoutWorkspaceState"]
     Layout --> Store["DockLayoutV3Store"]
+    Layout --> SaveQueue["DockLayoutSaveQueue"]
+    SaveQueue --> Store
+    Store --> Codec["DockLayoutV3Json"]
+    Codec --> Validator["DockLayoutV3Validator"]
     Store --> Atomic
 ```
 
@@ -501,6 +503,8 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 ## 7. 布局生命周期
 
 `DockLayoutLifecycle` 协调 Prepare、ApplyPending、捕获/保存与退出冻结，只拥有订阅和保存调度。生产写入 Layout V3，文档协议和默认数据根仍各自保持 V2。
+
+当前 Store 仍包含首次只读导入 Layout V2 的路径。[V20 方案](../../../../docs/roadmap/host-v20-layout-retirement-plan.md)拟完整退出该能力并迁移有效测试，尚未实施；旧 `DockLayoutStore`、`DockLayoutSnapshotMapper` 和 `DockLayoutRuntimeValidator` 不属于当前生命周期主链，不能用它们解释现行 V3 的恢复和保存。
 
 - `DockLayoutWorkspaceState`：UI 树与纯数据互转，复用原 Tool/Document/View，稳定身份独立于临时框架 ID。
 - `DockLayoutTree`：剔除文档、空分支归并、隐藏和不可用工具记录合并。

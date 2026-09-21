@@ -45,11 +45,12 @@
 
 ## 当前结论、待办与历史
 
+- [V20 历史布局退役与现行入口收敛](roadmap/host-v20-layout-retirement-plan.md)：待实施；配套[专用开发验证](roadmap/host-v20-layout-retirement-verification.md)。范围为 Layout V2 完整退役、有效测试迁至 V3、验证工具适配、旧查询入口删除及当前文档校准；当前代码尚未改变。
 - [V19 Host 复杂度收敛方案](archive/plans/host-v19-complexity-reduction-plan.md)：已实施并归档；[专用回归验证](maintenance/host-v19-complexity-verification.md)、[逐项测试映射](archive/records/host-v19/test-matrix.md)与[开发记录](archive/records/host-v19/development-acceptance.md)记录关闭、回滚、命令目录、实时查询和工具入口的收敛。
 - [Host 人工验收确认](archive/records/host/manual-acceptance-20260921.md)：项目所有者确认当前主程序通过，专项矩阵保留供后续回归。
 - [V18 命令面板交互方案](archive/plans/host-v18-command-palette-interaction-plan.md)：已实施四类分组、动作和目标校验；配套[专用开发验证](maintenance/host-v18-command-palette-verification.md)及[开发记录](archive/records/host-v18/development-acceptance.md)。
 - [待办与候选](roadmap/README.md)：保留当前开发计划、发布前事项、外部业务边界、实验和未来候选。
-- [历史归档](archive/README.md)：V1–V18 方案、阶段结果、原失败和各次部署/发布证据；历史命令不作为当前操作入口。
+- [历史归档](archive/README.md)：V1–V19 方案、阶段结果、原失败和各次部署/发布证据；历史命令不作为当前操作入口。
 - [本轮文档整理记录](archive/records/documentation/reorganization-20260921.md)：目录归位、验收与部署状态修正、应用内帮助同步和验证结果。
 
 ## 理论与设计解释

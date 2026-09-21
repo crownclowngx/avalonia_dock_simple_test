@@ -53,6 +53,8 @@ V18 完整开发验证已通过，证据对应当时定稿的代码和嵌入 Mar
 
 V19 已实施：[复杂度收敛专用验证](host-v19-complexity-verification.md)保留可复用矩阵，[方案](../archive/plans/host-v19-complexity-reduction-plan.md)已归档；实际测试映射及最终完整开发验证见[开发记录](../archive/records/host-v19/development-acceptance.md)。
 
+V20 尚未实施：[历史布局退役方案](../roadmap/host-v20-layout-retirement-plan.md)与[专用开发验证计划](../roadmap/host-v20-layout-retirement-verification.md)覆盖有效布局测试迁至 V3、Writer Lease、Gate 产物检查自测、旧查询及文档收口。开发阶段仅执行本机专项和完整 `verify`，不使用 AIFLOW、Windows CI 或发布门禁；当前发布 Smoke 断言仍是 V2，计划不表示已经适配。
+
 ## 正式 Host 封板
 
 仅在具备发布验收条件时使用：
@@ -63,7 +65,7 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- seal
 dotnet run --project tools/MyAvaloniaManagement.Gate -- seal --repeat
 ```
 
-V11 当前布局已升级为 V3。既有发布 Smoke 的 V2 文件断言尚待实际发布前适配和验证，本轮未运行或放宽它；开发验证见 [浮窗与布局专项指南](floating-layout-verification.md)。
+V11 当前布局已升级为 V3。既有发布 Smoke 的 V2 文件断言尚待适配，代码修改与工具自测已纳入 [V20 待实施方案](../roadmap/host-v20-layout-retirement-plan.md)；发布进程链的实际运行仍留到发布阶段，本次文档交付未运行或放宽它。开发验证见[浮窗与布局专项指南](floating-layout-verification.md)。
 
 seal 只支持 Windows x64，要求干净工作树，固定 global.json 的 SDK 和 Release 配置。它创建无硬链接源码克隆，执行本仓验证、MyPlugTest 双次确定性打包、包身份和资产检查、真实包验收、Host-only 覆盖率及真实窗口 layout-v2.json Smoke。
 

@@ -4,19 +4,20 @@
 
 项目所有者于 2026-09-21 [确认当前主程序已完成手工验收](../archive/records/host/manual-acceptance-20260921.md)。当前 V18 与此前 Host 桌面体验的验收待办已收口，专项矩阵保留供后续回归；确认记录没有逐项环境日志，不补写输入法或多屏配置。历次本机部署见[部署索引](../maintenance/local-deployment.md)。
 
-## 本轮后续验收
+## 当前开发计划与后续体验
 
 | 事项 | 状态 / 范围 | 依据与完成条件 |
 | --- | --- | --- |
-| V19 实机体验与后续交付 | 代码实施完成；本轮未执行新的人工桌面验收或安装目录部署 | [开发记录](../archive/records/host-v19/development-acceptance.md)、[回归矩阵](../maintenance/host-v19-complexity-verification.md)：后续在实际部署需求下核对主窗/浮窗、保存和恢复、自动收起及多屏体验 |
+| V20 历史布局退役与现行入口收敛 | 待实施；本次仅交付文档 | [方案](host-v20-layout-retirement-plan.md)、[专用开发验证](host-v20-layout-retirement-verification.md)：Layout V2 完整退役，有效测试迁至 V3，工具适配、旧查询删除和当前说明校准 |
+| V19 后续实机体验 | 代码实施及本机交付已完成；人工体验与交付分别留证 | [开发记录](../archive/records/host-v19/development-acceptance.md)、[部署证据](../archive/records/host-v19/local-deployment-20260921.json)、[回归矩阵](../maintenance/host-v19-complexity-verification.md)：后续按实际改动需要核对主窗/浮窗、保存和恢复、自动收起及多屏体验，不用部署结果扩展既有人工验收范围 |
 
-V19 方案已[归档](../archive/plans/host-v19-complexity-reduction-plan.md)，本地开发验证不使用 AIFLOW、Windows CI 或发布门禁。最近部署包含 V18 实现和 V19 方案文档，不能据此认定 V19 重构已部署。V18 自动化结果见[开发记录](../archive/records/host-v18/development-acceptance.md)，后续人工确认与部署分别留证。
+V19 方案已[归档](../archive/plans/host-v19-complexity-reduction-plan.md)，本机单文件交付已完成，实际源码与产物身份以部署 JSON 为准。V20 开发不使用 AIFLOW、Windows CI 或发布门禁；当前仍有 V2 导入能力，不能将待实施方案作为已经退役的证据。
 
 ## 发布与外部验证
 
 | 事项 | 状态 / 范围 | 依据与完成条件 |
 | --- | --- | --- |
-| 发布 Smoke 适配 Layout V3 | 发布前待完成 / Gate | [主仓验证](../maintenance/verification.md)：当前 GateChecks 仍检查 V2 文件与 schema；正式发布前适配 V3，运行工具自测和当次发布验证 |
+| 发布 Smoke 适配 Layout V3 | 代码适配与工具自测纳入 V20；发布实跑仍待发布阶段 / Gate | [V20 方案](host-v20-layout-retirement-plan.md)：当前 GateChecks 仍检查 V2；开发阶段修改共享产物检查并运行自测，不执行发布 Windows Smoke，正式发布再按[原门禁](../maintenance/verification.md)验证真实进程链 |
 | 已发布 API 文本分类与 Host seal 政策 | 发布政策待明确 / SDK、Host | [API 维护](../reference/plugin-sdk-api-compatibility.md)：公开包事实和二进制比较已有证据；分类、Unshipped 和 seal 政策在发布阶段处理 |
 | Host 安装程序公开发布 | 发布前待完成 / Host 交付 | [NuGet 发布范围](../archive/records/host-v9/nuget-unified-3.4.1-release.md)：本机单文件交付已完成；公开发布仍需当次产物、有效 seal 条件及备份/回退验证 |
 | 外部插件专有业务回归 | 按插件独立跟踪 / 外部仓库 | [兼容验证边界](../maintenance/plugin-compatibility-verification.md)：账号、数据库、下载、视频/WebView、后台任务和原生依赖由对应业务仓库记录，Host 整体验收不生成这些逐项业务结果 |
@@ -26,7 +27,9 @@ V19 方案已[归档](../archive/plans/host-v19-complexity-reduction-plan.md)，
 
 | 候选 | 范围与依据 |
 | --- | --- |
-| 清单解析与 Workflow 编排继续改善可读性 | [V17 已归档方案](../archive/plans/host-v17-readability-refactor-plan.md)中未纳入实施的候选，先明确独立目标与行为保护；关闭规则的具体收敛已进入上方 V19 方案 |
+| Workflow BeginShutdown 取消锁边界调查 | V20 之后优先独立调查；验证注释与实际锁内取消的差异、回调与 Run 释放竞态，确认缺陷才最小修复；不纳入 V20 完成条件，不全面重构 Workflow |
+| PluginManifestReader 最小整理 | 在上述调查之后独立安排；优先只提取声明解释步骤，保留首次失败、错误码、异常范围及 JSON 生命周期；背景见[V17 候选](../archive/plans/host-v17-readability-refactor-plan.md) |
+| Command Palette 按来源分段 | 有新的展示修改需求时再评估；当前保持四类来源的线性流程及 V18 目标复查，不新增 Provider 框架或拆分 WorkspaceSession |
 | Workflow 下载与跨插件业务闭环 | [原始 Workflow 方案](../archive/plans/ai-workflow-plugin-exploration.md)：先确认实际插件现状和责任仓库，再验证真实下载、后续加密的取消/失败及源文件保留 |
 | AI 候选规划、破坏性能力、定义持久化 | 同一原始方案中的独立产品候选，分别确认需求与边界，不作为当前手工编排的前提 |
 
