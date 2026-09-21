@@ -1,9 +1,9 @@
 # V13 插件启用与禁用开发验证
 
-> 当前状态（2026-09-20）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260920.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
+> 当前状态（2026-09-21）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260921.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
 
 > 用途：为 [V13 实施计划](../archive/plans/host-v13-plugin-enablement-plan.md)提供专项测试矩阵、本地开发门禁、恢复约定与证据标准。
-> 状态：专项已执行，实际名称、结果与最终完整 verify 见[开发记录](../archive/records/host-v13/development-acceptance.md)及其 JSON；原开发阶段未执行原生桌面，后续所有者确认见页首。核对日期：2026-09-20。
+> 状态：专项已执行，实际名称、结果与最终完整 verify 见[开发记录](../archive/records/host-v13/development-acceptance.md)及其 JSON；原开发阶段未执行原生桌面，后续所有者确认见页首。核对日期：2026-09-21。
 > 事实源：[Gate 执行图](../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs)、[Gate 配置](../../tools/MyAvaloniaManagement.Gate/gate.config.json)、[主仓验证](verification.md)及当前 Host 测试工程。
 
 ## 1. 验证范围与约束

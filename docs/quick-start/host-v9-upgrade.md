@@ -1,6 +1,6 @@
 # V9：Avalonia / Dock 升级使用与开发验证
 
-> 用途：V9 框架升级的使用与开发说明；状态：V9 范围的证据保留。核对日期：2026-09-20。后续 V11 生产布局已使用 [V3](../reference/dock-layout-snapshot-v3.md)，不能把本文 V9 的 V2 原样保留边界视为今天的写入协议。当前版本与支持范围见[集中基线](../reference/platform-baseline.md)。
+> 用途：V9 框架升级的使用与开发说明；状态：V9 范围的证据保留。核对日期：2026-09-21。后续 V11 生产布局已使用 [V3](../reference/dock-layout-snapshot-v3.md)，不能把本文 V9 的 V2 原样保留边界视为今天的写入协议。当前版本与支持范围见[集中基线](../reference/platform-baseline.md)。
 
 版本事实以 [Directory.Version.props](../../Directory.Version.props) 为准；逐阶段证据见 [专用开发验收](../archive/records/host-v9/development-acceptance.md)。
 
@@ -75,4 +75,4 @@ Remove-Item Env:MYAVALONIA_EXTERNAL_CONTROLS, Env:MYAVALONIA_WORKSPACE_PLUGIN_ID
 
 ## Host 安装程序发布前仍需完成
 
-当前 Host 人工验收已由所有者[确认通过](../archive/records/host/manual-acceptance-20260920.md)。外部插件的原生视频及专有业务、发布 Smoke 的 V3 适配和正式发布前的备份/回退验证见[现行待办](../roadmap/README.md)。本文 V9 的回退约束只对应当时版本；当前部署恢复成套且身份一致的 Host、运行时补丁与交付物，保留插件和用户数据，不能把生产 Layout V3 当作 V2 写回或只回退一个 DLL。
+当前 Host 人工验收已由所有者[确认通过](../archive/records/host/manual-acceptance-20260921.md)。外部插件的原生视频及专有业务、发布 Smoke 的 V3 适配和正式发布前的备份/回退验证见[现行待办](../roadmap/README.md)。本文 V9 的回退约束只对应当时版本；当前部署恢复成套且身份一致的 Host、运行时补丁与交付物，保留插件和用户数据，不能把生产 Layout V3 当作 V2 写回或只回退一个 DLL。

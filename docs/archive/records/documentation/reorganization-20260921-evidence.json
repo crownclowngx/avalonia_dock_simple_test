@@ -1,0 +1,962 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-21",
+  "status": "passed",
+  "scope": "Host documentation organization, drift correction, link validation and embedded help regression",
+  "baselineRevision": "d9765768bc76a5c971a39447a43b20fda28ebb67",
+  "initialWorktreeClean": true,
+  "finalizedAtUtc": "2026-09-21T01:01:34.214425+00:00",
+  "manualAcceptance": {
+    "source": "User explicitly stated: 我已经手工验收过主程序了",
+    "record": "docs/archive/records/host/manual-acceptance-20260921.md",
+    "granularity": "Overall Host acceptance; no per-device, per-matrix or exact EXE identity inferred"
+  },
+  "moves": [
+    {
+      "from": "docs/maintenance/host-v19-complexity-verification.md",
+      "to": "docs/roadmap/host-v19-complexity-verification.md",
+      "reason": "Unimplemented verification plan belongs beside its roadmap plan; relative links and acceptance context updated"
+    },
+    {
+      "from": "docs/archive/records/host-v19/local-deployment-20260921.json",
+      "to": "docs/archive/records/host-v18/local-deployment-with-v19-plan-20260921.json",
+      "reason": "Actual deployed code is V18 with V19 planning documents",
+      "rawSha256Before": "ae72be67a84f3224e2cffe1d616047c2838de941f436abd3f3b5eb573c3acc57",
+      "rawSha256After": "ae72be67a84f3224e2cffe1d616047c2838de941f436abd3f3b5eb573c3acc57",
+      "bytesPreserved": true
+    }
+  ],
+  "documentChecks": {
+    "markdownCount": 220,
+    "localLinksChecked": 1764,
+    "headingAnchorsChecked": 26,
+    "helpLinksChecked": 12,
+    "errors": [],
+    "optionalExternalLinks": 40,
+    "missingOptionalExternalLinks": [],
+    "historicalMarkdownPreservedCount": 137,
+    "historicalAssetsChecked": 43,
+    "historicalAssetsUnchanged": true,
+    "movedFilesChecked": 2,
+    "movedNarrativeOrAssetErrors": [],
+    "unknownCurrentTestClasses": []
+  },
+  "assetComparison": "Historical assets match HEAD raw blob or Git checkout-filter byte representation to account for pre-existing LF/CRLF; moved deployment JSON additionally matches the raw SHA-256 captured immediately before its move.",
+  "sourceInputs": {
+    "markdownCount": 220,
+    "manifestPath": "artifacts/documentation-audit/20260921/markdown-inputs.json",
+    "manifestSha256": "4ab7793f43dce4d9363214ea9cb3643696e22e234f41d90d658fad3227600cdd",
+    "embeddedMarkdown": [
+      {
+        "path": "Host/MyAvaloniaManagement/HelpContent/activity.md",
+        "sha256": "24750F522ED2B858D0FEDD68092D7748A176C9C00952E7AF09D040CBA435AD29"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/HelpContent/architecture.md",
+        "sha256": "EDC6567AFFC297801FD73BE9F313FFD99A635204476E16EF1F78C19316ED9234"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/HelpContent/attention.md",
+        "sha256": "18489D9EABDE0CCA461B5666AEA8CA41812CDF08CB49DF4802D40097A3A4F80A"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/HelpContent/forkable.md",
+        "sha256": "A99A1329C966C13CAC0C5699FEF99CBCFADF6816AD378909CA3EBC21B9C84938"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/HelpContent/product.md",
+        "sha256": "D7322EBF4DC7D850EA63FAC66645EDF5CAF596F24291B29ECB198C62C29D6FDC"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/HelpContent/production.md",
+        "sha256": "A48BDA7DC52618C31BA80F398839BF127947E11270C71B20085A1EC6212A5811"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/HelpContent/references.md",
+        "sha256": "673F1B0E0C1080B0E51D328587D857C19C50B60CC7399EC6E33C70868E85B289"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/HelpContent/workbench.md",
+        "sha256": "191837E0D0CF90D5695D2E05DE43F58E45501CAE3B9905D350C5C9899B96A46A"
+      },
+      {
+        "path": "docs/archive/plans/ai-workflow-plugin-exploration.md",
+        "sha256": "D962E3701FB217C5317A36ACDBA89C3E232BF8CE84DD86A779A4D638975AD782"
+      },
+      {
+        "path": "docs/archive/plans/avalonia-dock-upgrade-assessment-20260916.md",
+        "sha256": "79977F1C7906A743234E66D402E8B09BF3E240677F6B0AE1F6D600B5FA9EFA6F"
+      },
+      {
+        "path": "docs/archive/plans/host-dock-area-fill-implementation-plan.md",
+        "sha256": "6976BA4916968A7EAB03953A427F8D1AF13B119C4D3EEB311C68C956AA814200"
+      },
+      {
+        "path": "docs/archive/plans/host-document-cross-window-layout-crash-fix-plan.md",
+        "sha256": "F3F585623849B72A7A366E2B88D9AAA525A07441917B7344703E06027DAC1733"
+      },
+      {
+        "path": "docs/archive/plans/host-plugin-architecture-review.md",
+        "sha256": "77B390C977357897C277849C2BDF32842AD99367BFCF0FC5C0ABFEAE7D4C39C4"
+      },
+      {
+        "path": "docs/archive/plans/host-v1-sealing-readiness-plan.md",
+        "sha256": "80D14C8AB06F47038EEE5D233DEE7D572242550041F6BB112957C547B81BD947"
+      },
+      {
+        "path": "docs/archive/plans/host-v10-plugin-compatibility-and-dashboard-plan.md",
+        "sha256": "2FD12C3C3E74492FF5F58BCC9C2A2BB77CBCCD8CC5A6D3BC1FA75DE197DC6578"
+      },
+      {
+        "path": "docs/archive/plans/host-v11-floating-windows-and-layout-v3-plan.md",
+        "sha256": "9C9879F2FC4AD35410EC4C37C5F27D5854E5A45AF6DC845BE7F3FDA6E9400F12"
+      },
+      {
+        "path": "docs/archive/plans/host-v11-p1-tool-split-fix-plan.md",
+        "sha256": "119708971FBDA832C79A78562B3A5A049F57A3D2113758C26190D39D9B260DEC"
+      },
+      {
+        "path": "docs/archive/plans/host-v11-p2-tool-window-close-fix-plan.md",
+        "sha256": "5AB3DE831AAEB235DF28C71AAB87996F92BA6436F452C5CEBBC6DFF4BDD4BF98"
+      },
+      {
+        "path": "docs/archive/plans/host-v12-internal-refactor-plan.md",
+        "sha256": "318C796338703F49EEABDEE67C9DEA86F6C071178A23E088D815739922F5ED62"
+      },
+      {
+        "path": "docs/archive/plans/host-v13-plugin-enablement-plan.md",
+        "sha256": "4E0CFDF1DB6EBBC4B038657FAD374D87315D6A4F9C0CB473F26D16A99ECF3769"
+      },
+      {
+        "path": "docs/archive/plans/host-v14-automatic-restart-plan.md",
+        "sha256": "F624CB0EBE4BA704ACAFDC3CE920D37AB8122ADED9C6E3B453DAF73C08118270"
+      },
+      {
+        "path": "docs/archive/plans/host-v15-startup-splash-plan.md",
+        "sha256": "3BF8941DBA61F196ADAB65EE0895C48883D4C050565F3D8216185AD40B8AF8C8"
+      },
+      {
+        "path": "docs/archive/plans/host-v16-document-floating-close-and-creation-target-plan.md",
+        "sha256": "BF6C5E009B6EA2B3F2DE4466BAB1BC2F35E059BB7A517CC0BD7E38889419978C"
+      },
+      {
+        "path": "docs/archive/plans/host-v17-readability-refactor-plan.md",
+        "sha256": "2A686B7FA9A646B00260CAFEF8F20B649CDB7FAEE29355BE827DD528617CBB38"
+      },
+      {
+        "path": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "sha256": "98D8893F4D657EBA10F0A14D2559BE06C301CB2155D9E441A43F54F2188E868A"
+      },
+      {
+        "path": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "sha256": "9CBFFC7D86EAD5830E0ED970FA102A881ECE0873CB65386387D54E60101F606B"
+      },
+      {
+        "path": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "sha256": "C08CFA7B97E8CB6EA9B75EFBEF36340CFC68A32B9C3D11553A96662F955BD648"
+      },
+      {
+        "path": "docs/archive/plans/host-v4-breaking-refactor-plan.md",
+        "sha256": "F3D67CB2530DE5D7298F8C15BDB94637C3E4541FE956CE2C681FAA5E7049AD0C"
+      },
+      {
+        "path": "docs/archive/plans/host-v5-lifecycle-ownership-repair-plan.md",
+        "sha256": "08B7DA90DD2335ADFD4E7A9CCD1E997D1704ECD3D56D39CA11B61855EB5AC683"
+      },
+      {
+        "path": "docs/archive/plans/host-v6-plugin-navigation-and-function-center-plan.md",
+        "sha256": "EBE31EA3D867763E755ECF6F13BE4EE1BE4F43658402D467077CF5C83682B84E"
+      },
+      {
+        "path": "docs/archive/plans/host-v6.1-extensible-icon-contributions-plan.md",
+        "sha256": "DAFDD745D9CE5B45A78D7AA2C431C6E6B2CCE6D485E65A1D3DBF817ACA82D52C"
+      },
+      {
+        "path": "docs/archive/plans/host-v7-tool-center-and-visibility-plan.md",
+        "sha256": "D9E5F3F2E2B74FD5F779E22D239AE6E8F6DD96C52AAB0370085CC6E4DF39F674"
+      },
+      {
+        "path": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+        "sha256": "9483220188ADE89C21819D1363645D1DDF92EDC468291B2F7D869170DF81AD89"
+      },
+      {
+        "path": "docs/archive/plans/host-v9-avalonia-dock-upgrade-plan.md",
+        "sha256": "1A63D79C0FBCAC7307FC66EB25D43466F76E444289410700754664C44DA1CBAC"
+      },
+      {
+        "path": "docs/archive/plans/plugin-status-window.md",
+        "sha256": "366C5E90F0572AB3E99C5A64D5320F23A8AF3554594BEA7C0846BC8A44C30C92"
+      },
+      {
+        "path": "docs/archive/plans/workbench-command-introduction-plan.md",
+        "sha256": "97ED52C34BBB77B5AAFCD82E6791482EE8466819855ABF1D0F8227CF07119295"
+      },
+      {
+        "path": "docs/archive/README.md",
+        "sha256": "E896D2050D88DB4DC742F212954B1DC6D967F32BA0A4CE05811F1FCE54636292"
+      },
+      {
+        "path": "docs/archive/records/dock-area-fill/cross-window-layout-crash-20260917.md",
+        "sha256": "A8B380636EF03D896D93548EE7A5ECF062CCA55EC5673C502AABF73B80DB1175"
+      },
+      {
+        "path": "docs/archive/records/dock-area-fill/cross-window-layout-deployment-guide.md",
+        "sha256": "3FD57BC6DD6ACD6A2094066B64F8FDBCF7C9AF16938EE2B878CC7D9308303126"
+      },
+      {
+        "path": "docs/archive/records/dock-area-fill/cross-window-layout-fix.md",
+        "sha256": "80AD744137486124FCA31951D30F4418BD8D8B6554F08920D69F10EB8A5EA9C3"
+      },
+      {
+        "path": "docs/archive/records/dock-area-fill/development-acceptance.md",
+        "sha256": "3481CE52C3B4452ED49725C9B86BAD4D8A4EAEF707FE8E099035B17219713BEC"
+      },
+      {
+        "path": "docs/archive/records/documentation/reorganization-20260916.md",
+        "sha256": "084CB374607D678BE77CD17AF0458D077C5348E2D8C1D142F5E380EB9A2CC5CD"
+      },
+      {
+        "path": "docs/archive/records/documentation/reorganization-20260920.md",
+        "sha256": "33A758F0B24CAAD2B6EA6004EFF25FD01F832F3DF20641407AA5869EBED09775"
+      },
+      {
+        "path": "docs/archive/records/documentation/reorganization-20260921.md",
+        "sha256": "6E1B56EEDE6E54BE813EE9AA0B4419BB7FEBF09B3FCC838317B38D0A4ED9711F"
+      },
+      {
+        "path": "docs/archive/records/host-v10/development-acceptance.md",
+        "sha256": "B80804713898D7317F29FFD7C01C9C7BE98C7572436F8B10C47CAA94DCE28CC8"
+      },
+      {
+        "path": "docs/archive/records/host-v11/development-acceptance.md",
+        "sha256": "3324063C74292B7467B324CFF94F52A59887EADFA244D19F70A9F93533BF9A25"
+      },
+      {
+        "path": "docs/archive/records/host-v11/p1-tool-split-fix.md",
+        "sha256": "DB5C6122A326BDDC5A930083C30DD97013039535FF210C8C6431EC6D76659A7B"
+      },
+      {
+        "path": "docs/archive/records/host-v11/p2-tool-window-close-fix.md",
+        "sha256": "3C8EA5C3B2CFDA6DB378837AF80DD0DED2BF65074FE3DF83FDBA771A7C550473"
+      },
+      {
+        "path": "docs/archive/records/host-v12/development-acceptance.md",
+        "sha256": "E38C470C54948B76E621244C60FC8B60E29CC1520C80E7813205359A4EC6552B"
+      },
+      {
+        "path": "docs/archive/records/host-v12/local-deployment-guide.md",
+        "sha256": "756CDF3EA6922D9E1D263867527C50C586E7EAF1EA17A995F2E3F082A47ECE57"
+      },
+      {
+        "path": "docs/archive/records/host-v13/development-acceptance.md",
+        "sha256": "0D5ACFF6C329607932B815D26A9A4AA1A4CFD7D68509A5F1A0E49C3981E263D7"
+      },
+      {
+        "path": "docs/archive/records/host-v13/local-deployment-guide.md",
+        "sha256": "EF50B005A72EFFEEC59F8C4ECB85AFFE9B5A19EFF0507C0C87174AB587DCF9ED"
+      },
+      {
+        "path": "docs/archive/records/host-v14/development-acceptance.md",
+        "sha256": "C97C62FAA1221BD286931AB6A8E1AB04AA1BD83F201F7ABF6E9F876473B3806B"
+      },
+      {
+        "path": "docs/archive/records/host-v14/local-deployment-guide.md",
+        "sha256": "9755F32B769DF12201AA2B4335D06FDABF70732EE75F33A332FE0C388868A7C2"
+      },
+      {
+        "path": "docs/archive/records/host-v15/development-acceptance.md",
+        "sha256": "373A0BF90CF9021B0ED806E1C5F5E646039C90B833D0EA59F5611A43E4917605"
+      },
+      {
+        "path": "docs/archive/records/host-v15/local-deployment-guide.md",
+        "sha256": "B665C1862EB839C6E343C813D24BCBE77E8F3925BEAF394A27CD9B0966D3A95F"
+      },
+      {
+        "path": "docs/archive/records/host-v16/development-acceptance.md",
+        "sha256": "61DDCF4EDB5F9315D14E17C8649ED56B86C5669F5581929CF885433DE9ABB397"
+      },
+      {
+        "path": "docs/archive/records/host-v17/development-acceptance.md",
+        "sha256": "3154F69B2E53AC3808B4CD1C27D063FF43EEAAB0CCFA60D41A7094D019EDA59B"
+      },
+      {
+        "path": "docs/archive/records/host-v18/development-acceptance.md",
+        "sha256": "481E0AFBC108C8C8639E20FFC1EB3E605548A1525EAAE4C0FF3B0105715F52A0"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g0-green-baseline.md",
+        "sha256": "87DB830C30D37BBBFD4E09A830ED029DE42353F1A0A891A65E18585FB8CFC0FC"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g1-support-boundary-and-version-lines.md",
+        "sha256": "198DF60EE30363154A767E4AD101AA69528B9CEAC411049F2476BB50BB576B62"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g10-host-internal-coordination.md",
+        "sha256": "C28E808981DE3702E0DB07397B2875E6E8018374E14FD1447159A3823C2C9CEA"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g11-low-value-public-surface-cleanup.md",
+        "sha256": "6524AFDD1B68CD41611C52D8D99C8CF9BE15C9326D293DEE75C1355E5F9B16C4"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g12-unified-plugin-build-and-deployment.md",
+        "sha256": "9168FB60B56335DF77D948199434F6ACF30EE6312DF766B2BD5D89F0E2B3323D"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g13-plugin-sdk-api-compatibility-baseline.md",
+        "sha256": "A9EEB400A6B7B51E9F07D2C2868BEFE205343E397BF044C5EC6A86872B99F576"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g14-windows-release-gate.md",
+        "sha256": "2962DCBED1929E0C76963B9CA6767DE04A1F3C1D0547253DEBFB0D0848C71999"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g15-host-diagnostic-redaction.md",
+        "sha256": "2B339D2F6CD04BD33C54CD52B8B3D575FBD0AE0827CD7FE69908B515B1326352"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g16-documentation-and-v1-baseline.md",
+        "sha256": "655889E145930D67F350E9D7F7771A392C9AE7F266870DEFE0205BDFFD834447"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g2-host-api-surface.md",
+        "sha256": "30A1A88E5C6016CC60030DAC569D961D7C75CEF89D08F53BF438A7CE929B57D3"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g3-plugin-sdk-and-ui-profile.md",
+        "sha256": "29F660706D70C5251FB8AE8D63AA899A78E26F0764CDD500D64D5389638F4361"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g4-managed-only-plugin-loading.md",
+        "sha256": "DE1317F269C2FD1137100658D6B72B48B56AAFABA04BB374F563D8596A6658C0"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g5-explicit-contributions-and-plugin-registry.md",
+        "sha256": "3A5FC614AA534D9F9F209C00FF461155F0C0427402090AD6A70175E2974A93C0"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g6-host-di-protection.md",
+        "sha256": "BCF351D25330545B64A9082C2A4487B57B6644A7D61E08E474F2C157E4D65C41"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g7-document-envelope-v1.md",
+        "sha256": "A4CF62F34528C43DA1107DE3E9F51421AEEAC2E155B12736E2AFDE392F710007"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g8-document-content-persistence-contract.md",
+        "sha256": "A33191863C3EF324D05766700672BD673464BC4EBA5B4188105F9B6FAAC08E1D"
+      },
+      {
+        "path": "docs/archive/records/host-v1/g9-sdk-event-bus.md",
+        "sha256": "8DB747E885407503B3C0E0FEF3CEC44977685582B7309C0C7A35FA4DF6AE3950"
+      },
+      {
+        "path": "docs/archive/records/host-v2/g0-green-baseline.md",
+        "sha256": "EACC4F1426D720154DC78A02E3A6FC2399834D567AC6FBBE276B9746DC88C27C"
+      },
+      {
+        "path": "docs/archive/records/host-v2/g1-version-and-data-boundaries.md",
+        "sha256": "A780D544CBA7303A942D92D55A0BD10487F08F5F1959BE49D60FA60F05C1D263"
+      },
+      {
+        "path": "docs/archive/records/host-v2/g13-remove-v1-production-surface.md",
+        "sha256": "FC5ED7525467781FAFDEAA914DE6DC85518C8ECFCC62945B8D44BBA0AF4B1414"
+      },
+      {
+        "path": "docs/archive/records/host-v2/g14-v2-sealing.md",
+        "sha256": "E713858E248594357CC0DBCF9D048E87DC02C542EFB3731265757F036207ECEE"
+      },
+      {
+        "path": "docs/archive/records/host-v2/g2-plugin-sdk-rebuild.md",
+        "sha256": "7628E9AB818B6C7AD337ED85E673CCC31C59140BF9AE22E777A01981B655014B"
+      },
+      {
+        "path": "docs/archive/records/host-v2/g3-manifest-v2-and-build-protocol.md",
+        "sha256": "CCE5B226FC6A1A26BA5C807793A5A7274D763502376E1288FEDAFD5426DFADAF"
+      },
+      {
+        "path": "docs/archive/records/host-v2/g4-per-plugin-containers.md",
+        "sha256": "33E242B61E8DF41C922139BDFE9A4CB615679845B1A7D2D1F5FFC9D287DFA525"
+      },
+      {
+        "path": "docs/archive/records/host-v2/g5-declarative-contribution-catalog.md",
+        "sha256": "F78CA1C71CC201C1BAA884980D7F472FE71D097A5F1232C86A97A8A9E4D3A6EA"
+      },
+      {
+        "path": "docs/archive/records/host-v2/g6-host-dock-adapter.md",
+        "sha256": "A23984EA97ABE952DB3FE8A207C197B59E830800486711534ADAC0F36038634F"
+      },
+      {
+        "path": "docs/archive/records/host-v2/g7-document-v2.md",
+        "sha256": "EB130567B652E025AB24FC7DA96B411D6F870140DCA42AA1320FD9C23844D37D"
+      },
+      {
+        "path": "docs/archive/records/host-v2/g8-layout-and-lifecycle-v2.md",
+        "sha256": "A99A180ADBE668DF6BA3A21F87743DE957663E00052EE932FC48E2AAAC2659F7"
+      },
+      {
+        "path": "docs/archive/records/host-v2/g9-my-plug-test-v2.md",
+        "sha256": "BEB95ACD15FC481F15F086240DFC1C7F5248BCB51EF5824107B8D42BE7B1940D"
+      },
+      {
+        "path": "docs/archive/records/host-v3/g0-green-baseline.md",
+        "sha256": "76D7319324BD51DD3C4CB20761A5891DC22CB1B5D74EA75FE2F4AD835E3FB2AD"
+      },
+      {
+        "path": "docs/archive/records/host-v3/g1-version-and-data-boundaries.md",
+        "sha256": "17D61A02BD10B801027A0989BBC296DB4F66E483205E2289ECFEFB5F699A3078"
+      },
+      {
+        "path": "docs/archive/records/host-v3/g13-remove-v2-production-surface.md",
+        "sha256": "42E518E5C4ABF57EFFE3E4AFABB207808A3718F06DCC8E50E631ACA775230A34"
+      },
+      {
+        "path": "docs/archive/records/host-v3/g14-v3-sealing.md",
+        "sha256": "3366158C783848B180F09CC3BF4C65BA15AFBAE29BA69C512F7AB823A19211FB"
+      },
+      {
+        "path": "docs/archive/records/host-v3/g2-revisioned-document-save.md",
+        "sha256": "CF54740F104DCA0648A0D3000EF15730E99447DD950ECE471D3155533DAD7D9E"
+      },
+      {
+        "path": "docs/archive/records/host-v3/g3-exclusive-document-activation.md",
+        "sha256": "AE8D2DB74997783DD279C4941CA1081C080E6298594D61FD9115A2A84D4B34E4"
+      },
+      {
+        "path": "docs/archive/records/host-v3/g4-plugin-registration-ownership.md",
+        "sha256": "FC40F90C7BC12AC5E4B5E572C6882432E73650CB97E42C1EC72CCC46890915DD"
+      },
+      {
+        "path": "docs/archive/records/host-v3/g5-plugin-private-messaging.md",
+        "sha256": "4CC509E02324A080DE7D22DBAF3B685E7B3A03DC8106FDEF0E88A15F75CD6B1D"
+      },
+      {
+        "path": "docs/archive/records/host-v3/g6-workspace-session-and-dock-factory.md",
+        "sha256": "2FC43C637FD69F6433CD98A63169A49CBFD18734A639D4DF9CA14E15A1009FA6"
+      },
+      {
+        "path": "docs/archive/records/host-v3/g7-host-catalog-and-plugin-registry.md",
+        "sha256": "5B5372F59CDD9F226C01DCAFAC4EF83506AF046206F79C32A97ECC7E2113EA92"
+      },
+      {
+        "path": "docs/archive/records/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md",
+        "sha256": "04DD036D9C0EA7FC71886E3BBE69E4F9C088512E77FE3EB48EC0688574AC6900"
+      },
+      {
+        "path": "docs/archive/records/host-v3/g9-my-plug-test-v3-acceptance.md",
+        "sha256": "70B6AE8AD61082273AE351E9FE5DB1219816D4B95418278B3BC4D2DC14222600"
+      },
+      {
+        "path": "docs/archive/records/host-v4/g0-v3-source-baseline.md",
+        "sha256": "AD17EF8E411E71DED9C40EDB8E2F00E00984EF3127B4C4DA2053FF6F5281BFF2"
+      },
+      {
+        "path": "docs/archive/records/host-v4/g1-remove-dead-host-surface.md",
+        "sha256": "4EA2D6BF0D669385E6456AF6F88843AF4440332A833E4A29410AED525D21B4A1"
+      },
+      {
+        "path": "docs/archive/records/host-v4/g2-strongly-typed-identity-and-use-case-entry.md",
+        "sha256": "2A19BD43CEECF56CEB5AA4665BDA10D4BC78201470D25C75A17623CAB3D2E34B"
+      },
+      {
+        "path": "docs/archive/records/host-v4/g3-layout-responsibility-alignment.md",
+        "sha256": "AF14006999277E87B8C612A6D8BFB40B1136FF33BCA1A1DC13DEEDFD23C11CC0"
+      },
+      {
+        "path": "docs/archive/records/host-v4/g4-document-control-recycling-ownership.md",
+        "sha256": "9DE99CA33CBDF635FCB7215FB6A1B8EA9230E49E419B41E3D1E7BC0C19210618"
+      },
+      {
+        "path": "docs/archive/records/host-v4/g5-domain-helper-migration.md",
+        "sha256": "7613DB4FACBDDE6743916B64347E6248AF562A8ACEA833D113DF51E278D4D9DB"
+      },
+      {
+        "path": "docs/archive/records/host-v4/g6-file-system-path-and-presentation-model.md",
+        "sha256": "8F2AD5BFFAFE137EFE4694E90B9436BABC7CE8E64C3F2F2F43FBEB9D4D9297CB"
+      },
+      {
+        "path": "docs/archive/records/host-v4/g7-four-plugins-harness-documentation-regression.md",
+        "sha256": "B6205371A8B138A5E19456DD224A65D5B640DF958C815E8A2DA1607808BFCB24"
+      },
+      {
+        "path": "docs/archive/records/host-v4/g8-v4-sealing.md",
+        "sha256": "2A567B2C54A5B24F88FE1E24C86DD80EF218E439BF05E9D578260CE472C3DBB5"
+      },
+      {
+        "path": "docs/archive/records/host-v5/lifecycle-ownership-repair-acceptance.md",
+        "sha256": "65B7CF0AF72C380A0E6A4467BE8BCD9F7EC69C68E8D9EC3F219D1CE70C044CB7"
+      },
+      {
+        "path": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "sha256": "77137D5AE31F687E34876D63B0EA0671221CC807AD71F1054815B95C4425763A"
+      },
+      {
+        "path": "docs/archive/records/host-v6.1/icon-contributions-and-resources-acceptance.md",
+        "sha256": "9C1205850D8C251DE696BEF47B85CE0C44DC8F6AD012910FF7CAA1B721759E99"
+      },
+      {
+        "path": "docs/archive/records/host-v6/plugin-navigation-and-function-center-acceptance.md",
+        "sha256": "BADC1008326B1FB5C070E7475F7224E658675D552D1996242C92DF4288322877"
+      },
+      {
+        "path": "docs/archive/records/host-v7/tool-center-and-visibility-acceptance.md",
+        "sha256": "AC94745C2C0D1A267E90518B2F4CFF4F75A191D2ACE1A254909D8DAF926A886E"
+      },
+      {
+        "path": "docs/archive/records/host-v8/cognitive-ux-convergence-acceptance.md",
+        "sha256": "A04725B530EC3EE149681608C792264381F082E311AF522C5F84C572CD37A16B"
+      },
+      {
+        "path": "docs/archive/records/host-v8/local-deployment-20260912.md",
+        "sha256": "45E64823C568667EB74CF476B1F2AA4AF3099E3422919D129F996A23404B31E0"
+      },
+      {
+        "path": "docs/archive/records/host-v9/development-acceptance.md",
+        "sha256": "7BBB7174755B7440F1BBE20C9261CCF55FED9157B45E30878D63FCF80D31EB39"
+      },
+      {
+        "path": "docs/archive/records/host-v9/generated-artifacts-cleanup.md",
+        "sha256": "860864512A9C440C3CEC9549013E57C790A978676CEB930C3F311E89E83708C4"
+      },
+      {
+        "path": "docs/archive/records/host-v9/nuget-unified-3.4.1-release.md",
+        "sha256": "15D31F5B96ACBC8993756A7D3E604F43F70A0CAA97AA01F421C7E4880FF79248"
+      },
+      {
+        "path": "docs/archive/records/host/manual-acceptance-20260920.md",
+        "sha256": "B6F40F1F5B306BAA3BA6B4AEF08E9CAC38BC77077FA8CF700178DD3560D237A0"
+      },
+      {
+        "path": "docs/archive/records/host/manual-acceptance-20260921.md",
+        "sha256": "1CB00EBA3CC7A5BB93C9CF050CD29479A31DE3F0041B81D5861804452162C2D9"
+      },
+      {
+        "path": "docs/archive/records/net10/phase-0-baseline.md",
+        "sha256": "E70FC3651623277F09738BD1F08A4D5CA18D063BF544D6AD872197A049142583"
+      },
+      {
+        "path": "docs/archive/records/net10/phase-1-governance.md",
+        "sha256": "BB697DE15DDC681E63827D193B51878986997FBCA2B53B409C468761CA6CAC30"
+      },
+      {
+        "path": "docs/archive/records/net10/phase-2-net10-foundation.md",
+        "sha256": "FF39037F8F28B877C7DF7C8D00D5F96CA92B68019E1C3EA35D1D23A8319AF3BF"
+      },
+      {
+        "path": "docs/archive/records/net10/phase-3-plugin-dependencies.md",
+        "sha256": "8847E2784A9D135ECF4BBE02469CED750970F1F7A612AF2233B305F524643C4E"
+      },
+      {
+        "path": "docs/archive/records/net10/phase-4-avalonia12-libvlc-gate.md",
+        "sha256": "902C2BE4BC0899046991FEBA4E66D1F24647E32356B6FE39BFB491EE0F68ABB1"
+      },
+      {
+        "path": "docs/archive/records/plugin-packaging/distribution-baseline-20260828.md",
+        "sha256": "DAB6656663687AF9EEEE8E005A504B1486D9EDD3592DA211422D23C9081AFB4D"
+      },
+      {
+        "path": "docs/archive/records/plugin-status/window-acceptance.md",
+        "sha256": "943E7714503AA26B92E1638F1EC228B5F94AB879EAC2AD51B4CE28518E0138BD"
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g0-facts-semantics-public-api.md",
+        "sha256": "344F2FF74EF99476FFE7CEEA2646D16886F48D0658121E91ACE3293DCE384602"
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g1-command-contracts-registration-declarations.md",
+        "sha256": "F513D8EBE05BA3503EA5E15BE327BF43FABF60BB208DA72C68BDB8F6B033F698"
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g10-cross-repository-integration-sealing.md",
+        "sha256": "8AECA04E0FFB471510CCCAECEFC5C280516D06FCC78B8959269F619CC28C7764"
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g2-command-catalog-executor.md",
+        "sha256": "D3947E2B7FA49120FE9744C955D99122C4FA566242B70516C89F6F974440E413"
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g3-context-active-document-target-routing.md",
+        "sha256": "0A194A065C116FDE9D68ADAC9CD09D0EBDB20D2BCD73CDB59DAE62282C145B4A"
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g4-host-open-save-presentation-loop.md",
+        "sha256": "668E3795FF1A8151DAEA641E3663516B5F6375C419DE6EAC10A17B8A1D102370"
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g5-declarative-menu-keybinding-projection.md",
+        "sha256": "949677FF14F27B481A06EEFB8FF91F302CD77B0B773DF0DBCF623D41B5F92E2A"
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g6-sdk-candidate-template-independent-consumption.md",
+        "sha256": "3E7B5B232FB41570A1554624F0CB5B1FE93B356B68690732FD58429D7F0D1133"
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g7-workflow-studio-three-real-commands.md",
+        "sha256": "63AE7067321C4FB5C02F3A8B06BE7192A76C3A2888AB9CC701C2C5598A177E13"
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g8-classic-game-multi-instance-commands.md",
+        "sha256": "DC1DC40BC6E27C7B790D3C28404335AA733AD7899D82DA9C4E76354626F58E00"
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g9-minimal-command-palette.md",
+        "sha256": "3FFF8A1B0D7245DDC19D5BC5A632C925187CDB1E53429507B54854C92BB1571F"
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md",
+        "sha256": "51B4F36D45EBB56A62578901A2031EA2314FFE7074F78FC57DDDFBC9DC5850B3"
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g1-host-workflow-action-kernel.md",
+        "sha256": "95F178AE269A9BB59CF5F9DC62BAF98815C25A36FFBDB57E1347316050D878F6"
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g2-sdk-build-external-template-propagation.md",
+        "sha256": "A7D02E0635CB3D0FD5CF37CD1C5AFDB536D348A43B6F72D4FF64DBAB0E775D7C"
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g3-workflow-studio-fake-action-loop.md",
+        "sha256": "E4E62142193D731A9EB21E69D85738232FC42B72184FBEFF8735118E62AECC52"
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g3.1-template-1.2-publication.md",
+        "sha256": "EDF638645E044A96E7F7C32F87195E8E1ABED49CE427F625BB542A06EC799793"
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g3.1-workflow-protocol-consistency.md",
+        "sha256": "0130B450D18F5FEFA8578662839B0FA14429C2678D572E9B29674E603DC665AE"
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g5-dual-role-governance.md",
+        "sha256": "DCEC5A155401C4A114CF44E18AB09312DA6D4EA76C15F0CA0EBAD438239FA7A4"
+      },
+      {
+        "path": "docs/archive/specifications/dock-layout-snapshot-v1.md",
+        "sha256": "3022B120EBD21D7A1919521365991302BF48407BAA450C8E6B81FC1E052E3FBC"
+      },
+      {
+        "path": "docs/archive/specifications/document-persistence-v1-design.md",
+        "sha256": "C12B0CFC334480432D3C04E11EF076299BF8F91DD7C1A213D3556E6F85D94148"
+      },
+      {
+        "path": "docs/maintenance/dock-area-fill-verification.md",
+        "sha256": "21FCED4A76E36748DF1FFF1733D53A703B649C453ED811AB454D0DE946B70414"
+      },
+      {
+        "path": "docs/maintenance/dock-cross-window-layout-verification.md",
+        "sha256": "1B85623A562ADA3BD4AE9B8C7C09C729D256776C34998B43CEE4B1161EF862AE"
+      },
+      {
+        "path": "docs/maintenance/documentation.md",
+        "sha256": "56BC7007615B984EAE5FA2FF6C41E095C0F5760852A81DCCC56E2946C06FEC05"
+      },
+      {
+        "path": "docs/maintenance/floating-layout-verification.md",
+        "sha256": "E164D5B632C1F6AA178C748FF47FFA8BA4EBA5ED5FC9691B347DF55D93235626"
+      },
+      {
+        "path": "docs/maintenance/host-v12-refactor-verification.md",
+        "sha256": "712E96EFA7CE0CBD4EB61B0C429BD19C5BC21A38B2D32846A2050929E3A2898E"
+      },
+      {
+        "path": "docs/maintenance/host-v13-plugin-enablement-verification.md",
+        "sha256": "E7B77F0ABF9C9057483B2AF99E4350ADD446842CA99FC0CE6B63832FC75B6874"
+      },
+      {
+        "path": "docs/maintenance/host-v14-automatic-restart-verification.md",
+        "sha256": "51599641811324ADD8E0C8372E8A455D493A7F04D16DB87793AE28480365EFF2"
+      },
+      {
+        "path": "docs/maintenance/host-v15-startup-verification.md",
+        "sha256": "A906C1EA2467C31E1C62F24D2E8DBE4E7F491480E6AA888F13D47EFC67ACEDF6"
+      },
+      {
+        "path": "docs/maintenance/host-v16-document-window-verification.md",
+        "sha256": "66F1D1F5C119050B85BA95D85047D179EDF9A642A5ED10615010490E6DF70BBE"
+      },
+      {
+        "path": "docs/maintenance/host-v17-readability-verification.md",
+        "sha256": "08B0833F29143A134838FE4EF44CDC862F28EA13E4C1ECDEC7FE24BC5D7364E4"
+      },
+      {
+        "path": "docs/maintenance/host-v18-command-palette-verification.md",
+        "sha256": "279D0ABFA37D9488910FB4829D72861DE0C8E8D7154FD41DB96716FF7D848F1C"
+      },
+      {
+        "path": "docs/maintenance/local-deployment.md",
+        "sha256": "699A3A548714646F700A8EE89FE9759F8478F3301217CED2F6804D51FEAB7B6D"
+      },
+      {
+        "path": "docs/maintenance/nuget-release.md",
+        "sha256": "229FF1FCCEA6E7C045DA28321CCDF9C19A4B02671AFC67E3F99B15CF3D78B8B8"
+      },
+      {
+        "path": "docs/maintenance/plugin-compatibility-verification.md",
+        "sha256": "F835D6DEA879D89EE73F6420B38FFA43F27C030815E1EBDBDEB73154105F1E38"
+      },
+      {
+        "path": "docs/maintenance/verification.md",
+        "sha256": "48D02347D25DCC8E0055DA92E123F96246D3058FB167158218357EF6E0A4B960"
+      },
+      {
+        "path": "docs/quick-start/add-document-and-tool.md",
+        "sha256": "C35D4F377342CA4EE06DD9199FA8134AED0D6B61B3AF327AA19917B7CE63D23E"
+      },
+      {
+        "path": "docs/quick-start/create-managed-plugin.md",
+        "sha256": "08DE605174D76C4DFE376D2BC90C95EBE2B9F311C2D27BAB539A453DB83D894D"
+      },
+      {
+        "path": "docs/quick-start/floating-windows-and-layout.md",
+        "sha256": "19024CFFF4FF1876084BA4E4E4F397BCC9E50ED8E38552B1F2AABACE283863DA"
+      },
+      {
+        "path": "docs/quick-start/host-v9-upgrade.md",
+        "sha256": "37454443EFBAADC9A07CBB28D000E4EAA233503FC9D34844AE9F2BB9C30531C0"
+      },
+      {
+        "path": "docs/quick-start/macos-experiment.md",
+        "sha256": "E7760CDBBD8E9C09D35A1EC2D9235FD3DD5ECF42D6B864E7AE6FC8C29CF9B0B9"
+      },
+      {
+        "path": "docs/quick-start/plugin-icons.md",
+        "sha256": "11807C476BF1ED8215C082B802F483F7CDABD4A30C37BDCAE4B334D5F57716DE"
+      },
+      {
+        "path": "docs/quick-start/plugin-navigation-and-function-center.md",
+        "sha256": "A4C5F3F66E815E4E11E16FF40C35CB71F1DFEC6CD70F72BCBCC4BC2F5E25810C"
+      },
+      {
+        "path": "docs/quick-start/plugin-status.md",
+        "sha256": "6037ABD0CF1A3F731B452169A85CEABF51A0A5C8A4CC86517CA53402841B207B"
+      },
+      {
+        "path": "docs/quick-start/README.md",
+        "sha256": "169A285286E59157DAFD3E5C1EC9DF3EDCE9BB0A6EFD7F7617EAE01A6E925632"
+      },
+      {
+        "path": "docs/quick-start/restart-host.md",
+        "sha256": "9C279D11F077D988544A0FC9B961D30392F6BF52FB8656F18AA2A49587BF9464"
+      },
+      {
+        "path": "docs/quick-start/startup.md",
+        "sha256": "C9FC3DC9C6D49296AAB83CFF6AF244F28B2D3EC22BE3744850ED52DF12C7C25C"
+      },
+      {
+        "path": "docs/quick-start/tool-center.md",
+        "sha256": "11B70610BB1ADAFF8A09A68773A8ACC8B0A260AB6EC4C8A794A5606088A4B71C"
+      },
+      {
+        "path": "docs/quick-start/verification-and-troubleshooting.md",
+        "sha256": "6711312A4F92112B2CA2EC3F210266B2B3E77F9D576E7734B99B23C92A56DBA2"
+      },
+      {
+        "path": "docs/quick-start/workbench-search.md",
+        "sha256": "F22747C1477F74D737D0E96FD1515E25B66E66180A0F667C630734F38979DBDF"
+      },
+      {
+        "path": "docs/quick-start/workflow-action-development.md",
+        "sha256": "7627565F589741D048078CCDC986755430BACC9A6E5068E7F2ABAB13FDEE7157"
+      },
+      {
+        "path": "docs/README.md",
+        "sha256": "BA40A6037859036471209958F302DABDD8FBD8C170159DE006662AF74F249CD7"
+      },
+      {
+        "path": "docs/reference/dock-layout-snapshot-v2.md",
+        "sha256": "D3057509AC642B37E987C3A7E0B77002E83ECE5E39A8B9F08FF155A5879AD280"
+      },
+      {
+        "path": "docs/reference/dock-layout-snapshot-v3.md",
+        "sha256": "ECD0C454FB9C124A077E8DD25636F7F727CCEA5D883B81C8FF9FE6683134EE5C"
+      },
+      {
+        "path": "docs/reference/document-persistence.md",
+        "sha256": "23E177202E3A774A4A15CA9E0A93FDF3D9433FABBC1FFC1193177B3F7ED4D57C"
+      },
+      {
+        "path": "docs/reference/host-restart.md",
+        "sha256": "942260F24128D9D69AAC72138C7AE5C498BC07D53C4570E9D9D23BE6FEF2B05D"
+      },
+      {
+        "path": "docs/reference/host-startup.md",
+        "sha256": "DDB89D16D323B0DD070AA6808F6AC2752D1B39219FB7824436C2357BABDA0C80"
+      },
+      {
+        "path": "docs/reference/platform-baseline.md",
+        "sha256": "8C2DAB1F58B71663370060FA9BC2A1E09F237581C66C51E07F1E80A66C27C916"
+      },
+      {
+        "path": "docs/reference/plugin-compatibility.md",
+        "sha256": "53B0E7C471640BCD44F230FC08F683BB8F83383FFC0800582E25418A7892CE31"
+      },
+      {
+        "path": "docs/reference/plugin-enablement.md",
+        "sha256": "ACD9034B74DCC3A23836EE5801E9DCE148D359D2545C635C6C57295F9F525173"
+      },
+      {
+        "path": "docs/reference/plugin-sdk-api-compatibility.md",
+        "sha256": "DAA384D7D689954FC27420AFF9293A293EAC7C29E7AC7836441C4C1FF1EDDAF7"
+      },
+      {
+        "path": "docs/reference/workbench-commands.md",
+        "sha256": "316B93FDB5ED6A73877DEF822B40B07F6213F3494911ECF9CBA50D60B5CDCFBB"
+      },
+      {
+        "path": "docs/reference/workflow-actions.md",
+        "sha256": "DF8E8E7E75743BD51EA4B8EA43F0101D3DFF7DD62E2D9C00CD60DD13E3DC3EED"
+      },
+      {
+        "path": "docs/roadmap/host-v19-complexity-reduction-plan.md",
+        "sha256": "EE580FC4713F5E6984A1652B68EF503434D52FE12C75DF0231DAE4B135A28332"
+      },
+      {
+        "path": "docs/roadmap/host-v19-complexity-verification.md",
+        "sha256": "736A1FDC4835CFDBE8C2008EEB11B29E12DD1B0DA90AE22E5E3AEB22ED2DEE2B"
+      },
+      {
+        "path": "docs/roadmap/README.md",
+        "sha256": "9003AD00DE3107B50A2E91311964CCFEB9FB4AEA690A1C3B37671AE39FE33D47"
+      },
+      {
+        "path": "docs/theory/activity-theory-requirements-decomposition.md",
+        "sha256": "B5B0AC766FC7CCC7671685725A8451B61F167DD3B61F9BCD5B4A28771312AA77"
+      },
+      {
+        "path": "docs/theory/ai-enabled-forkable-software-bases.md",
+        "sha256": "91C00AEB6FB5A5E5726B76D210C98D738B23394A6E9B882B9EA132A498853E8F"
+      },
+      {
+        "path": "docs/theory/attention-centered-dock-workspace-design.md",
+        "sha256": "D12D7F5BC2FC9D6D7F2A0219DCC99CEF4B8F36DBC65CD7341209108446C1544D"
+      },
+      {
+        "path": "docs/theory/约束驱动的软件工业化.md",
+        "sha256": "5631742884E5C0E10D1B8876EAB0D9DFAF2BBC4B5B6BDE08AA8F91D6FBF297DB"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/design/architecture.md",
+        "sha256": "0A88333DFE2C5152771F2C17F8615ADA793FAFFC1739CC09086EB05D19785ACC"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+        "sha256": "ADD25F6E06A1C1EE8C54DEBC20BEAF8900CBB54824ABC5235042201A5BD6B2D0"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/README.md",
+        "sha256": "510A12BAA9B0048DFC6D4B001F3AF7081564FDF6C38AA7967BFD9C46E66F37B8"
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md",
+        "sha256": "5169B1CA6E51CE2320605FDBFE60B93254A2571442A1A53EE7AFFD7FD1D53B25"
+      },
+      {
+        "path": "README.md",
+        "sha256": "DD5B99B13ED3ACA798E0A07290035F53460C6BB66C647C25D77099069AC70BC6"
+      }
+    ]
+  },
+  "tests": [
+    {
+      "project": "Host/MyAvaloniaManagement.Tests",
+      "command": "dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~HelpContentTests' --logger 'trx;LogFileName=help-content.trx' --results-directory artifacts/documentation-audit/20260921/final-help-unit",
+      "exitCode": 0,
+      "trx": {
+        "path": "artifacts/documentation-audit/20260921/final-help-unit/help-content.trx",
+        "sha256": "2b3301e3db2abf068b9913b7e4b14cdf69ef6dd30730e900974c1433e857daa2"
+      },
+      "times": {
+        "creation": "2026-09-21T08:58:03.0879249+08:00",
+        "queuing": "2026-09-21T08:58:03.0879253+08:00",
+        "start": "2026-09-21T08:58:02.4409737+08:00",
+        "finish": "2026-09-21T08:58:03.1441504+08:00"
+      },
+      "counters": {
+        "total": 10,
+        "executed": 10,
+        "passed": 10,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "project": "Host/MyAvaloniaManagement.UiTests",
+      "command": "dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~HelpWindowTests' --logger 'trx;LogFileName=help-window.trx' --results-directory artifacts/documentation-audit/20260921/final-help-ui",
+      "exitCode": 0,
+      "trx": {
+        "path": "artifacts/documentation-audit/20260921/final-help-ui/help-window.trx",
+        "sha256": "7666701e29056a29484729376ad830140a6b9fb08a520a116192669fded8fb00"
+      },
+      "times": {
+        "creation": "2026-09-21T08:58:55.4120688+08:00",
+        "queuing": "2026-09-21T08:58:55.4120693+08:00",
+        "start": "2026-09-21T08:58:52.2058991+08:00",
+        "finish": "2026-09-21T08:58:55.4254647+08:00"
+      },
+      "counters": {
+        "total": 4,
+        "executed": 4,
+        "passed": 4,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    }
+  ],
+  "embeddedHelp": {
+    "status": "passed",
+    "documentsCheckedAndRendered": 202,
+    "assemblySha256": "72CA750B40A1B6401FE99DEFED3572134AB3D7B7F00CE99B07F8C64E983D9550",
+    "movedResourceReadable": true,
+    "obsoleteResourceAbsent": true,
+    "movedLinksResolved": true,
+    "method": "Fresh Release Host assembly, reflection through actual HelpContentCatalog and HelpMarkdownRenderer, every embedded Markdown compared with source bytes and rendered; updated workbench content asserted",
+    "command": "dotnet run --project artifacts/documentation-audit/20260921/render-check/RenderCheck.csproj -c Release -- D:\\code\\local\\avalonia_dock_simple_test",
+    "evidencePath": "artifacts/documentation-audit/20260921/embedded-help-checks.json",
+    "evidenceSha256": "b13c233671bb5c3ce33556f64b30f4b3357e707a54e2a1165803090bb892eca6"
+  },
+  "diffCheck": {
+    "command": "git -c core.safecrlf=false diff --check",
+    "exitCode": 0
+  },
+  "initialCheckAndCorrections": {
+    "initialReport": "artifacts/documentation-audit/20260921/document-check-initial.json",
+    "initialReportSha256": "5b820d54f3ef472b311af810883df91369a3920626969a734c84ff1ca057111d",
+    "correctedLink": "Moved V19 verification plan still linked verification.md in its old directory; fixed to ../maintenance/verification.md",
+    "checkerCorrections": "Initial audit compared CRLF worktree bytes only with LF Git blobs and treated the current archive index as immutable history; corrected comparison and index exclusion without modifying historical assets.",
+    "earlierHelpUnitRun": "10 tests passed before the last relative-link correction; final-help-unit reran against the final Markdown input."
+  },
+  "excluded": {
+    "fullDevelopmentVerify": "not rerun for this documentation-only change; prior V18 complete verify remains in its original evidence",
+    "formalReleaseGates": "not-run",
+    "windowsCi": "not-run",
+    "nativeManualRetest": "not-run by assistant; owner confirmation recorded",
+    "installationDeployment": "not-run",
+    "publicPublication": "not-run",
+    "gitCommitAndPush": "not-run",
+    "aiflow": "not-read-or-modified"
+  },
+  "postValidationPolicy": "Only this non-embedded JSON finalized after tests and resource checks; Markdown inputs remain identical."
+}

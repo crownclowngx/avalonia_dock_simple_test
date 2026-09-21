@@ -1,14 +1,14 @@
 # V18：命令面板交互专用开发验证
 
 > 用途：验证四类结果分组、明确动作、当前目标提示和无额外操作负担的命令面板改造。
-> 状态：V18 实现及专项已完成；完整开发门禁、输入身份及实机待办见[开发记录](../archive/records/host-v18/development-acceptance.md)与其非嵌入 JSON。日期：2026-09-21。
+> 状态：V18 实现、专项及最终完整开发验证已完成，见[开发记录](../archive/records/host-v18/development-acceptance.md)与其非嵌入 JSON。项目所有者已[确认当前主程序手工验收通过](../archive/records/host/manual-acceptance-20260921.md)，矩阵保留供后续回归。日期：2026-09-21。
 > 设计依据：[V18 交互方案](../archive/plans/host-v18-command-palette-interaction-plan.md)。当前实际行为见[工作区搜索](../quick-start/workbench-search.md)。本文不授予部署或发布资格。
 
 ## 1. 验证范围与执行边界
 
 SOLID、详细中文注释、单一事实源和原有执行路径是首要审查条件。以可观察行为组织单元测试和 Headless UI 测试，不以私有方法名、类数量、文件行数或复制生产实现的断言代替验证。
 
-本页维护行为矩阵和实际方法映射，不把阶段测试数量重复作为当前基线。第 10 节映射已经落地的测试与审查；最终完整 `verify` 在代码和嵌入 Markdown 定稿后执行，结果单独存入开发证据。
+本页维护可复用行为矩阵和实际方法映射，不把阶段测试数量重复作为当前基线。第 10 节映射已经落地的测试与审查；V18 最终完整 `verify` 已在当时代码和嵌入 Markdown 定稿后通过，输入身份与结果单独存入开发证据。后续修改按实际影响重新验证。
 
 开发允许本机 `dotnet test` 和既有 `verify`。**不使用 AIFLOW、Windows CI、`seal`、发布 Windows Smoke、发布覆盖率、发布重复性门禁，不部署或发布产物。** 本机在 Windows 上运行单元测试或 Headless 测试不等同于 Windows CI；不改动或放宽发布政策。
 
@@ -16,7 +16,7 @@ SOLID、详细中文注释、单一事实源和原有执行路径是首要审查
 
 ## 2. 测试落点和补测原则
 
-实施前逐条核对以下矩阵与现有测试的真实方法、参数组合和断言。下表中的已有测试类是检查入口，不代表它已经覆盖 V18 行为；缺口必须补测。
+后续修改时逐条核对以下矩阵与现有测试的真实方法、参数组合和断言。下表列出检查入口，已落地映射见第 10 节；新行为缺口按实际风险补测。
 
 | 范围 | 已有测试入口 | V18 补测方向 |
 | --- | --- | --- |
@@ -155,7 +155,7 @@ dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warn
 | 中文输入与小窗口 | 输入法确认不触发命令；长名称、主题、高 DPI 下重要信息和底部提示不被截掉 |
 | 创建失败/异步切窗 | 失败保留查询可重试；等待期间切窗或开启新会话后旧结果不抢焦点 |
 
-尚未完成的桌面项单独标注，不借用 V17 或 Host 此前整体人工验收作为 V18 的逐项证据。
+项目所有者已于 2026-09-21 确认当前主程序整体手工验收通过，原桌面待办收口。本表保留作后续改动的回归清单；确认没有逐项环境日志，不据此补写输入法型号、屏幕配置或每个矩阵编号的执行结果。
 
 ## 9. 通过标准、证据与文档同步
 
@@ -167,7 +167,7 @@ dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warn
 6. 同步方案、专用验证、搜索指南、命令契约、Host 内部设计和导航；将计划行为转换为“当前行为”必须有代码及验证依据。
 7. AIFLOW、Windows CI、发布门禁、部署和公开发布均不属于本次完成条件，记录为未执行，不写成失败或已通过。
 
-阶段通过、原失败、重跑和最终门禁分别保存在开发记录与 JSON；以下映射不代表尚未完成的实机项目通过。
+阶段通过、原失败、重跑和最终门禁分别保存在开发记录与 JSON；以下映射描述自动化覆盖，整体人工确认另见页首记录。
 
 ## 10. 实际方法映射与审查结果
 
@@ -218,8 +218,8 @@ dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warn
 | K06 / K07 | S2、K3、K4、K5、R7 |
 | K08 / K09 | R6、R7、K4；错误行与选中项提示独立 |
 | K10 | K1、K8、R12、R13；截图经过人工查看，选中色修复有非透明背景断言 |
-| K11 | K8、R13 覆盖文本、主题和小窗口；原生多屏 DPI **待验证** |
-| K12 | K2 覆盖公开 PreeditText 事件链；真实 Windows 中文输入法 **待验证** |
+| K11 | K8、R13 覆盖文本、主题和小窗口；原开发阶段未执行原生多屏 DPI，后续整体人工确认见页首，未补写逐屏日志 |
+| K12 | K2 覆盖公开 PreeditText 事件链；原开发阶段未执行真实 Windows 中文输入法，后续整体人工确认见页首，未补写逐项输入法日志 |
 | E01 / E02 / E04 | X1、K5、R7；旧提交和关闭瞬间切页都不执行新实例 |
 | E03 | K6、R12；保存属于页面命令，全局入口无预期页面 |
 | E05 | X1、R6、R9；预期目标只作为调用值，无共享可变字段 |
@@ -231,7 +231,7 @@ dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warn
 | A01 / A02 | 展示快照与纯排序、View 会话、Executor 分责；ExpectedTarget 仅 PageId/Revision；R4、R10、X1 验证查询和所有权 |
 | A03 / A06 | 代码审查：仅 Host 已知 CommandId 提示映射，插件无 ID 特判；中文注释覆盖排序、快照、调用约束、预编辑和迟到回调 |
 | A04 | SDK/版本/schema/CI/Gate 无修改；既有 HostApiBoundaryTests、PublicApiContractTests 和完整 verify 的 contracts 阶段保护 |
-| A05 / A07 | R12、K2、K7、K8；设计数据纯内存，常规操作路径无新增步骤；实机待办独立 |
+| A05 / A07 | R12、K2、K7、K8；设计数据纯内存，常规操作路径无新增步骤；整体人工确认独立留证 |
 | A08 | R5、K6、K7；两 Intent 与页面命令用主仓夹具模拟，不引入邻仓或外部业务依赖 |
 
 Headless 输出包括 `palette-v18-light.png`、`palette-v18-dark.png` 以及 V8 长列表、空结果和失败截图。截图路径及 SHA256 由非嵌入 JSON 保存；不把截图、模拟输入或测试名字中的“原生浮窗”当作 Windows 桌面实机执行记录。

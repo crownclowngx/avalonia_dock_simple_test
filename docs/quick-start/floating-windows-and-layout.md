@@ -2,7 +2,7 @@
 
 通过[插件看板](plugin-status.md)禁用插件并重启后，其工具暂不创建；布局仍保留缺失工具的位置、分组和显示意图。重新启用并重启后沿用原恢复逻辑。开关不删除文档文件，Document 仍不跨启动自动重开。
 
-> 用途：Host 浮窗使用指南（含 V16）。状态：当前；核对日期：2026-09-20。数据细节见 [Layout V3 契约](../reference/dock-layout-snapshot-v3.md)。
+> 用途：Host 浮窗使用指南（含 V16）。状态：当前；核对日期：2026-09-21。数据细节见 [Layout V3 契约](../reference/dock-layout-snapshot-v3.md)。
 
 ## 浮动与回停
 
@@ -33,7 +33,7 @@
 
 V11-P2 修复了工具浮窗右上角关闭后留下黑框的问题。标题栏按钮、工具菜单和工具中心统一遵守关闭许可；取消关闭不会先清空工具。关闭后的隐藏布局记录仍会保留，重启时不会因此创建空白窗口。
 
-V16 将最后一个 Document 的标签关闭接入同一窗口收尾协议，避免文档已移除而原生关闭仍等待确认的空壳。命令面板新建会使用发起窗口的活动文档组，具体回退规则见[工作区搜索](workbench-search.md)。当前 Host 人工验收已由项目所有者[确认通过](../archive/records/host/manual-acceptance-20260920.md)，后续回归沿用 [V16 专用验证](../maintenance/host-v16-document-window-verification.md)的检查矩阵。
+V16 将最后一个 Document 的标签关闭接入同一窗口收尾协议，避免文档已移除而原生关闭仍等待确认的空壳。命令面板新建会使用发起窗口的活动文档组，具体回退规则见[工作区搜索](workbench-search.md)。当前 Host 人工验收已由项目所有者[确认通过](../archive/records/host/manual-acceptance-20260921.md)，后续回归沿用 [V16 专用验证](../maintenance/host-v16-document-window-verification.md)的检查矩阵。
 
 ## 重启时记住什么
 

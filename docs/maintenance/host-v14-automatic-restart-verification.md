@@ -1,9 +1,9 @@
 # V14 一键自动重启：专用开发验证
 
-> 当前状态（2026-09-20）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260920.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
+> 当前状态（2026-09-21）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260921.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
 
 > 用途：定义 V14 的自动化测试、真实进程交接、桌面检查、本地开发门禁和证据规范。
-> 状态：实现和自动化已接入；矩阵到实际测试的映射见第 10 节，最终判定/计数见[开发证据](../archive/records/host-v14/final-development-evidence.json)。原阶段原生桌面和单文件样本未执行；后续人工结论与交付见页首入口。核对日期：2026-09-20。
+> 状态：实现和自动化已接入；矩阵到实际测试的映射见第 10 节，最终判定/计数见[开发证据](../archive/records/host-v14/final-development-evidence.json)。原阶段原生桌面和单文件样本未执行；后续人工结论与交付见页首入口。核对日期：2026-09-21。
 > 关联：[V14 执行方案](../archive/plans/host-v14-automatic-restart-plan.md)、[当前主仓验证](verification.md)、[插件开关契约](../reference/plugin-enablement.md)。
 
 ## 1. 范围与证据原则

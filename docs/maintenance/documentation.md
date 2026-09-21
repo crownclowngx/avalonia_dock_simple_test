@@ -1,6 +1,6 @@
 # 文档维护规则
 
-> 用途：统一 Host 主仓文档分类、事实维护和整理验证。状态：当前；核对日期：2026-09-20。依据：既有总导航维护约定、[上一轮整理记录](../archive/records/documentation/reorganization-20260916.md)、[帮助资源声明](../../Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj)及 [Gate 检查实现](../../tools/MyAvaloniaManagement.Gate/GateChecks.cs)。
+> 用途：统一 Host 主仓文档分类、事实维护和整理验证。状态：当前；核对日期：2026-09-21。依据：既有总导航维护约定、[上一轮整理记录](../archive/records/documentation/reorganization-20260920.md)、[帮助资源声明](../../Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj)及 [Gate 检查实现](../../tools/MyAvaloniaManagement.Gate/GateChecks.cs)。
 
 ## 文档放在哪里
 
@@ -11,8 +11,8 @@
 | `docs/quick-start/` | 当前使用和接入步骤 |
 | `docs/reference/` | 当前版本、协议及对外行为的权威说明 |
 | `Host/MyAvaloniaManagement/docs/` | Host 内部架构、取舍与兼容约束 |
-| `docs/maintenance/` | 可复用的验证、部署和维护流程；专项测试矩阵按主题保留 |
-| `docs/roadmap/` | 尚未完成的工作、实验和候选；候选不自动获得实施授权 |
+| `docs/maintenance/` | 当前可复用的验证、部署和维护流程；已实施功能的回归矩阵按主题保留 |
+| `docs/roadmap/` | 待实施方案及配套验证计划、尚未完成的工作、实验和候选；候选不自动获得实施授权 |
 | `docs/archive/plans/` | 已结束的方案与阶段计划 |
 | `docs/archive/records/` | 有日期的开发、人工验收、部署、发布与整理证据 |
 | `docs/theory/` | 设计解释；实现映射以当前契约和源码为准 |
@@ -26,6 +26,7 @@
 4. 实现、自动验证、人工验收、部署和公开发布分别标记。项目所有者的明确人工确认可以作为人工验收依据，需记录确认日期、方式及范围；不能据此编造逐项日志或自动化结果。
 5. 完成的计划先提取仍未完成的事项，再连同资产归档。历史结果只追加带日期的后续说明或勘误，不倒写失败、未执行、NO-GO 或原始哈希。
 6. 部署目录、备份政策和清理范围以各次交付记录为准。一次任务的“不备份”等选择不升级为后续部署默认规则。
+7. 部署证据按实际实现阶段归档。仅嵌入后续方案文档不代表后续代码已交付；同日再次部署用清楚的文件名区分，保留原始 JSON 字节和当时产物路径。
 
 ## 批量整理与验证
 
@@ -35,4 +36,4 @@
 - 运行 `git diff --check`。既有 Gate 仅检查三个 README 的本仓文件链接，不能代替全量文档审查；按影响运行[主仓验证](verification.md)。
 - 证据 JSON、图片等历史资产移动时核对字节摘要。整理记录保留处置、漂移修正、验证结果及未覆盖范围；自动化运行后的完整结果可保存在非嵌入 JSON。
 
-本规则延续原文档治理约定；本次执行记录见[2026-09-20 整理记录](../archive/records/documentation/reorganization-20260920.md)。
+本规则延续原文档治理约定；本次执行记录见[2026-09-21 整理记录](../archive/records/documentation/reorganization-20260921.md)。

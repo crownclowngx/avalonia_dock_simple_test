@@ -1,5 +1,7 @@
 # V18：命令面板交互开发记录
 
+> 后续状态（2026-09-21）：最终完整开发 `verify` 已通过，见[原始证据](final-development-evidence.json)（run-id `20260920-235651-0945a5af8b7c`，输入 `0945a5af8b7ce9e5dc95bd3c85efbbbec3e0e260`）；其后完成[本机部署](local-deployment-20260921.json)及[随 V19 方案文档再次部署](local-deployment-with-v19-plan-20260921.json)。项目所有者已[确认当前主程序手工验收通过](../host/manual-acceptance-20260921.md)，桌面待办收口，矩阵留作后续回归。以下正文及 JSON 保留原开发阶段的范围，不倒写当时未执行的实机与发布结果。
+
 > 状态：P0–P3 实现及专项已完成，当前 Markdown 在最终验证前定稿。最终完整 `verify` 状态、输入身份和输出摘要以[非嵌入开发证据](final-development-evidence.json)为准，不预写最终通过结论。日期：2026-09-21。
 > 依据：[V18 方案](../../../archive/plans/host-v18-command-palette-interaction-plan.md)、[专用验证矩阵](../../../maintenance/host-v18-command-palette-verification.md)。不使用 AIFLOW、Windows CI 或发布门禁，不包含部署/发布。
 

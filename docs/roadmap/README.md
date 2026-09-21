@@ -2,23 +2,15 @@
 
 > 用途：集中保留尚未完成的工作。状态：按下表分别跟踪；核对日期：2026-09-21。事实源：当前实现、历史开发/部署记录及项目所有者确认。
 
-当前 Host 的人工验收已由项目所有者实际手工使用后[确认通过](../archive/records/host/manual-acceptance-20260920.md)。原工具中心、搜索、看板、V11–V17 与 Dock 修复的重复 Host 桌面待办已收口，完成计划移入[历史归档](../archive/README.md)。历次本机部署见[部署索引](../maintenance/local-deployment.md)。
+项目所有者于 2026-09-21 [确认当前主程序已完成手工验收](../archive/records/host/manual-acceptance-20260921.md)。当前 V18 与此前 Host 桌面体验的验收待办已收口，专项矩阵保留供后续回归；确认记录没有逐项环境日志，不补写输入法或多屏配置。历次本机部署见[部署索引](../maintenance/local-deployment.md)。
 
 ## 当前开发方案
 
 | 事项 | 状态 / 范围 | 依据与完成条件 |
 | --- | --- | --- |
-| V19 Host 复杂度收敛 | 方案与专用验证规范已编写；代码实施和开发验收待执行 | [实施方案](host-v19-complexity-reduction-plan.md)、[专用开发验证](../maintenance/host-v19-complexity-verification.md)：关闭规则、待发布回滚、命令目录、实时查询和工具用例分阶段收敛；SOLID 优先，先复现风险再修复，执行完整本地开发验证 |
+| V19 Host 复杂度收敛 | 方案与验证计划已编写；代码实施和开发验收待执行 | [实施方案](host-v19-complexity-reduction-plan.md)、[验证计划](host-v19-complexity-verification.md)：关闭规则、待发布回滚、命令目录、实时查询和工具用例分阶段收敛；SOLID 优先，先复现风险再修复，执行完整本地开发验证 |
 
-V19 当前交付为文档；不使用 AIFLOW、Windows CI 或发布门禁。V18 的既有实现和独立实机待办保持原状态。
-
-## 已实施功能的实机体验待办
-
-| 事项 | 状态 / 范围 | 依据与完成条件 |
-| --- | --- | --- |
-| V18 原生输入法与多屏 DPI | 实现及专项自动化已完成；实机体验待验证 | [归档方案](../archive/plans/host-v18-command-palette-interaction-plan.md)、[开发记录](../archive/records/host-v18/development-acceptance.md)、[专用开发验证](../maintenance/host-v18-command-palette-verification.md)：自动化覆盖预编辑事件、小窗口/主题、跨窗及目标竞态；真实中文输入法、原生焦点与多屏 DPI 另行逐项记录 |
-
-V18 代码、当前文档和专项已完成；最终完整开发门禁以开发记录所链接 JSON 为准。此前 Host 人工验收不覆盖 V18 新行为，本轮没有部署或执行发布门禁。
+V19 尚未实施；计划中的本地开发验证不使用 AIFLOW、Windows CI 或发布门禁。最新部署包含 V18 实现和 V19 方案文档，不能据此认定 V19 重构已交付。V18 自动化结果见[开发记录](../archive/records/host-v18/development-acceptance.md)，后续人工确认与部署分别留证。
 
 ## 发布与外部验证
 

@@ -66,7 +66,7 @@ SOLID 优先：Session 保持唯一业务所有权，Factory 适配框架，窗�
 
 原生 Float/FloatAll 与 HostWindow 保留框架协议；实际核查后补上原生取消保护和同模型窗口复用。布局只记工具，不承担文档会话恢复；缺插件的记录保留，业务 View/Scope 在移动和重置时复用。最终保存队列不捕获 Dispatcher，干净窗口可同步排空，其余关闭仍异步准备；这一调整保留既有原生关闭语义，日常保存仍后台执行。
 
-接口只用于已有替换边界，新增具体类不为形式拆出单实现接口。详细协议集中在 [Layout V3](../../../../docs/reference/dock-layout-snapshot-v3.md)，自动化证据与[所有者人工验收确认](../../../../docs/archive/records/host/manual-acceptance-20260920.md)分别记录。
+接口只用于已有替换边界，新增具体类不为形式拆出单实现接口。详细协议集中在 [Layout V3](../../../../docs/reference/dock-layout-snapshot-v3.md)，自动化证据与[所有者人工验收确认](../../../../docs/archive/records/host/manual-acceptance-20260921.md)分别记录。
 
 ### V11-P1：分割完成事实与停靠策略
 

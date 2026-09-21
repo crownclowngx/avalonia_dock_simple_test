@@ -1,8 +1,8 @@
-# V19：Host 复杂度收敛专用开发验证
+# V19：Host 复杂度收敛开发验证计划
 
 > 用途：验证关闭规则、待发布回滚、命令目录、实时查询和工具入口收敛的行为与结构。
 > 状态：验证规范已编写；V19 代码实施、风险复现和以下实施矩阵尚未执行。日期：2026-09-21。
-> 设计范围与分阶段要求见 [V19 方案](../roadmap/host-v19-complexity-reduction-plan.md)。本文只定义本地开发验证，不授予发布资格。
+> 设计范围与分阶段要求见 [V19 方案](host-v19-complexity-reduction-plan.md)。本文与待实施方案一同维护在 roadmap；实施后将可复用流程整理到 maintenance，实际结果归入 archive/records。本文只定义本地开发验证，不授予发布资格。
 
 ## 1. 执行边界
 
@@ -10,7 +10,7 @@ SOLID 优先，设计模式朴素使用；中文注释与设计思路属于必�
 
 不使用 AIFLOW、Windows CI、seal、发布 Windows Smoke、发布覆盖率或发布重复性门禁；不部署安装目录或发布包。发布阶段再执行原发布政策，不降低阈值或删除发布检查。
 
-本地完整 `verify` 的事实源为 [Gate 执行图](../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs)及[主仓验证](verification.md)：固定补丁准备、locked restore、Release 零警告构建、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约和已发布 API 比较、MyPlugTest 打包及真实 ZIP 验收。开发打包和本地包验收不等于公开发布。verify 不执行 coverage/windows-smoke。
+本地完整 `verify` 的事实源为 [Gate 执行图](../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs)及[主仓验证](../maintenance/verification.md)：固定补丁准备、locked restore、Release 零警告构建、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、契约和已发布 API 比较、MyPlugTest 打包及真实 ZIP 验收。开发打包和本地包验收不等于公开发布。verify 不执行 coverage/windows-smoke。
 
 本文“既有落点”指已存在的测试类，**不表示其中已有本行全部断言**。P0 必须逐项核对方法和参数；后续记录每个矩阵编号对应的真实测试或审查证据。没有执行的项目保持待验证。
 
@@ -185,7 +185,7 @@ dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warn
 | 菜单、快捷键及 Palette | 同一命令作用于正确目标；打开面板后切页不误执行旧项；新建 Intent 与窗口落点保持 |
 | 隐藏、自动收起、浮动和最小化工具 | 恢复原实例、正确焦点与位置；取消浮窗关闭后仍可操作 |
 
-不能借用此前 Host 人工验收或 V18 结果作为本轮通过证据。未执行的实机项单列到待办，开发自动化完成与实机验证状态分别报告；不因本轮重构替用户关闭 V18 原生输入法/多屏 DPI 待办。
+V19 实施后的实机回归需单独记录，不能借用当前 Host 人工验收或 V18 自动化结果作为本轮通过证据。项目所有者已[确认当前主程序手工验收通过](../archive/records/host/manual-acceptance-20260921.md)，原 V18 桌面待办已收口；输入法、多屏等矩阵保留作未来改动的回归清单，不预填 V19 结果。
 
 ## 11. 完成标准与结果记录
 

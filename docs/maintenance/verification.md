@@ -35,7 +35,7 @@ dotnet test Host/MyAvaloniaManagement.PluginTests -c Release -m:1 --filter 'Full
 
 ## 专项回归索引
 
-Host 整体人工验收已由项目所有者[确认通过](../archive/records/host/manual-acceptance-20260920.md)。以下文档保留可复用命令与检查矩阵；其中阶段自动化计数指原开发记录。当前部署见[本机部署](local-deployment.md)。
+Host 整体人工验收已由项目所有者[确认通过](../archive/records/host/manual-acceptance-20260921.md)。以下文档保留可复用命令与检查矩阵；其中阶段自动化计数指原开发记录。当前部署见[本机部署](local-deployment.md)。
 
 | 主题 | 专项验证 |
 | --- | --- |
@@ -47,9 +47,11 @@ Host 整体人工验收已由项目所有者[确认通过](../archive/records/ho
 | 首屏及真实插件进度 | [V15 启动窗口](host-v15-startup-verification.md) |
 | Document 浮窗关闭及命令面板创建目标 | [V16 文档窗口](host-v16-document-window-verification.md) |
 | 诊断、命令展示和服务注册 | [V17 可读性](host-v17-readability-verification.md) |
-| 关闭、待发布回滚、命令目录、实时查询与工具用例 | [V19 复杂度收敛](host-v19-complexity-verification.md)：验证规范已编写，代码实施与专项待执行 |
+| 命令面板分组、键盘会话与页面目标校验 | [V18 命令面板](host-v18-command-palette-verification.md) |
 
-V18 命令面板分组与目标校验已实施，见[专用开发验证及方法映射](host-v18-command-palette-verification.md)与[开发记录](../archive/records/host-v18/development-acceptance.md)。完整 `verify` 对应最终代码和嵌入 Markdown，结果单独保存；Headless 不代替原生输入法与多屏 DPI 验收。
+V18 完整开发验证已通过，证据对应当时定稿的代码和嵌入 Markdown，见[开发记录](../archive/records/host-v18/development-acceptance.md)。后续整体手工验收见[2026-09-21 所有者确认](../archive/records/host/manual-acceptance-20260921.md)；输入法、多屏等矩阵保留供以后回归，不从 Headless 结果推定具体设备上的逐项操作。
+
+V19 尚未实施，其[复杂度收敛验证计划](../roadmap/host-v19-complexity-verification.md)与[方案](../roadmap/host-v19-complexity-reduction-plan.md)放在 roadmap，实施后再整理为维护流程与开发记录。
 
 ## 正式 Host 封板
 

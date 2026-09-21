@@ -2,7 +2,7 @@
 
 > 用途：查找过去的设计、验收与交付证据。核对日期：2026-09-21。正文中的“当前”、版本、命令及通过结果只对原始基线成立，不能作为当前操作指令。
 
-当前指南从[总导航](../README.md)进入，未完成事项由[待办](../roadmap/README.md)继续跟踪。历史失败、NO-GO、当时未执行和已清理产物状态保留。当前 Host 人工验收以[2026-09-20 所有者确认](records/host/manual-acceptance-20260920.md)为准；已完成本机部署统一由[部署索引](../maintenance/local-deployment.md)进入。
+当前指南从[总导航](../README.md)进入，未完成事项由[待办](../roadmap/README.md)继续跟踪。历史失败、NO-GO、当时未执行和已清理产物状态保留。当前 Host 人工验收以[2026-09-21 所有者确认](records/host/manual-acceptance-20260921.md)为准；已完成本机部署统一由[部署索引](../maintenance/local-deployment.md)进入。
 
 ## 方案与评审
 
@@ -45,6 +45,8 @@
 
 ### documentation / Host 人工验收
 
+- [2026-09-21 Host 人工验收确认](records/host/manual-acceptance-20260921.md)
+- [2026-09-21 文档归位、状态与帮助漂移修正](records/documentation/reorganization-20260921.md)
 - [2026-09-20 Host 人工验收确认](records/host/manual-acceptance-20260920.md)
 - [2026-09-20 文档整理、漂移修正及处置清单](records/documentation/reorganization-20260920.md)
 - [2026-09-16 文档重组与原始处置清单](records/documentation/reorganization-20260916.md)
@@ -53,6 +55,8 @@
 
 - [命令面板交互开发记录](records/host-v18/development-acceptance.md)
 - [最终本地开发证据](records/host-v18/final-development-evidence.json)
+- [本机单文件部署证据](records/host-v18/local-deployment-20260921.json)
+- [V18 实现及 V19 方案文档的后续部署](records/host-v18/local-deployment-with-v19-plan-20260921.json)：按实际代码阶段归位，V19 重构仍待实施。
 
 ### host-v17
 

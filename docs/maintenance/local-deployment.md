@@ -1,14 +1,14 @@
 # Host 本机部署
 
-> 用途：当前本机交付形式、证据入口及后续部署流程。状态：当前；核对日期：2026-09-20。事实源：[Host 项目](../../Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj)、[版本属性](../../Directory.Version.props)及下列部署记录。
+> 用途：当前本机交付形式、证据入口及后续部署流程。状态：当前；核对日期：2026-09-21。事实源：[Host 项目](../../Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj)、[版本属性](../../Directory.Version.props)及下列部署记录。
 
 ## 已记录的最新交付
 
-最近一次本机交付为 V17，目标为 `D:\data\avalonia\MyAvaloniaManagement.exe`，实际源码、构建参数、EXE 和补丁摘要、安装文件核对及清理结果见 [V17 部署证据](../archive/records/host-v17/local-deployment-20260920.json)。这是截至核对日期的交付记录，不代替对安装目录实时状态的检查。
+最近一次已记录的本机交付于 2026-09-21 完成，目标为 `D:\data\avalonia\MyAvaloniaManagement.exe`，内容为 **V18 实现及 V19 方案文档**，见[部署证据](../archive/records/host-v18/local-deployment-with-v19-plan-20260921.json)。该记录包含源码 revision、六份文档覆盖输入、构建参数、EXE 和补丁摘要、安装文件核对及清理结果；V19 代码重构尚未实施。这是已记录交付事实，不代替对安装目录实时状态的检查。
 
-当前交付形式为 Release、win-x64、自包含压缩单 EXE，打入 .NET 运行时与原生绘制库，关闭裁剪；`Controls` 插件和 `HelpWeb` 帮助资源外置。安装版不要求另装 .NET。单文件形式核对和隔离启动/关闭已经记录，Host 整体人工验收由[项目所有者确认通过](../archive/records/host/manual-acceptance-20260920.md)。
+当前交付形式为 Release、win-x64、自包含压缩单 EXE，打入 .NET 运行时与原生绘制库，关闭裁剪；`Controls` 插件和 `HelpWeb` 帮助资源外置。安装版不要求另装 .NET。单文件形式核对和隔离启动/关闭已经记录，Host 整体人工验收由[项目所有者确认通过](../archive/records/host/manual-acceptance-20260921.md)。
 
-V17 沿用此前功能，并改善诊断、命令展示和服务注册的可读性；V16 的 Document 浮窗关闭与命令面板新建位置也已交付。方案名称 V11–V17 表示改造阶段，产品和包版本仍以[集中基线](../reference/platform-baseline.md)为准。
+V18 在此前功能上提供命令面板连续分组、键盘会话和页面目标校验。方案名称 V11–V19 表示改造阶段，产品和包版本仍以[集中基线](../reference/platform-baseline.md)为准；文档随包嵌入不表示对应方案已经实施。
 
 ## 后续部署流程
 
@@ -19,12 +19,14 @@ V17 沿用此前功能，并改善诊断、命令展示和服务注册的可读�
 5. 安装前检查实例是否退出，记录目标目录文件摘要并落实本次备份/回退安排；逐项交付已核对的文件，保留现有插件及用户数据，核对保留文件字节不变。
 6. 记录已交付文件、源码、产物摘要、检查结果与清理范围。清理仅限本次隔离目录，先核对绝对路径和重解析点，再删除本次中间产物；保留小型日志与收据。
 
-V15–V17 的不备份操作来自对应任务的用户要求，详见各自 JSON；它不构成后续部署的默认政策。回退必须使用真实存在且身份匹配的旧产物，不能假定旧备份覆盖最新版本。正式发布条件见[主仓验证与封板](verification.md)。
+V15–V17 及 V18 首次部署的不备份操作来自对应任务的用户要求；2026-09-21 随 V19 方案文档再次部署时已备份被替换 EXE，详见各自 JSON。各次选择不构成后续部署的默认政策。回退必须检查备份当前仍存在且身份匹配，不能假定旧备份覆盖最新版本。正式发布条件见[主仓验证与封板](verification.md)。
 
 ## 历次交付
 
 | 阶段 | 原说明或证据 |
 | --- | --- |
+| V18 实现 + V19 方案文档 | [2026-09-21 后续部署 JSON](../archive/records/host-v18/local-deployment-with-v19-plan-20260921.json)；原存于 host-v19，按实际代码阶段归位，原始字节保留 |
+| V18 命令面板交互 | [2026-09-21 首次部署 JSON](../archive/records/host-v18/local-deployment-20260921.json) |
 | V17 可读性重构 | [2026-09-20 JSON](../archive/records/host-v17/local-deployment-20260920.json) |
 | V16 文档浮窗与新建位置 | [2026-09-20 JSON](../archive/records/host-v16/local-deployment-20260920.json) |
 | V15 启动窗口 | [归档说明](../archive/records/host-v15/local-deployment-guide.md)、[2026-09-20 JSON](../archive/records/host-v15/local-deployment-20260920.json) |

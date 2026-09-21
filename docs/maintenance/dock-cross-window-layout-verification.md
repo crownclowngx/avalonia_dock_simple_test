@@ -1,8 +1,8 @@
 # Document 跨窗口布局崩溃专项维护
 
-> 当前状态（2026-09-20）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260920.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
+> 当前状态（2026-09-21）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260921.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
 
-> 核对日期：2026-09-20。框架补丁和自动化回归已实现；最终开发 verify 与产物身份以[开发证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)为准。Host 人工验收见页首确认；交付状态与现行流程见[本机部署](local-deployment.md)。
+> 核对日期：2026-09-21。框架补丁和自动化回归已实现；最终开发 verify 与产物身份以[开发证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)为准。Host 人工验收见页首确认；交付状态与现行流程见[本机部署](local-deployment.md)。
 
 ## 原因与实际修复
 

@@ -4,7 +4,7 @@
 > 状态：设计文档交付；功能代码、缺陷复现、专项补测及实施阶段开发门禁尚未执行。日期：2026-09-21。
 > 调研基线：`c38d71fb45b07b4c0eac778b9ed7ea009d855a19`，编写前工作树干净；实施前重新记录 HEAD、差异和实际调用关系。
 > V19 是 Host 改造序号，不升级产品、程序集、SDK、NuGet 或持久化格式版本。
-> 配套：[专用开发验证](../maintenance/host-v19-complexity-verification.md)。当前行为以[Host 架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)及现行契约为准，本文目标不表示已经实现。
+> 配套：[开发验证计划](host-v19-complexity-verification.md)。当前行为以[Host 架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)及现行契约为准，本文目标不表示已经实现。
 
 ## 1. 目标与首要规定
 
@@ -198,7 +198,7 @@ P1/P2 分别先做最小缺陷修复，再做结构收敛，保持独立可审�
 | [命令契约](../reference/workbench-commands.md)、[启动契约](../reference/host-startup.md) | 目录与绑定时机、失败诊断，原目标/取消政策保持 |
 | [Host 架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md) | 最终依赖、资源所有者、共享关闭规则、待发布回滚和查询路径 |
 | [工具中心指南](../quick-start/tool-center.md)、[搜索指南](../quick-start/workbench-search.md)、[浮窗指南](../quick-start/floating-windows-and-layout.md) | 仅更新被实际修正的可观察行为，不把内部类名搬入用户操作说明 |
-| 本计划、[专用开发验证](../maintenance/host-v19-complexity-verification.md) | 实际阶段状态、矩阵到真实测试方法/参数/断言的映射、剩余事项 |
+| 本计划、[开发验证计划](host-v19-complexity-verification.md) | 实际阶段状态、矩阵到真实测试方法/参数/断言的映射、剩余事项 |
 | [总导航](../README.md)、[待办](README.md)、[Host 入口](../../Host/MyAvaloniaManagement/docs/README.md)、[验证索引](../maintenance/verification.md) | 同步计划、验证、开发记录和剩余实机项目入口 |
 
 后续实施建立 `docs/archive/records/host-v19/development-acceptance.md` 和非嵌入证据 JSON，文件真实存在后再加入链接。记录 HEAD、工作树差异身份、运行时间、实际命令、退出码、TRX 数量、Gate run-id、摘要路径及失败/重跑，不预填成功或覆盖率。

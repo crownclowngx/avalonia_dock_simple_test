@@ -1,6 +1,6 @@
 # Host 自动重启契约
 
-> 状态：V14 实现已接入；最终开发判定与产物身份见 [JSON 证据](../archive/records/host-v14/final-development-evidence.json)。核对日期：2026-09-20。V14 是改造序号，不改变产品、SDK 或持久化 schema 版本。
+> 状态：V14 实现已接入；最终开发判定与产物身份见 [JSON 证据](../archive/records/host-v14/final-development-evidence.json)。核对日期：2026-09-21。V14 是改造序号，不改变产品、SDK 或持久化 schema 版本。
 
 ## 用户行为
 
@@ -43,7 +43,7 @@ V15 新 Host 先显示羽毛启动窗口，再完成插件组合与主窗口交�
 
 ## 启动形式与环境
 
-apphost 使用当前 `Environment.ProcessPath`；`dotnet Host.dll` 保留 dotnet 可执行路径及实际入口 DLL。单文件按可执行路径处理，不依赖 `Assembly.Location`；单文件交付与实际启动检查见[本机部署](../maintenance/local-deployment.md)，当前 Host 人工结论见[所有者确认](../archive/records/host/manual-acceptance-20260920.md)。`dotnet run` 只按最终进程形态重建，不重新执行构建命令。
+apphost 使用当前 `Environment.ProcessPath`；`dotnet Host.dll` 保留 dotnet 可执行路径及实际入口 DLL。单文件按可执行路径处理，不依赖 `Assembly.Location`；单文件交付与实际启动检查见[本机部署](../maintenance/local-deployment.md)，当前 Host 人工结论见[所有者确认](../archive/records/host/manual-acceptance-20260921.md)。`dotnet run` 只按最终进程形态重建，不重新执行构建命令。
 
 保留工作目录、逐项复制的原始用户参数、有效数据根，以 `ProcessStartInfo.ArgumentList` 启动，`UseShellExecute=false`；中文、空格、引号和 shell 元字符不参与命令拼接。显式设置 `MYAVALONIA_DATA_DIRECTORY`，其余环境继承，清除以 `MYAVALONIA_` 开头且含 `TEST` 或 `PROBE` 的一次性测试变量。助手参数只进入助手，不传给普通后继 Host。启动信息验证先检查可执行文件、入口 DLL 和目录存在性；操作系统执行权限或随后文件变化仍由真实创建失败路径处理。
 

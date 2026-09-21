@@ -1,6 +1,6 @@
 # V17：Host 可读性重构专用开发验证
 
-> 当前状态（2026-09-20）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260920.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
+> 当前状态（2026-09-21）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260921.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
 
 > 用途：验证诊断文件拆分、命令展示文件拆分和服务注册方法提取保持原行为。
 > 状态：P0 基线、行为补测及 P1–P3 专项已执行；实际结果见[开发记录](../archive/records/host-v17/development-acceptance.md)，最终完整 verify 以该记录关联 JSON 为准。日期：2026-09-20。

@@ -1,6 +1,6 @@
 # V15 启动引导：专用开发验证
 
-> 当前状态（2026-09-20）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260920.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
+> 当前状态（2026-09-21）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260921.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
 
 > 用途：定义本地自动化、渲染检查和独立原生桌面验收范围。日期：2026-09-20。
 > 实现已接入，实际执行结果以[开发记录和 JSON 证据](../archive/records/host-v15/development-acceptance.md)为准。

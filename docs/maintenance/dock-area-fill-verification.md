@@ -1,8 +1,8 @@
 # Dock 区域默认居中停靠专项验证
 
-> 当前状态（2026-09-20）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260920.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
+> 当前状态（2026-09-21）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260921.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
 
-> 用途：维护区域回停实现与本地开发门禁。核对日期：2026-09-20。实现记录见[专项记录](../archive/records/dock-area-fill/development-acceptance.md)，最终运行结果见[非嵌入证据](../archive/records/dock-area-fill/development-evidence.json)。本轮不使用 AIFLOW、Windows CI、seal 或发布 Smoke。
+> 用途：维护区域回停实现与本地开发门禁。核对日期：2026-09-21。实现记录见[专项记录](../archive/records/dock-area-fill/development-acceptance.md)，最终运行结果见[非嵌入证据](../archive/records/dock-area-fill/development-evidence.json)。本轮不使用 AIFLOW、Windows CI、seal 或发布 Smoke。
 
 ## 行为边界
 
