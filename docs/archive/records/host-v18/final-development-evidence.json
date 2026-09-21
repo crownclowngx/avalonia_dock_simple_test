@@ -1,10 +1,1482 @@
 {
   "schemaVersion": 1,
   "date": "2026-09-21",
-  "status": "pending-final-verify",
-  "scope": "V18 command palette interaction; local development only",
-  "finalGate": null,
-  "note": "最终嵌入 Markdown 定稿后提交验证输入；完整 verify 结束后仅更新此非嵌入 JSON。此初始记录不声明最终通过。",
-  "nativeDesktopChecks": "pending: Windows IME, native focus and multi-monitor DPI",
-  "excluded": ["AIFLOW", "Windows CI", "seal", "release smoke", "release coverage", "deployment", "publication"]
+  "status": "passed",
+  "scope": "V18 command palette: grouped results, keyboard interaction and per-invocation document target validation; local development only",
+  "branch": "master",
+  "sourceIdentity": {
+    "baseline": "71034f7cd3382c70fb0e58cff555cc0e1bef651a",
+    "implementationCommits": [
+      "8781839",
+      "84318cd"
+    ],
+    "finalInputCommit": "0945a5af8b7ce9e5dc95bd3c85efbbbec3e0e260",
+    "postGateChange": "Only this non-embedded JSON changes after final verify; executable code, tests, dependencies and embedded Markdown remain identical to finalGate.source.revision."
+  },
+  "baselineGate": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "exitCode": 0,
+    "runId": "20260920-232052-71034f7cd338",
+    "summary": {
+      "path": "artifacts/gate/20260920-232052-71034f7cd338/summary.json",
+      "sha256": "4f77c632445a79c68d4756dbcd120ba9f650239402a81c8d1793bd1a039eec39"
+    },
+    "startedAtUtc": "2026-09-21T07:20:51.4522115+08:00",
+    "finishedAtUtc": "2026-09-21T07:24:04.3591019+08:00",
+    "source": {
+      "revision": "71034f7cd3382c70fb0e58cff555cc0e1bef651a",
+      "tree": "90c1a3029ea57ff294db094ac2f68b0bb02ef0ec",
+      "clean": true,
+      "files": 1055,
+      "sha256": "D06867B28D1987BC8EC8CAF4EC68EC70DCF9CF022E8E3B73AC32FC765D7A11F5"
+    },
+    "stages": [
+      {
+        "id": "avalonia-layout-patch",
+        "status": "passed",
+        "durationMilliseconds": 655,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-232052-71034f7cd338\\pass-1"
+      },
+      {
+        "id": "dock-patch",
+        "status": "passed",
+        "durationMilliseconds": 700,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-232052-71034f7cd338\\pass-1"
+      },
+      {
+        "id": "restore",
+        "status": "passed",
+        "durationMilliseconds": 2087,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-232052-71034f7cd338\\pass-1"
+      },
+      {
+        "id": "build",
+        "status": "passed",
+        "durationMilliseconds": 16300,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-232052-71034f7cd338\\pass-1"
+      },
+      {
+        "id": "tests",
+        "status": "passed",
+        "durationMilliseconds": 166693,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-232052-71034f7cd338\\pass-1"
+      },
+      {
+        "id": "contracts",
+        "status": "passed",
+        "durationMilliseconds": 4233,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-232052-71034f7cd338\\pass-1"
+      },
+      {
+        "id": "packages",
+        "status": "passed",
+        "durationMilliseconds": 14,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-232052-71034f7cd338\\pass-1"
+      },
+      {
+        "id": "package-acceptance",
+        "status": "passed",
+        "durationMilliseconds": 1544,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-232052-71034f7cd338\\pass-1"
+      }
+    ],
+    "tests": [
+      {
+        "file": {
+          "path": "artifacts/gate/20260920-232052-71034f7cd338/pass-1/tests/host-plugin/host-plugin.trx",
+          "sha256": "e78d6cca3e6354d4db25bedaf6c8db8bcded908140a2a317f8d2b90b96e78089"
+        },
+        "total": 292,
+        "executed": 292,
+        "passed": 292,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-21T07:21:21.3108899+08:00",
+        "finishedAt": "2026-09-21T07:22:27.7324464+08:00",
+        "v18Cases": [],
+        "failures": []
+      },
+      {
+        "file": {
+          "path": "artifacts/gate/20260920-232052-71034f7cd338/pass-1/tests/host-ui/host-ui.trx",
+          "sha256": "8ef1ca83b0471cb98ef42a7ee91adbacf9a0b04eb1a5120280ca74f4cf0eafa8"
+        },
+        "total": 277,
+        "executed": 277,
+        "passed": 277,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-21T07:22:28.4962074+08:00",
+        "finishedAt": "2026-09-21T07:23:57.2200888+08:00",
+        "v18Cases": [],
+        "failures": []
+      },
+      {
+        "file": {
+          "path": "artifacts/gate/20260920-232052-71034f7cd338/pass-1/tests/host-unit/host-unit.trx",
+          "sha256": "1e275698c4e8833e53c9f631299ce25a8e1a655942114cfe1517021af8d48df1"
+        },
+        "total": 616,
+        "executed": 616,
+        "passed": 616,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-21T07:21:18.3769154+08:00",
+        "finishedAt": "2026-09-21T07:21:20.3865775+08:00",
+        "v18Cases": [],
+        "failures": []
+      },
+      {
+        "file": {
+          "path": "artifacts/gate/20260920-232052-71034f7cd338/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+          "sha256": "13ef6d2c8a384ddc7abd4040fc0a5d9a151f255719bda5ef7043f879e12887d3"
+        },
+        "total": 1,
+        "executed": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-21T07:24:03.5617127+08:00",
+        "finishedAt": "2026-09-21T07:24:04.2864946+08:00",
+        "v18Cases": [],
+        "failures": []
+      },
+      {
+        "file": {
+          "path": "artifacts/gate/20260920-232052-71034f7cd338/pass-1/tests/my-plug-test/my-plug-test.trx",
+          "sha256": "24a49510b997fcdcd709668ac67ffab7cb15e7912e5ca9684f6fef1d412beb22"
+        },
+        "total": 11,
+        "executed": 11,
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-21T07:23:57.9837195+08:00",
+        "finishedAt": "2026-09-21T07:23:58.4929547+08:00",
+        "v18Cases": [],
+        "failures": []
+      },
+      {
+        "file": {
+          "path": "artifacts/gate/20260920-232052-71034f7cd338/pass-1/tests/sdk/sdk.trx",
+          "sha256": "ee21feb3f23ea4b5c69cb478d38b770c70c2cd414c1009eb72b09e9569a10da7"
+        },
+        "total": 91,
+        "executed": 91,
+        "passed": 91,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-21T07:21:12.5309137+08:00",
+        "finishedAt": "2026-09-21T07:21:17.6140012+08:00",
+        "v18Cases": [],
+        "failures": []
+      }
+    ],
+    "totalPassed": 1288,
+    "packages": {
+      "my-plug-test": {
+        "pluginId": "myavalonia.plugin.my-plug-test",
+        "archivePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-232052-71034f7cd338\\pass-1\\packages\\my-plug-test\\build-1\\MyPlugTest-win-x64.zip",
+        "sha256": "DC634568371E700CBC88414D4009E92584FF5C9EF2459F994DEA83FF0272D1C2",
+        "files": 8,
+        "manifestSha256": "93B4006555E65634300C0E1AF204CCC345A1739B432AD6FD9CDC384E2A567AE1",
+        "deterministic": false
+      }
+    },
+    "buildLog": {
+      "path": "artifacts/gate/20260920-232052-71034f7cd338/pass-1/logs/build-main.log",
+      "sha256": "d55f630b13f177bf7d5131f197d30eff3b3a04fe031ba19fdca98249cdd051c9"
+    },
+    "releaseEligible": false,
+    "publishable": false
+  },
+  "stageTests": [
+    {
+      "file": {
+        "path": "artifacts/host-v18/implementation-20260921/p0-behavior-red/p0-red.trx",
+        "sha256": "77211655f97d85d50fa433a32f5252705aff8bf50329b8e549540bd2858146a5"
+      },
+      "total": 1,
+      "executed": 1,
+      "passed": 0,
+      "failed": 1,
+      "skipped": 0,
+      "startedAt": "2026-09-21T07:25:10.5136843+08:00",
+      "finishedAt": "2026-09-21T07:25:11.2412403+08:00",
+      "v18Cases": [
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同组弱匹配页面仍连续排列而不会被同名创建入口穿插",
+          "outcome": "Failed"
+        }
+      ],
+      "failures": [
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同组弱匹配页面仍连续排列而不会被同名创建入口穿插",
+          "message": "Assert.Contains() Failure: Filter not matched in collection\r\nCollection: [WorkbenchCommandPaletteProjectionEntry { Identity = PagePaletteIdentity { Order = 0, StableKey = page:72c268b2129240a281984a3a96f6fcd9, Id = WorkspacePageId { Value = 72c268b2-1292-40a2-8198-4a3a96f6fcd9 } }, DisplayName = 示例入口, Description = 测试文档 · myavalonia.plugin.host-tests · 页面 2, ShortcutText = , IsEnabled = True, Command = MyAvaloniaManagement.Business.Presentation.Commands.WorkspacePaletteCommand, StableKey = page:72c268b2129240a281984a3a96f6fcd9, CommandId = , ToolTypeId = , ActionText = 切换到页面, SearchName = 示例入口, MatchRank = 0, IconRequest = HostIconRequest { OwnerId = myavalonia.plugin.host-tests, Reference =  }, IconRenderer = MyAvaloniaManagement.Business.Presentation.Icons.HostIconRenderer }]"
+        }
+      ]
+    },
+    {
+      "file": {
+        "path": "artifacts/host-v18/implementation-20260921/p0-red/p0-red.trx",
+        "sha256": "753366d24c0f7d8c0ab89ca90f597dda28875150083974a5f17201447cf6337c"
+      },
+      "total": 1,
+      "executed": 1,
+      "passed": 0,
+      "failed": 1,
+      "skipped": 0,
+      "startedAt": "2026-09-21T07:24:36.1173749+08:00",
+      "finishedAt": "2026-09-21T07:24:37.4784537+08:00",
+      "v18Cases": [
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同组弱匹配页面仍连续排列而不会被同名创建入口穿插",
+          "outcome": "Failed"
+        }
+      ],
+      "failures": [
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同组弱匹配页面仍连续排列而不会被同名创建入口穿插",
+          "message": "System.NotSupportedException : 不支持的 Document 类型：myavalonia.host.document.welcome。"
+        }
+      ]
+    },
+    {
+      "file": {
+        "path": "artifacts/host-v18/implementation-20260921/p1-green/p1-unit.trx",
+        "sha256": "733a68200fd3fa222665ff4e993958f746ace2be66cef5c0389cb51559016568"
+      },
+      "total": 54,
+      "executed": 54,
+      "passed": 54,
+      "failed": 0,
+      "skipped": 0,
+      "startedAt": "2026-09-21T07:29:23.9627924+08:00",
+      "finishedAt": "2026-09-21T07:29:24.6772873+08:00",
+      "v18Cases": [
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同组弱匹配页面仍连续排列而不会被同名创建入口穿插",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.四类实际投影包含身份动作和真实原因且重复查询不创建页面",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同等级可用项优先但状态刷新保留原顺序而新查询应用新顺序",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.禁用原因无事实时使用通用说明且命令名称不被推断为完成结果",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.组相关性优先且同组保持连续并以身份稳定打破同名平局",
+          "outcome": "Passed"
+        }
+      ],
+      "failures": []
+    },
+    {
+      "file": {
+        "path": "artifacts/host-v18/implementation-20260921/p1-ui/p1-ui.trx",
+        "sha256": "cb388179178af7ae8935d49f8eabf334a6e33ed480a9dab33244bf51f11c03eb"
+      },
+      "total": 18,
+      "executed": 18,
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "startedAt": "2026-09-21T07:29:47.0058952+08:00",
+      "finishedAt": "2026-09-21T07:29:54.6326626+08:00",
+      "v18Cases": [],
+      "failures": []
+    },
+    {
+      "file": {
+        "path": "artifacts/host-v18/implementation-20260921/p1/p1-unit.trx",
+        "sha256": "8683eb1250b59157aff9a3a4eed8e841f143e65eaa3356ebd5581c4e173e7177"
+      },
+      "total": 54,
+      "executed": 54,
+      "passed": 52,
+      "failed": 2,
+      "skipped": 0,
+      "startedAt": "2026-09-21T07:28:38.7999509+08:00",
+      "finishedAt": "2026-09-21T07:28:39.5218837+08:00",
+      "v18Cases": [
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.四类实际投影包含身份动作和真实原因且重复查询不创建页面",
+          "outcome": "Failed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同等级可用项优先但状态刷新保留原顺序而新查询应用新顺序",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同组弱匹配页面仍连续排列而不会被同名创建入口穿插",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.组相关性优先且同组保持连续并以身份稳定打破同名平局",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.禁用原因无事实时使用通用说明且命令名称不被推断为完成结果",
+          "outcome": "Passed"
+        }
+      ],
+      "failures": [
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.四类实际投影包含身份动作和真实原因且重复查询不创建页面",
+          "message": "Assert.Contains() Failure: Filter not matched in collection\r\nCollection: [WorkbenchCommandPaletteProjectionEntry { Identity = PagePaletteIdentity { Order = 0, StableKey = page:873a6ce83ae044c8ab5fb69b7295682c, Id = WorkspacePageId { Value = 873a6ce8-3ae0-44c8-ab5f-b69b7295682c } }, DisplayName = 欢迎, Description = 欢迎主程序 · 内置 · 页面 1, ShortcutText = , IsEnabled = True, Command = MyAvaloniaManagement.Business.Presentation.Commands.WorkspacePaletteCommand, StableKey = page:873a6ce83ae044c8ab5fb69b7295682c, CommandId = , ToolTypeId = , ActionText = 切换到页面, SearchName = 欢迎, MatchRank = 0, IconRequest = HostIconRequest { OwnerId = , Reference =  }, IconRenderer = MyAvaloniaManagement.Business.Presentation.Icons.HostIconRenderer, SourceText = 主程序, InstanceText = 页面 1, TargetText = , UnavailableReason = , ExecuteHint = 回到“欢迎”（页面 1）, StartsGroup = True, GroupName = 已打开的页面, LeadingAction = ↩, IdentityText = 主程序 · 页面 1, DisabledText = , DetailText = 欢迎主程序 · 内置 · 页面 1, EnterHint = Enter 回到“欢迎”（页面 1）, AccessibleText = 已打开的页面 · ↩ · 欢迎 · 主程序 · 页面 1 · 欢迎主程序 · 内置 · 页面 1 }, WorkbenchCommandPaletteProjectionEntry { Identity = FunctionPaletteIdentity { Order = 1, StableKey = function:32:myavalonia.host.document.welcome:-1:, DocumentTypeId = myavalonia.host.document.welcome, IntentId =  }, DisplayName = 欢迎主程序, Description = 显示欢迎信息 · 帮助 · 内置, ShortcutText = , IsEnabled = True, Command = MyAvaloniaManagement.Business.Presentation.Commands.WorkspacePaletteCommand, StableKey = function:32:myavalonia.host.document.welcome:-1:, CommandId = , ToolTypeId = , ActionText = 打开新标签, SearchName = 欢迎主程序, MatchRank = 0, IconRequest = HostIconRequest { OwnerId = , Reference =  }, IconRenderer = MyAvaloniaManagement.Business.Presentation.Icons.HostIconRenderer, SourceText = 主程序, InstanceText = , TargetText = , UnavailableReason = , ExecuteHint = 新开“欢迎主程序”, StartsGroup = True, GroupName = 新开页面, LeadingAction = ＋, IdentityText = 主程序, DisabledText = , DetailText = 显示欢迎信息 · 帮助 · 内置, EnterHint = Enter 新开“欢迎主程序”, AccessibleText = 新开页面 · ＋ · 欢迎主程序 · 主程序 · 显示欢迎信息 · 帮助 · 内置 }, WorkbenchCommandPaletteProjectionEntry { Identity = FunctionPaletteIdentity { Order = 1, StableKey = function:42:myavalonia.plugin.host-tests.document.test:13:sample-intent, DocumentTypeId = myavalonia.plugin.host-tests.document.test, IntentId = sample-intent }, DisplayName = 示例入口, Description = 当前 Document 生产链测试 · 测试 · myavalonia.plugin.host-tests, ShortcutText = , IsEnabled = True, Command = MyAvaloniaManagement.Business.Presentation.Commands.WorkspacePaletteCommand, StableKey = function:42:myavalonia.plugin.host-tests.document.test:13:sample-intent, CommandId = , ToolTypeId = , ActionText = 打开新标签, SearchName = 示例入口, MatchRank = 0, IconRequest = HostIconRequest { OwnerId = myavalonia.plugin.host-tests, Reference =  }, IconRenderer = MyAvaloniaManagement.Business.Presentation.Icons.HostIconRenderer, SourceText = myavalonia.plugin.host-tests, InstanceText = , TargetText = , UnavailableReason = , ExecuteHint = 新开“示例入口”, StartsGroup = False, GroupName = 新开页面, LeadingAction = ＋, IdentityText = myavalonia.plugin.host-tests, DisabledText = , DetailText = 当前 Document 生产链测试 · 测试 · myavalonia.plugin.host-tests, EnterHint = Enter 新开“示例入口”, AccessibleText = 新开页面 · ＋ · 示例入口 · myavalonia.plugin.host-tests · 当前 Document 生产链测试 · 测试 · myavalonia.plugin.host-tests }, WorkbenchCommandPaletteProjectionEntry { Identity = ToolPaletteIdentity { Order = 2, StableKey = tool:myavalonia.host.tool.plugin-menu, Id = myavalonia.host.tool.plugin-menu }, DisplayName = 插件分组菜单, Description = 已隐藏, ShortcutText = , IsEnabled = True, Command = MyAvaloniaManagement.Business.Presentation.Commands.WorkspacePaletteCommand, StableKey = tool:myavalonia.host.tool.plugin-menu, CommandId = , ToolTypeId = myavalonia.host.tool.plugin-menu, ActionText = 显示, SearchName = 插件分组菜单, MatchRank = 0, IconRequest = HostIconRequest { OwnerId = , Reference =  }, IconRenderer = MyAvaloniaManagement.Business.Presentation.Icons.HostIconRenderer, SourceText = 主程序, InstanceText = , TargetText = , UnavailableReason = , ExecuteHint = 显示“插件分组菜单”, StartsGroup = True, GroupName = 工具面板, LeadingAction = 显示, IdentityText = 主程序, DisabledText = , DetailText = 已隐藏, EnterHint = Enter 显示“插件分组菜单”, AccessibleText = 工具面板 · 显示 · 插件分组菜单 · 主程序 · 已隐藏 }, WorkbenchCommandPaletteProjectionEntry { Identity = ToolPaletteIdentity { Order = 2, StableKey = tool:myavalonia.host.tool.file-system-tree, Id = myavalonia.host.tool.file-system-tree }, DisplayName = 文件系统浏览器, Description = 已隐藏, ShortcutText = , IsEnabled = True, Command = MyAvaloniaManagement.Business.Presentation.Commands.WorkspacePaletteCommand, StableKey = tool:myavalonia.host.tool.file-system-tree, CommandId = , ToolTypeId = myavalonia.host.tool.file-system-tree, ActionText = 显示, SearchName = 文件系统浏览器, MatchRank = 0, IconRequest = HostIconRequest { OwnerId = , Reference =  }, IconRenderer = MyAvaloniaManagement.Business.Presentation.Icons.HostIconRenderer, SourceText = 主程序, InstanceText = , TargetText = , UnavailableReason = , ExecuteHint = 显示“文件系统浏览器”, StartsGroup = False, GroupName = 工具面板, LeadingAction = 显示, IdentityText = 主程序, DisabledText = , DetailText = 已隐藏, EnterHint = Enter 显示“文件系统浏览器”, AccessibleText = 工具面板 · 显示 · 文件系统浏览器 · 主程序 · 已隐藏 }, ···]"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.WorkbenchCommandProjectionTests.Palette普通命令只按菜单许可发现且Host保存以Disabled显示",
+          "message": "Assert.Collection() Failure: Item comparison failure\r\n             ↓ (pos 0)\r\nCollection: [WorkbenchCommandPaletteProjectionEntry { Identity = CommandPaletteIdentity { Order = 3, StableKey = command:myavalonia.host.command.document.new, Id = myavalonia.host.command.document.new }, DisplayName = 功能中心…, Description = 查找功能，在新标签中开始使用。, ShortcutText = , IsEnabled = True, Command = MyAvaloniaManagement.Business.Presentation.Commands.WorkbenchPresentationCommand, StableKey = command:myavalonia.host.command.document.new, CommandId = myavalonia.host.command.document.new, ToolTypeId = , ActionText = 执行命令, SearchName = 功能中心…, MatchRank = 0, IconRequest = HostIconRequest { OwnerId = , Reference =  }, IconRenderer = MyAvaloniaManagement.Business.Presentation.Icons.HostIconRenderer, SourceText = 主程序, InstanceText = , TargetText = , UnavailableReason = , ExecuteHint = 打开功能中心, StartsGroup = True, GroupName = 命令, LeadingAction = , IdentityText = 主程序, DisabledText = , DetailText = 查找功能，在新标签中开始使用。, EnterHint = Enter 打开功能中心, AccessibleText = 命令 · 功能中心… · 主程序 · 查找功能，在新标签中开始使用。 }, WorkbenchCommandPaletteProjectionEntry { Identity = CommandPaletteIdentity { Order = 3, StableKey = command:myavalonia.host.command.help.open, Id = myavalonia.host.command.help.open }, DisplayName = 帮助中心, Description = 阅读产品介绍、架构与理论，探索公式和交互演示。, ShortcutText = F1, IsEnabled = True, Command = MyAvaloniaManagement.Business.Presentation.Commands.WorkbenchPresentationCommand, StableKey = command:myavalonia.host.command.help.open, CommandId = myavalonia.host.command.help.open, ToolTypeId = , ActionText = 执行命令, SearchName = 帮助中心, MatchRank = 0, IconRequest = HostIconRequest { OwnerId = , Reference =  }, IconRenderer = MyAvaloniaManagement.Business.Presentation.Icons.HostIconRenderer, SourceText = 主程序, InstanceText = , TargetText = , UnavailableReason = , ExecuteHint = 显示帮助中心, StartsGroup = False, GroupName = 命令, LeadingAction = , IdentityText = 主程序, DisabledText = , DetailText = 阅读产品介绍、架构与理论，探索公式和交互演示。, EnterHint = Enter 显示帮助中心, AccessibleText = 命令 · 帮助中心 · 主程序 · 阅读产品介绍、架构与理论，探索公式和交互演示。 · F1 }, WorkbenchCommandPaletteProjectionEntry { Identity = CommandPaletteIdentity { Order = 3, StableKey = command:myavalonia.host.command.document.open, Id = myavalonia.host.command.document.open }, DisplayName = 打开…, Description = 从文件中打开一个或多个页面。, ShortcutText = , IsEnabled = True, Command = MyAvaloniaManagement.Business.Presentation.Commands.WorkbenchPresentationCommand, StableKey = command:myavalonia.host.command.document.open, CommandId = myavalonia.host.command.document.open, ToolTypeId = , ActionText = 执行命令, SearchName = 打开…, MatchRank = 0, IconRequest = HostIconRequest { OwnerId = , Reference =  }, IconRenderer = MyAvaloniaManagement.Business.Presentation.Icons.HostIconRenderer, SourceText = 主程序, InstanceText = , TargetText = , UnavailableReason = , ExecuteHint = 选择文件…, StartsGroup = False, GroupName = 命令, LeadingAction = , IdentityText = 主程序, DisabledText = , DetailText = 从文件中打开一个或多个页面。, EnterHint = Enter 选择文件…, AccessibleText = 命令 · 打开… · 主程序 · 从文件中打开一个或多个页面。 }, WorkbenchCommandPaletteProjectionEntry { Identity = CommandPaletteIdentity { Order = 3, StableKey = command:myavalonia.host.command.document.save, Id = myavalonia.host.command.document.save }, DisplayName = 保存, Description = 保存当前活动的可持久化页面。, ShortcutText = Ctrl+S, IsEnabled = False, Command = MyAvaloniaManagement.Business.Presentation.Commands.WorkbenchPresentationCommand, StableKey = command:myavalonia.host.command.document.save, CommandId = myavalonia.host.command.document.save, ToolTypeId = , ActionText = 执行命令, SearchName = 保存, MatchRank = 0, IconRequest = HostIconRequest { OwnerId = , Reference =  }, IconRenderer = MyAvaloniaManagement.Business.Presentation.Icons.HostIconRenderer, SourceText = 主程序, InstanceText = , TargetText = , UnavailableReason = 当前没有可保存的页面, ExecuteHint = 执行：保存, StartsGroup = False, GroupName = 命令, LeadingAction = , IdentityText = 主程序, DisabledText = 当前没有可保存的页面, DetailText = 保存当前活动的可持久化页面。 · 当前没有可保存的页面, EnterHint = 当前没有可保存的页面, AccessibleText = 命令 · 保存 · 主程序 · 保存当前活动的可持久化页面。 · 当前没有可保存的页面 · Ctrl+S }, WorkbenchCommandPaletteProjectionEntry { Identity = CommandPaletteIdentity { Order = 3, StableKey = command:myavalonia.host.command.restart, Id = myavalonia.host.command.restart }, DisplayName = 重新启动 Host…, Description = 重启将关闭所有文档，未保存内容会先询问。, ShortcutText = , IsEnabled = False, Command = MyAvaloniaManagement.Business.Presentation.Commands.WorkbenchPresentationCommand, StableKey = command:myavalonia.host.command.restart, CommandId = myavalonia.host.command.restart, ToolTypeId = , ActionText = 执行命令, SearchName = 重新启动 Host…, MatchRank = 0, IconRequest = HostIconRequest { OwnerId = , Reference =  }, IconRenderer = MyAvaloniaManagement.Business.Presentation.Icons.HostIconRenderer, SourceText = 主程序, InstanceText = , TargetText = , UnavailableReason = , ExecuteHint = 执行：重新启动 Host…, StartsGroup = False, GroupName = 命令, LeadingAction = , IdentityText = 主程序, DisabledText = 当前状态下不可用, DetailText = 重启将关闭所有文档，未保存内容会先询问。 · 当前状态下不可用, EnterHint = 当前状态下不可用, AccessibleText = 命令 · 重新启动 Host… · 主程序 · 重启将关闭所有文档，未保存内容会先询问。 · 当前状态下不可用 }]\r\nError:      Assert.Equal() Failure: Values differ\r\n            Expected: myavalonia.host.command.document.save\r\n            Actual:   myavalonia.host.command.document.new\r\n            Stack Trace:\r\n              D:\\code\\local\\avalonia_dock_simple_test\\Host\\MyAvaloniaManagement.Tests\\WorkbenchCommandProjectionTests.cs(168,0): at MyAvaloniaManagement.Tests.WorkbenchCommandProjectionTests.<>c.<Palette普通命令只按菜单许可发现且Host保存以Disabled显示>b__7_3(WorkbenchCommandPaletteProjectionEntry save)"
+        }
+      ]
+    },
+    {
+      "file": {
+        "path": "artifacts/host-v18/implementation-20260921/p2-existing/p2-existing-ui.trx",
+        "sha256": "15a2e645a62e4ee12158bd03fc3bc3f5295b71ed105b48d291349e0bfb060aef"
+      },
+      "total": 18,
+      "executed": 18,
+      "passed": 18,
+      "failed": 0,
+      "skipped": 0,
+      "startedAt": "2026-09-21T07:37:05.0955365+08:00",
+      "finishedAt": "2026-09-21T07:37:14.1977066+08:00",
+      "v18Cases": [],
+      "failures": []
+    },
+    {
+      "file": {
+        "path": "artifacts/host-v18/implementation-20260921/p2-ui-behavior/p2-ui.trx",
+        "sha256": "098a4b06620ad03b343ebf048db0de4fdf29d6328d22c9dd16ea2b5ecca8b3b6"
+      },
+      "total": 17,
+      "executed": 17,
+      "passed": 10,
+      "failed": 7,
+      "skipped": 0,
+      "startedAt": "2026-09-21T07:42:13.3239569+08:00",
+      "finishedAt": "2026-09-21T07:42:20.9902965+08:00",
+      "v18Cases": [
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.状态刷新保留身份顺序和滚动而查询更改采用新的默认项",
+          "outcome": "Failed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: False, width: 800)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.组标题不增加键盘步骤或执行入口且中文预编辑回车只交给输入控件",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.默认跨禁用项选择可用结果且全部禁用和空查询结果不误执行",
+          "outcome": "Failed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.选中身份在执行前消失时本次回车不执行自动补选项且错误不被底部提示覆盖",
+          "outcome": "Failed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: False)",
+          "outcome": "Failed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: True, width: 640)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: True)",
+          "outcome": "Failed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.真实保存携带页面约束而全局入口无页面约束并保留创建意图",
+          "outcome": "Failed"
+        }
+      ],
+      "failures": [
+        {
+          "name": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.同名页面选择按实例切换并保留编辑内容且消失目标不新建",
+          "message": "Assert.Equal() Failure: Values differ\r\nExpected: 2\r\nActual:   1"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.状态刷新保留身份顺序和滚动而查询更改采用新的默认项",
+          "message": "Assert.True() Failure\r\nExpected: True\r\nActual:   False"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.默认跨禁用项选择可用结果且全部禁用和空查询结果不误执行",
+          "message": "Assert.Equal() Failure: Values differ\r\nExpected: 0\r\nActual:   1"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.选中身份在执行前消失时本次回车不执行自动补选项且错误不被底部提示覆盖",
+          "message": "Assert.Equal() Failure: Values differ\r\nExpected: 0\r\nActual:   1"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: False)",
+          "message": "System.NotSupportedException : 不支持的 Document 类型：myavalonia.plugin.v18-ui.document.test。"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: True)",
+          "message": "System.NotSupportedException : 不支持的 Document 类型：myavalonia.plugin.v18-ui.document.test。"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.真实保存携带页面约束而全局入口无页面约束并保留创建意图",
+          "message": "System.NotSupportedException : 不支持的 Document 类型：myavalonia.plugin.v18-ui.document.test。"
+        }
+      ]
+    },
+    {
+      "file": {
+        "path": "artifacts/host-v18/implementation-20260921/p2-ui-corrected/p2-ui.trx",
+        "sha256": "9c0eff6b87538869e4dbc64d9bcc25d3f5f56581d304f9b84f5ad709d909fe89"
+      },
+      "total": 17,
+      "executed": 17,
+      "passed": 16,
+      "failed": 1,
+      "skipped": 0,
+      "startedAt": "2026-09-21T07:43:19.2699751+08:00",
+      "finishedAt": "2026-09-21T07:43:27.1860362+08:00",
+      "v18Cases": [
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.默认跨禁用项选择可用结果且全部禁用和空查询结果不误执行",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.组标题不增加键盘步骤或执行入口且中文预编辑回车只交给输入控件",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: False, width: 800)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: True, width: 640)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: False)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.真实保存携带页面约束而全局入口无页面约束并保留创建意图",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.选中身份在执行前消失时本次回车不执行自动补选项且错误不被底部提示覆盖",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.状态刷新保留身份顺序和滚动而查询更改采用新的默认项",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: True)",
+          "outcome": "Passed"
+        }
+      ],
+      "failures": [
+        {
+          "name": "MyAvaloniaManagement.UiTests.CognitiveUxV8UiTests.同名页面选择按实例切换并保留编辑内容且消失目标不新建",
+          "message": "Assert.Contains() Failure: Sub-string not found\r\nString:    \"原目标已不可用，请确认新的选择后再执行。\"\r\nNot found: \"暂不可用\""
+        }
+      ]
+    },
+    {
+      "file": {
+        "path": "artifacts/host-v18/implementation-20260921/p2-ui-final/p2-ui.trx",
+        "sha256": "1634c9a7355d56466c67ca07e79f00065677661b93ddf385156e23c08d7a7f7c"
+      },
+      "total": 103,
+      "executed": 103,
+      "passed": 103,
+      "failed": 0,
+      "skipped": 0,
+      "startedAt": "2026-09-21T07:45:23.4249461+08:00",
+      "finishedAt": "2026-09-21T07:45:58.7414524+08:00",
+      "v18Cases": [
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.选中身份在执行前消失时本次回车不执行自动补选项且错误不被底部提示覆盖",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: True)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.同类型两个创建入口按原意图各自新建而不会复用同名已有页面(intent: \"link\", name: \"链接下载\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.真实保存携带页面约束而全局入口无页面约束并保留创建意图",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.默认跨禁用项选择可用结果且全部禁用和空查询结果不误执行",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.状态刷新保留身份顺序和滚动而查询更改采用新的默认项",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.组标题不增加键盘步骤或执行入口且中文预编辑回车只交给输入控件",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.同类型两个创建入口按原意图各自新建而不会复用同名已有页面(intent: \"profile\", name: \"个人内容来源\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: True, width: 640)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: False, width: 800)",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: False)",
+          "outcome": "Passed"
+        }
+      ],
+      "failures": []
+    },
+    {
+      "file": {
+        "path": "artifacts/host-v18/implementation-20260921/p2-unit/p2-unit.trx",
+        "sha256": "f6cef36989a9194c98ef72edc02c2f35123b9c1033a4e04fc1a9a02ad0d7c8af"
+      },
+      "total": 106,
+      "executed": 106,
+      "passed": 106,
+      "failed": 0,
+      "skipped": 0,
+      "startedAt": "2026-09-21T07:44:07.9076725+08:00",
+      "finishedAt": "2026-09-21T07:44:09.3094017+08:00",
+      "v18Cases": [
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.组相关性优先且同组保持连续并以身份稳定打破同名平局",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.四类实际投影包含身份动作和真实原因且重复查询不创建页面",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同等级可用项优先但状态刷新保留原顺序而新查询应用新顺序",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同组弱匹配页面仍连续排列而不会被同名创建入口穿插",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18TargetTests.目标相同仍重查业务禁用且不因为已有约束绕过CanExecute",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18TargetTests.旧页面约束拒绝且同一共享命令的普通调用仍执行当前页",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.禁用原因无事实时使用通用说明且命令名称不被推断为完成结果",
+          "outcome": "Passed"
+        }
+      ],
+      "failures": []
+    },
+    {
+      "file": {
+        "path": "artifacts/host-v18/implementation-20260921/p3-plugin/p3-plugin.trx",
+        "sha256": "bc7f54ef131b73ff86fd6ddbe7c87d2835fc557a9aef14fba43373cf7fb4af9a"
+      },
+      "total": 31,
+      "executed": 31,
+      "passed": 31,
+      "failed": 0,
+      "skipped": 0,
+      "startedAt": "2026-09-21T07:54:02.6461865+08:00",
+      "finishedAt": "2026-09-21T07:54:03.3032131+08:00",
+      "v18Cases": [],
+      "failures": []
+    },
+    {
+      "file": {
+        "path": "artifacts/host-v18/implementation-20260921/p3-unit/p3-unit.trx",
+        "sha256": "d97844d37bc3d4ead3ecd9dcbce96b9d9538944c6d272f605ed18e969ad694a8"
+      },
+      "total": 122,
+      "executed": 122,
+      "passed": 122,
+      "failed": 0,
+      "skipped": 0,
+      "startedAt": "2026-09-21T07:46:59.5296643+08:00",
+      "finishedAt": "2026-09-21T07:47:00.8781565+08:00",
+      "v18Cases": [
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.禁用原因无事实时使用通用说明且命令名称不被推断为完成结果(name: \"本章完成后暂停\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同等级可用项优先但状态刷新保留原顺序而新查询应用新顺序",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.禁用原因无事实时使用通用说明且命令名称不被推断为完成结果(name: \"预览小说正文导出\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18TargetTests.目标相同仍重查业务禁用且不因为已有约束绕过CanExecute",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.四类实际投影包含身份动作和真实原因且重复查询不创建页面",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.禁用原因无事实时使用通用说明且命令名称不被推断为完成结果(name: \"持续创作\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同组弱匹配页面仍连续排列而不会被同名创建入口穿插",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.禁用原因无事实时使用通用说明且命令名称不被推断为完成结果(name: \"取消当前工作流\")",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18TargetTests.旧页面约束拒绝且同一共享命令的普通调用仍执行当前页",
+          "outcome": "Passed"
+        },
+        {
+          "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.组相关性优先且同组保持连续并以身份稳定打破同名平局",
+          "outcome": "Passed"
+        }
+      ],
+      "failures": []
+    }
+  ],
+  "confirmedStageCommands": [
+    {
+      "stage": "p3-unit",
+      "command": "dotnet test Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj --no-restore -m:1 -warnaserror --filter \"FullyQualifiedName~V18|FullyQualifiedName~CognitiveUxV8Tests|FullyQualifiedName~WorkbenchCommand|FullyQualifiedName~DockWorkspaceNavigationTests|FullyQualifiedName~PluginNavigationTests|FullyQualifiedName~ToolCenterTests\" --logger \"trx;LogFileName=p3-unit.trx\" --results-directory artifacts/host-v18/implementation-20260921/p3-unit",
+      "configuration": "Debug",
+      "exitCode": 0
+    },
+    {
+      "stage": "p2-ui-final",
+      "command": "dotnet test Host/MyAvaloniaManagement.UiTests/MyAvaloniaManagement.UiTests.csproj --no-restore -m:1 -warnaserror --filter \"FullyQualifiedName~V18|FullyQualifiedName~WorkbenchCommandPresentationUiTests|FullyQualifiedName~UiRefreshSchedulerTests|FullyQualifiedName~ToolCenterUiTests|FullyQualifiedName~DocumentWindowV16UiTests|FullyQualifiedName~CognitiveUxV8UiTests\" --logger \"trx;LogFileName=p2-ui.trx\" --results-directory artifacts/host-v18/implementation-20260921/p2-ui-final",
+      "configuration": "Debug",
+      "exitCode": 0,
+      "renderEnvironmentVariables": [
+        "MYAVALONIA_V18_RENDER_DIRECTORY",
+        "MYAVALONIA_V8_RENDER_DIRECTORY"
+      ]
+    },
+    {
+      "stage": "p3-plugin",
+      "command": "dotnet test Host/MyAvaloniaManagement.PluginTests/MyAvaloniaManagement.PluginTests.csproj -c Release --no-restore -m:1 -warnaserror --filter \"(FullyQualifiedName~PluginHostBoundaryTests|FullyQualifiedName~HostLifecycleOwnershipTests|FullyQualifiedName~DocumentScopeManagerTests)&Category!=PackageAcceptance\" --logger \"trx;LogFileName=p3-plugin.trx\" --results-directory artifacts/host-v18/implementation-20260921/p3-plugin",
+      "configuration": "Release",
+      "exitCode": 0
+    }
+  ],
+  "attemptsWithoutTrx": [
+    "XAML AVLN2100: ListBoxItem style compiled binding lacked x:DataType; corrected before tests ran.",
+    "UI test CS7036: synthetic TappedEventArgs lacked PointerEventArgs; replaced with Headless mouse input before tests ran."
+  ],
+  "failureHandling": "Original red/failed TRX are retained, including invalid initial fixtures and old presentation assertions. Later successful runs are separate. No skipped tests, changed release thresholds or deleted behavior assertions were used to obtain success.",
+  "finalGate": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "exitCode": 0,
+    "runId": "20260920-235651-0945a5af8b7c",
+    "summary": {
+      "path": "artifacts/gate/20260920-235651-0945a5af8b7c/summary.json",
+      "sha256": "8147f708960f542133cfedd333173f8a0e9ddbb3da614951f84408f6746e68f8"
+    },
+    "startedAtUtc": "2026-09-21T07:56:50.6469436+08:00",
+    "finishedAtUtc": "2026-09-21T08:01:05.5394783+08:00",
+    "source": {
+      "revision": "0945a5af8b7ce9e5dc95bd3c85efbbbec3e0e260",
+      "tree": "b367222627f57c8567d4931ebe8cf80514f0153c",
+      "clean": true,
+      "files": 1062,
+      "sha256": "4C971F3FCFCD45581F3C5709A0862F17311AF1E5E10C88E50E05629879BA9A0A"
+    },
+    "stages": [
+      {
+        "id": "avalonia-layout-patch",
+        "status": "passed",
+        "durationMilliseconds": 605,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-235651-0945a5af8b7c\\pass-1"
+      },
+      {
+        "id": "dock-patch",
+        "status": "passed",
+        "durationMilliseconds": 589,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-235651-0945a5af8b7c\\pass-1"
+      },
+      {
+        "id": "restore",
+        "status": "passed",
+        "durationMilliseconds": 3003,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-235651-0945a5af8b7c\\pass-1"
+      },
+      {
+        "id": "build",
+        "status": "passed",
+        "durationMilliseconds": 18561,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-235651-0945a5af8b7c\\pass-1"
+      },
+      {
+        "id": "tests",
+        "status": "passed",
+        "durationMilliseconds": 226100,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-235651-0945a5af8b7c\\pass-1"
+      },
+      {
+        "id": "contracts",
+        "status": "passed",
+        "durationMilliseconds": 4088,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-235651-0945a5af8b7c\\pass-1"
+      },
+      {
+        "id": "packages",
+        "status": "passed",
+        "durationMilliseconds": 26,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-235651-0945a5af8b7c\\pass-1"
+      },
+      {
+        "id": "package-acceptance",
+        "status": "passed",
+        "durationMilliseconds": 1461,
+        "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-235651-0945a5af8b7c\\pass-1"
+      }
+    ],
+    "tests": [
+      {
+        "file": {
+          "path": "artifacts/gate/20260920-235651-0945a5af8b7c/pass-1/tests/host-plugin/host-plugin.trx",
+          "sha256": "3ab047d2f373542087fb10baf1145221e5774facb0549ef35596f74ef7e0bea3"
+        },
+        "total": 292,
+        "executed": 292,
+        "passed": 292,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-21T07:57:19.1396906+08:00",
+        "finishedAt": "2026-09-21T07:58:30.5047571+08:00",
+        "v18Cases": [],
+        "failures": []
+      },
+      {
+        "file": {
+          "path": "artifacts/gate/20260920-235651-0945a5af8b7c/pass-1/tests/host-ui/host-ui.trx",
+          "sha256": "0a553db7c2b71020d9a81dd4645cca545e69b59ee74d8dca67d890aac19609d0"
+        },
+        "total": 288,
+        "executed": 288,
+        "passed": 288,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-21T07:58:31.3078746+08:00",
+        "finishedAt": "2026-09-21T08:00:58.5604172+08:00",
+        "v18Cases": [
+          {
+            "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.状态刷新保留身份顺序和滚动而查询更改采用新的默认项",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.同类型两个创建入口按原意图各自新建而不会复用同名已有页面(intent: \"profile\", name: \"个人内容来源\")",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: True)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.真实保存携带页面约束而全局入口无页面约束并保留创建意图",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.选中身份在执行前消失时本次回车不执行自动补选项且错误不被底部提示覆盖",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.默认跨禁用项选择可用结果且全部禁用和空查询结果不误执行",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.组标题不增加键盘步骤或执行入口且中文预编辑回车只交给输入控件",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.页面命令使用显示的目标且关闭面板瞬间切页也不会误执行(switchDuringClose: False)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.同类型两个创建入口按原意图各自新建而不会复用同名已有页面(intent: \"link\", name: \"链接下载\")",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: True, width: 640)",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.UiTests.CommandPaletteV18UiTests.长名称多实例主题截图保留序号来源和完整可访问目标(dark: False, width: 800)",
+            "outcome": "Passed"
+          }
+        ],
+        "failures": []
+      },
+      {
+        "file": {
+          "path": "artifacts/gate/20260920-235651-0945a5af8b7c/pass-1/tests/host-unit/host-unit.trx",
+          "sha256": "8df86186bb042c52bf3c0b704e3376c08eabef662d9167182ead1c3f68eac06c"
+        },
+        "total": 626,
+        "executed": 626,
+        "passed": 626,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-21T07:57:16.6854628+08:00",
+        "finishedAt": "2026-09-21T07:57:18.2807593+08:00",
+        "v18Cases": [
+          {
+            "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.禁用原因无事实时使用通用说明且命令名称不被推断为完成结果(name: \"本章完成后暂停\")",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同组弱匹配页面仍连续排列而不会被同名创建入口穿插",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.同等级可用项优先但状态刷新保留原顺序而新查询应用新顺序",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.禁用原因无事实时使用通用说明且命令名称不被推断为完成结果(name: \"持续创作\")",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.CommandPaletteV18TargetTests.旧页面约束拒绝且同一共享命令的普通调用仍执行当前页",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.禁用原因无事实时使用通用说明且命令名称不被推断为完成结果(name: \"预览小说正文导出\")",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.禁用原因无事实时使用通用说明且命令名称不被推断为完成结果(name: \"取消当前工作流\")",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.CommandPaletteV18TargetTests.目标相同仍重查业务禁用且不因为已有约束绕过CanExecute",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.组相关性优先且同组保持连续并以身份稳定打破同名平局",
+            "outcome": "Passed"
+          },
+          {
+            "name": "MyAvaloniaManagement.Tests.CommandPaletteV18Tests.四类实际投影包含身份动作和真实原因且重复查询不创建页面",
+            "outcome": "Passed"
+          }
+        ],
+        "failures": []
+      },
+      {
+        "file": {
+          "path": "artifacts/gate/20260920-235651-0945a5af8b7c/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+          "sha256": "c773cceb526f9d44af1dcaa107aa62dd0c4b3200ff5030d9059cdba1d4952222"
+        },
+        "total": 1,
+        "executed": 1,
+        "passed": 1,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-21T08:01:04.7893759+08:00",
+        "finishedAt": "2026-09-21T08:01:05.4588207+08:00",
+        "v18Cases": [],
+        "failures": []
+      },
+      {
+        "file": {
+          "path": "artifacts/gate/20260920-235651-0945a5af8b7c/pass-1/tests/my-plug-test/my-plug-test.trx",
+          "sha256": "097178c39e0b00f7c48418bda8d0f5464a3cb8fe935bd18a38b1b3f372f5c005"
+        },
+        "total": 11,
+        "executed": 11,
+        "passed": 11,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-21T08:00:59.4051465+08:00",
+        "finishedAt": "2026-09-21T08:00:59.8776157+08:00",
+        "v18Cases": [],
+        "failures": []
+      },
+      {
+        "file": {
+          "path": "artifacts/gate/20260920-235651-0945a5af8b7c/pass-1/tests/sdk/sdk.trx",
+          "sha256": "571d81b106235632f8508f59cd73f7d661784094da61b05a1f958d97f73454a6"
+        },
+        "total": 91,
+        "executed": 91,
+        "passed": 91,
+        "failed": 0,
+        "skipped": 0,
+        "startedAt": "2026-09-21T07:57:14.4627647+08:00",
+        "finishedAt": "2026-09-21T07:57:15.9263867+08:00",
+        "v18Cases": [],
+        "failures": []
+      }
+    ],
+    "totalPassed": 1309,
+    "packages": {
+      "my-plug-test": {
+        "pluginId": "myavalonia.plugin.my-plug-test",
+        "archivePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260920-235651-0945a5af8b7c\\pass-1\\packages\\my-plug-test\\build-1\\MyPlugTest-win-x64.zip",
+        "sha256": "9B3954A692418AC0A04BB7D93A2D2A711696F020916CDFC1636F62E7BEA163E0",
+        "files": 8,
+        "manifestSha256": "93B4006555E65634300C0E1AF204CCC345A1739B432AD6FD9CDC384E2A567AE1",
+        "deterministic": false
+      }
+    },
+    "buildLog": {
+      "path": "artifacts/gate/20260920-235651-0945a5af8b7c/pass-1/logs/build-main.log",
+      "sha256": "386f028bcd309bc92b52f525fc16f9bc8bbdd3447f013c17977633dabbf1b921"
+    },
+    "releaseEligible": false,
+    "publishable": false
+  },
+  "documentationChecks": {
+    "status": "passed",
+    "checkedAt": "2026-09-21T07:55:57.0576706+08:00",
+    "markdownFiles": 216,
+    "repositoryLinks": 1679,
+    "changedFileAnchors": 0,
+    "optionalNeighbourLinks": [
+      {
+        "source": "docs/archive/plans/ai-workflow-plugin-exploration.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-plugin-architecture-review.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/src/BiliDownloaderPlugin.Plugin/Messaging/IBiliDownloaderEventBus.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-plugin-architecture-review.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-plugin-architecture-review.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-plugin-architecture-review.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/src/BiliDownloaderPlugin.Plugin/Plugin/BiliDownloaderPluginModule.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-workflow-studio/src/WorkflowStudio.Plugin/Plugin/WorkflowStudioModule.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-classic-game/src/ClassicGamePlugin.Plugin/Plugin/ClassicGamePluginModule.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-novel-generate/src/NovelGeneratePlugin.Plugin/Plugin/NovelCommands.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-novel-generate/src/NovelGeneratePlugin.Plugin/Features/Main/MainDocument.Workbench.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-layer-unpack/src/LayerUnpackPlugin.Plugin/Workflow/ArchiveWorkflowActions.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v2/g10-datang-accounting-help-v2.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v2/g11-my-small-tools-v2.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v2/g10-datang-accounting-help-v2.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v2/g11-my-small-tools-v2.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "url": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v3/g13-remove-v2-production-surface.md",
+        "url": "../../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "url": "../../../../../avalonia_dock_plug_test/myavalonia-baidu-netdisk/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "url": "../../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "url": "../../../../../avalonia_dock_plug_test/myavalonia-classic-game/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "url": "../../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "url": "../../../../../avalonia_dock_plug_test/myavalonia-fractal-art/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "url": "../../../../../avalonia_dock_plug_test/myavalonia-image-lab/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "url": "../../../../../avalonia_dock_plug_test/myavalonia-layer-unpack/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "url": "../../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "url": "../../../../../avalonia_dock_plug_test/myavalonia-workflow-studio/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "url": "../../../../../avalonia_dock_plug_test/myavalonia-xiancai-business-worker/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/README.md",
+        "url": "../../avalonia_dock_plug_test/myavalonia-workflow-studio/README.md",
+        "exists": true
+      },
+      {
+        "source": "docs/README.md",
+        "url": "../../avalonia_dock_plug_test/myavalonia-bili-downloader/README.md",
+        "exists": true
+      },
+      {
+        "source": "docs/README.md",
+        "url": "../../avalonia_dock_plug_test/myavalonia-video-security-player/README.md",
+        "exists": true
+      },
+      {
+        "source": "docs/README.md",
+        "url": "../../avalonia_dock_plug_test/myavalonia-datang-work/README.md",
+        "exists": true
+      },
+      {
+        "source": "docs/theory/attention-centered-dock-workspace-design.md",
+        "url": "../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/secret-video-player/design/architecture-design.md",
+        "exists": true
+      },
+      {
+        "source": "docs/theory/attention-centered-dock-workspace-design.md",
+        "url": "../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/secret-video-player/plan-history/G7.1-UI-RESPONSIBILITY-REFACTOR.md",
+        "exists": true
+      }
+    ],
+    "failures": [],
+    "methodChecks": [
+      {
+        "class": "CommandPaletteV18Tests",
+        "method": "组相关性优先且同组保持连续并以身份稳定打破同名平局",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18Tests",
+        "method": "同等级可用项优先但状态刷新保留原顺序而新查询应用新顺序",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18Tests",
+        "method": "禁用原因无事实时使用通用说明且命令名称不被推断为完成结果",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18Tests",
+        "method": "四类实际投影包含身份动作和真实原因且重复查询不创建页面",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18Tests",
+        "method": "同组弱匹配页面仍连续排列而不会被同名创建入口穿插",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18TargetTests",
+        "method": "旧页面约束拒绝且同一共享命令的普通调用仍执行当前页",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18TargetTests",
+        "method": "目标相同仍重查业务禁用且不因为已有约束绕过CanExecute",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18UiTests",
+        "method": "默认跨禁用项选择可用结果且全部禁用和空查询结果不误执行",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18UiTests",
+        "method": "组标题不增加键盘步骤或执行入口且中文预编辑回车只交给输入控件",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18UiTests",
+        "method": "状态刷新保留身份顺序和滚动而查询更改采用新的默认项",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18UiTests",
+        "method": "选中身份在执行前消失时本次回车不执行自动补选项且错误不被底部提示覆盖",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18UiTests",
+        "method": "页面命令使用显示的目标且关闭面板瞬间切页也不会误执行",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18UiTests",
+        "method": "真实保存携带页面约束而全局入口无页面约束并保留创建意图",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18UiTests",
+        "method": "同类型两个创建入口按原意图各自新建而不会复用同名已有页面",
+        "found": true
+      },
+      {
+        "class": "CommandPaletteV18UiTests",
+        "method": "长名称多实例主题截图保留序号来源和完整可访问目标",
+        "found": true
+      },
+      {
+        "class": "CognitiveUxV8Tests",
+        "method": "查询按名称精确前缀包含说明匹配排序且不做模糊猜测",
+        "found": true
+      },
+      {
+        "class": "CognitiveUxV8Tests",
+        "method": "功能目录与工具目录共用匹配优先级且同名不同来源和意图不合并",
+        "found": true
+      },
+      {
+        "class": "CognitiveUxV8Tests",
+        "method": "同名页面按运行时身份切换且关闭旧项绝不替换成同名新页面",
+        "found": true
+      },
+      {
+        "class": "CognitiveUxV8Tests",
+        "method": "页面与工具重复查询不发布通知或改变实例且退出后重新检查",
+        "found": true
+      },
+      {
+        "class": "WorkbenchCommandProjectionTests",
+        "method": "Palette普通命令只按菜单许可发现且Host保存以Disabled显示",
+        "found": true
+      },
+      {
+        "class": "WorkbenchCommandPresentationUiTests",
+        "method": "CtrlShiftP打开聚焦且重复打开保留查询Escape恢复焦点和快捷键",
+        "found": true
+      },
+      {
+        "class": "CognitiveUxV8UiTests",
+        "method": "搜索异步失败保留查询选择并阻止重复输入和窗口假取消且重试成功后交还焦点",
+        "found": true
+      },
+      {
+        "class": "ToolCenterUiTests",
+        "method": "命令面板工具使用独立身份打开隐藏或自动收起项并记录访问",
+        "found": true
+      },
+      {
+        "class": "DocumentWindowV16UiTests",
+        "method": "N01主窗和两个浮窗的新建互不串组",
+        "found": true
+      },
+      {
+        "class": "WorkbenchCommandDocumentTargetTests",
+        "method": "关闭先取消并排空Target再释放Scope且拒绝迟到调用",
+        "found": true
+      },
+      {
+        "class": "WorkbenchCommandPresentationUiTests",
+        "method": "工作线程状态变化切回UI线程且释放后不再刷新",
+        "found": true
+      },
+      {
+        "class": "WorkbenchCommandPresentationUiTests",
+        "method": "文件菜单和CtrlS绑定同一稳定保存命令且设计数据保持纯内存",
+        "found": true
+      },
+      {
+        "class": "CognitiveUxV8UiTests",
+        "method": "百入口长名称与不同主题可滚动且查询不创建插件",
+        "found": true
+      }
+    ]
+  },
+  "documentationCheckEvidence": {
+    "path": "artifacts/host-v18/implementation-20260921/documentation-checks.json",
+    "sha256": "9885f1151dcd79186b4c90575ee54ead054efc16112f3c76bd1136959339adf3"
+  },
+  "embeddedHelp": {
+    "status": "passed",
+    "checkedAt": "2026-09-21T07:59:32.4598436+08:00",
+    "assemblySha256": "E90AF4805F3D5EA2D06883660BFBB6B61713EE3C8AF67624560925806B43137C",
+    "obsoletePlanResourceAbsent": true,
+    "documents": [
+      {
+        "path": "Host/MyAvaloniaManagement/docs/README.md",
+        "resource": "Help.Repository.Host/MyAvaloniaManagement/docs/README.md",
+        "sourceSha256": "C98CEA6BC1A798B860774D9B90CF567EEE9D8A87B9B7F413FD700F719D76843D",
+        "embeddedSha256": "C98CEA6BC1A798B860774D9B90CF567EEE9D8A87B9B7F413FD700F719D76843D",
+        "matched": true
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/design/architecture.md",
+        "resource": "Help.Repository.Host/MyAvaloniaManagement/docs/design/architecture.md",
+        "sourceSha256": "0A88333DFE2C5152771F2C17F8615ADA793FAFFC1739CC09086EB05D19785ACC",
+        "embeddedSha256": "0A88333DFE2C5152771F2C17F8615ADA793FAFFC1739CC09086EB05D19785ACC",
+        "matched": true
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+        "resource": "Help.Repository.Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+        "sourceSha256": "F86015FBA28B44C8EC2E68E6DF29B57652BFC1FBB1DEDB5153A6373F2610CFBC",
+        "embeddedSha256": "F86015FBA28B44C8EC2E68E6DF29B57652BFC1FBB1DEDB5153A6373F2610CFBC",
+        "matched": true
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md",
+        "resource": "Help.Repository.Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md",
+        "sourceSha256": "5169B1CA6E51CE2320605FDBFE60B93254A2571442A1A53EE7AFFD7FD1D53B25",
+        "embeddedSha256": "5169B1CA6E51CE2320605FDBFE60B93254A2571442A1A53EE7AFFD7FD1D53B25",
+        "matched": true
+      },
+      {
+        "path": "README.md",
+        "resource": "Help.Repository.README.md",
+        "sourceSha256": "2B057EF83FBDC633741A7E01BC34B656BAF16487E6BE09B07A1764B99308C03A",
+        "embeddedSha256": "2B057EF83FBDC633741A7E01BC34B656BAF16487E6BE09B07A1764B99308C03A",
+        "matched": true
+      },
+      {
+        "path": "docs/README.md",
+        "resource": "Help.Repository.docs/README.md",
+        "sourceSha256": "E76BF95F398887AADCD8038489E436E5B5711F8B4B17257309F23AD65EBC6E80",
+        "embeddedSha256": "E76BF95F398887AADCD8038489E436E5B5711F8B4B17257309F23AD65EBC6E80",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/README.md",
+        "resource": "Help.Repository.docs/archive/README.md",
+        "sourceSha256": "4DED3A4FB86CC80F427F87BA85A55C020F0AA895E9FBA50D8C1EC38D2811CCF0",
+        "embeddedSha256": "4DED3A4FB86CC80F427F87BA85A55C020F0AA895E9FBA50D8C1EC38D2811CCF0",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "resource": "Help.Repository.docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "sourceSha256": "6DC3EDAAF02ED141D803A096B00B0DFA63398DFDA76AD031DCAF002FF3C57E8B",
+        "embeddedSha256": "6DC3EDAAF02ED141D803A096B00B0DFA63398DFDA76AD031DCAF002FF3C57E8B",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v18/development-acceptance.md",
+        "resource": "Help.Repository.docs/archive/records/host-v18/development-acceptance.md",
+        "sourceSha256": "96C1ACA63B94B474116CB1732749AAF5478D8329344C4CBB5146550B3C584117",
+        "embeddedSha256": "96C1ACA63B94B474116CB1732749AAF5478D8329344C4CBB5146550B3C584117",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/host-v18-command-palette-verification.md",
+        "resource": "Help.Repository.docs/maintenance/host-v18-command-palette-verification.md",
+        "sourceSha256": "9BC5BF479AAD1086E8D3BA13B1B984AF59D29763D9867AD83E53218BCEC66FF3",
+        "embeddedSha256": "9BC5BF479AAD1086E8D3BA13B1B984AF59D29763D9867AD83E53218BCEC66FF3",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/verification.md",
+        "resource": "Help.Repository.docs/maintenance/verification.md",
+        "sourceSha256": "79C3E2DBA74C9D2342B8FA20E28ABA850807B51B0C7091CF58A8E0CA5676D76F",
+        "embeddedSha256": "79C3E2DBA74C9D2342B8FA20E28ABA850807B51B0C7091CF58A8E0CA5676D76F",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/workbench-search.md",
+        "resource": "Help.Repository.docs/quick-start/workbench-search.md",
+        "sourceSha256": "86A7B4AFED2D5215F098C438A64154C4709F28F3E7EC69B050DAC92951F2F21C",
+        "embeddedSha256": "86A7B4AFED2D5215F098C438A64154C4709F28F3E7EC69B050DAC92951F2F21C",
+        "matched": true
+      },
+      {
+        "path": "docs/reference/workbench-commands.md",
+        "resource": "Help.Repository.docs/reference/workbench-commands.md",
+        "sourceSha256": "316B93FDB5ED6A73877DEF822B40B07F6213F3494911ECF9CBA50D60B5CDCFBB",
+        "embeddedSha256": "316B93FDB5ED6A73877DEF822B40B07F6213F3494911ECF9CBA50D60B5CDCFBB",
+        "matched": true
+      },
+      {
+        "path": "docs/roadmap/README.md",
+        "resource": "Help.Repository.docs/roadmap/README.md",
+        "sourceSha256": "ACCC9FF5EE9981E597A42C8F7065B3CB1FB5BE8669FF925E4198B950EDDF1CAD",
+        "embeddedSha256": "ACCC9FF5EE9981E597A42C8F7065B3CB1FB5BE8669FF925E4198B950EDDF1CAD",
+        "matched": true
+      }
+    ]
+  },
+  "embeddedHelpCheckEvidence": {
+    "path": "artifacts/host-v18/implementation-20260921/embedded-help-checks.json",
+    "sha256": "381a612958a26fe55c37e5970841ea5ac70a598d77035c20354babdab7f85d33"
+  },
+  "screenshots": [
+    {
+      "path": "artifacts/host-v18/implementation-20260921/screenshots/palette-empty-dark.png",
+      "sha256": "68a73e722a702029df0820fb83214cfa4a197fa5ab7a22703f0701e992138d4f"
+    },
+    {
+      "path": "artifacts/host-v18/implementation-20260921/screenshots/palette-empty-light.png",
+      "sha256": "691b4edb1955cb8def8ee6007366edd366563e2f4f23111a677e91b7f209f2e6"
+    },
+    {
+      "path": "artifacts/host-v18/implementation-20260921/screenshots/palette-failure.png",
+      "sha256": "6f229bedece7f0c0c58433a1b5c7e6561957406f9cfca603a388682e7129a5ef"
+    },
+    {
+      "path": "artifacts/host-v18/implementation-20260921/screenshots/palette-long-dark.png",
+      "sha256": "1d6366323b569df20ea712b541311234db7879bc3dda6b50fe820caa17053d9a"
+    },
+    {
+      "path": "artifacts/host-v18/implementation-20260921/screenshots/palette-long-light.png",
+      "sha256": "959f95a08ad239e46d9002f0695eb9aad5bd4306de2dfb493f05438ff4e629bc"
+    },
+    {
+      "path": "artifacts/host-v18/implementation-20260921/screenshots/palette-success.png",
+      "sha256": "63649fa92ab9968a27c5ce9648f7b0d6370f861d826c167e600b815fe378571f"
+    },
+    {
+      "path": "artifacts/host-v18/implementation-20260921/screenshots/palette-v18-dark.png",
+      "sha256": "14de2e480aec9ab5b3afc8200c2fff74e57a49e55adffe8c28bd12bc7a6c809c"
+    },
+    {
+      "path": "artifacts/host-v18/implementation-20260921/screenshots/palette-v18-light.png",
+      "sha256": "6079d7228801510bb2c7a7827a40a001a260a73714e4031fbec33ebc70df970a"
+    }
+  ],
+  "visualReview": {
+    "reviewed": [
+      "palette-v18-dark.png",
+      "palette-long-light.png",
+      "palette-failure.png"
+    ],
+    "observations": "Confirmed selected background, visible instance/source, keyboard footer, long-list scrolling, production icon rendering and error text separate from the Enter hint. An initial transparent local background override was corrected and protected by a UI assertion.",
+    "limitation": "Headless screenshots and PreeditText simulation do not certify native Windows IME, native focus or multi-monitor DPI."
+  },
+  "excluded": {
+    "aiflow": "not used or read",
+    "windowsCI": "not run",
+    "seal": "not run",
+    "windowsSmoke": "not run",
+    "releaseCoverage": "not run",
+    "repeatability": "not run",
+    "deployment": "not run",
+    "publication": "not run",
+    "nativeDesktop": "pending: Windows IME, native focus and multi-monitor DPI",
+    "gateToolSelfTests": "not rerun: Gate implementation/configuration unchanged"
+  }
 }
