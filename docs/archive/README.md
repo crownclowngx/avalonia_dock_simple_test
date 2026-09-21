@@ -60,7 +60,8 @@
 ### host-v20
 
 - [历史布局退役开发记录](records/host-v20/development-acceptance.md)、[最终开发证据](records/host-v20/development-evidence.json)
-- [逐项测试去向与矩阵](records/host-v20/test-matrix.md)；本轮无部署或发布。
+- [逐项测试去向与矩阵](records/host-v20/test-matrix.md)
+- [单文件自包含交付说明](records/host-v20/local-deployment-guide.md)、[2026-09-21 本机部署证据](records/host-v20/local-deployment-20260921.json)
 
 ### host-v19
 

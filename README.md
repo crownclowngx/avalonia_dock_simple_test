@@ -8,9 +8,9 @@ MyAvaloniaManagement 是基于 .NET 10、Avalonia 和 Dock 的模块化桌面工
 
 正式支持范围为 Windows x64、同一团队维护的可信进程内插件。更新插件需要退出 Host、整体替换插件目录并重新启动；不提供插件沙箱、在线市场或热卸载。macOS 仍为[实验路径](docs/quick-start/macos-experiment.md)。
 
-当前源码已实施 V19 复杂度收敛，实际开发验证见[V19 开发记录](docs/archive/records/host-v19/development-acceptance.md)。V19 单文件自包含安装版的交付状态、产物身份和清理结果见[本机部署](docs/maintenance/local-deployment.md)。既有[手工验收确认](docs/archive/records/host/manual-acceptance-20260921.md)保留原始范围，本机部署不扩展人工验收结论。
+V19 复杂度收敛的实际开发验证见[V19 开发记录](docs/archive/records/host-v19/development-acceptance.md)。最新单文件自包含安装版的交付状态、产物身份和清理结果见[本机部署](docs/maintenance/local-deployment.md)。既有[手工验收确认](docs/archive/records/host/manual-acceptance-20260921.md)保留原始范围，本机部署不扩展人工验收结论。
 
-当前源码已实施 [V20 历史布局退役与现行入口收敛](docs/archive/plans/host-v20-layout-retirement-plan.md)：Layout 只支持 V3，旧文件不参与恢复，旧文档创建分组查询已删除。实际验证与逐项去向见[开发记录](docs/archive/records/host-v20/development-acceptance.md)及[专用开发验证](docs/maintenance/host-v20-layout-retirement-verification.md)。本轮未部署或发布，不扩展 V19 的人工验收范围。
+当前源码已实施 [V20 历史布局退役与现行入口收敛](docs/archive/plans/host-v20-layout-retirement-plan.md)：Layout 只支持 V3，旧文件不参与恢复，旧文档创建分组查询已删除。实际验证与逐项去向见[开发记录](docs/archive/records/host-v20/development-acceptance.md)及[专用开发验证](docs/maintenance/host-v20-layout-retirement-verification.md)。后续本机交付见[专用说明](docs/archive/records/host-v20/local-deployment-guide.md)，完成状态以部署 JSON 为准，不扩展 V19 的人工验收范围。
 
 ## 最短启动步骤
 

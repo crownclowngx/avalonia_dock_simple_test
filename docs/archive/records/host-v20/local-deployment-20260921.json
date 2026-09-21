@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "recordType": "host-v20-local-single-exe-deployment",
+  "status": "pending",
+  "date": "2026-09-21",
+  "target": "D:\\data\\avalonia",
+  "note": "构建前占位；实际构建、交付、核验和清理完成后仅回填此非嵌入 JSON。"
+}
