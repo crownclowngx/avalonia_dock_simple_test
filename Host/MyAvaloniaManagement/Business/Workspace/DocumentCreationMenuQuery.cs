@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System;
 using MyAvaloniaManagement.Business.Lifecycle;
 using MyAvaloniaManagement.PluginSdk;
@@ -40,13 +39,4 @@ internal sealed class DocumentCreationMenuQuery
 
     /// <summary>轻量判定只读取指定身份；分类路径诊断仍在构建真实目录时执行并按原规则去重。</summary>
     internal bool HasCreationEntry(DocumentTypeId id, CreationIntentId? intentId) => _catalog.HasCreationEntry(id, intentId);
-
-    /// <summary>
-    /// 获取按分类分组的创建入口；一个文档类型可以贡献多个入口。
-    /// </summary>
-    public Dictionary<string, List<DocumentCreationMenuEntry>>
-        GetCreationEntriesByCategory() =>
-        _catalog.GetCreationEntries()
-            .GroupBy(entry => entry.MenuCategory)
-            .ToDictionary(group => group.Key, group => group.ToList());
 }

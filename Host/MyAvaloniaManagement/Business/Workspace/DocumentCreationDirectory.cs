@@ -26,7 +26,7 @@ internal sealed record DocumentCreationCategory(
     IReadOnlyList<DocumentCreationItem> Items,
     int EntryCount);
 
-/// <summary>把已经排序的创建入口组织成分类树，同时保留原始入口顺序供搜索和旧版使用。</summary>
+/// <summary>把已经排序的创建入口组织成分类树，同时保留原始入口顺序供搜索和列表展示使用。</summary>
 /// <remarks>
 /// 构造器只处理描述数据，不持有 Provider、工厂或控件。树的可变字典只存在于构造期间，
 /// 对外交付数组的只读包装，从而不会因为某个视图展开节点而修改其他视图的数据。

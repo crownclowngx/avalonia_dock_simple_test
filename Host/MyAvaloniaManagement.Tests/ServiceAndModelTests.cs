@@ -110,12 +110,13 @@ public sealed class ServiceAndModelTests
             AddDocument<VisibleDocumentD>(services, builder, "uncategorized", "未分类", "其他");
         });
 
-        var groups = context.Provider.GetRequiredService<DocumentCreationMenuQuery>()
-            .GetCreationEntriesByCategory();
+        // 直接观察展示目录的分类和计数，不在测试中重建已经退出的分组 Dictionary。
+        var categories = context.Provider.GetRequiredService<DocumentCreationMenuQuery>()
+            .ReadDirectory().Categories;
 
-        Assert.Equal(2, groups["分类一"].Count);
-        Assert.Single(groups["分类二"]);
-        Assert.Contains("其他", groups.Keys);
+        Assert.Equal(2, Assert.Single(categories, category => category.Name == "分类一").EntryCount);
+        Assert.Equal(1, Assert.Single(categories, category => category.Name == "分类二").EntryCount);
+        Assert.Contains(categories, category => category.Name == "其他");
     }
 
     [Fact]
@@ -142,10 +143,13 @@ public sealed class ServiceAndModelTests
                 false);
         });
 
+        // 同一文档的多个 Intent 是不同入口，目录必须保持声明顺序和完整身份。
         var entries = context.Provider.GetRequiredService<DocumentCreationMenuQuery>()
-            .GetCreationEntriesByCategory()["测试"];
+            .ReadDirectory().Items
+            .Where(item => item.Entry.DocumentTypeId.Value == "myavalonia.plugin.host-tests.document.multi-intent")
+            .Select(item => item.Entry).ToArray();
 
-        Assert.Equal(2, entries.Count);
+        Assert.Equal(2, entries.Length);
         Assert.All(entries, entry => Assert.Equal(
             "myavalonia.plugin.host-tests.document.multi-intent",
             entry.DocumentTypeId.Value));
