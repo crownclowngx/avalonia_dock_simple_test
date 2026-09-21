@@ -28,9 +28,8 @@ internal sealed class WorkspacePaletteActions(WorkspaceSession workspace, Docume
 {
     internal bool CanExecute(WorkbenchPaletteIdentity identity) => identity switch
     {
-        FunctionPaletteIdentity function => workspace.CanCreateDocuments && functions.ReadDirectory().Items.Any(item =>
-            item.Entry.DocumentTypeId == function.DocumentTypeId && item.Entry.CreationIntentId == function.IntentId),
-        PagePaletteIdentity page => workspace.GetOpenPages().Any(item => item.Id == page.Id && item.CanActivate),
+        FunctionPaletteIdentity function => workspace.CanCreateDocuments && functions.HasCreationEntry(function.DocumentTypeId, function.IntentId),
+        PagePaletteIdentity page => workspace.CanActivatePage(page.Id),
         ToolPaletteIdentity tool => tools.CanOpen(tool.Id.Value),
         _ => false
     };
@@ -70,7 +69,7 @@ internal sealed class WorkspacePaletteActions(WorkspaceSession workspace, Docume
             if (identity is FunctionPaletteIdentity or PagePaletteIdentity &&
                 workspace.GetActiveDocument() is { } page && page.PageId == targetId &&
                 (identity is not PagePaletteIdentity selected || page.PageId == selected.Id) &&
-                workspace.GetOpenPages().Any(item => item.Id == page.PageId && item.CanActivate))
+                workspace.CanActivatePage(page.PageId))
                 view = page.PreparedView;
             else if (identity is ToolPaletteIdentity tool && tools.Capture().Any(item => item.ToolId == tool.Id.Value && item.IsVisible) &&
                 workspace.CreatedTools.TryGetValue(tool.Id.Value, out var adapter))

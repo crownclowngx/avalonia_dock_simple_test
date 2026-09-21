@@ -16,6 +16,11 @@
 
 V18 的 `WorkbenchPalettePresentation` 保存纯值展示快照及分组排序规则。Palette 投影继续汇合四类已声明来源，不增加目录或业务执行器；View 只维护查询、选择、滚动和预编辑输入会话。页面命令的 `WorkbenchCommandTargetExpectation` 只保存 PageId 和上下文代次，随一次调用传给共享 Executor，并在最终调用前重查；不进入 Command Store，也不拥有模型、窗口或 Scope。组首标记只是行装饰，组标题不是可执行候选。详见[V18 专用验证](../../../../docs/maintenance/host-v18-command-palette-verification.md)。
 
+V19 的 `DocumentCreationMenuQuery` 直接依赖 `WorkspaceCatalog`，读取纯声明不需要 Session。
+`HasCreationEntry(DocumentTypeId, CreationIntentId)` 和 `WorkspaceSession.CanActivatePage(PageId)`
+只检查请求身份及实时状态，Palette 的可用性和焦点复核不再生成全量分类树/页面展示列表。
+完整展示查询继续保留原排序、分类诊断和单次布局快照；不新增长期缓存或第二份页面索引。
+
 `ServiceCollectionExtensions.AddApplicationServices` 在入口确定共享 Builder、Provider 所有者、Scope 目录和退出参与者；同类私有方法分别登记布局、导航工具、看板、Host 交互、Workflow、文档用例、Registry、命令、插件生命周期、工作区激活和 Session。所有调用保持原始注册顺序，简单的 WorkspaceCatalog 合并工厂仍直接可见；每个工厂继续在原解析时机创建对象，成功交付前记录实际参与者。同实例接口映射与 Session.DockFactory 别名不产生第二份所有权。
 
 V14 自动重启在 Program 入口先分流无插件助手；正常 Host 由 `HostRestartCoordinator` 协调单次请求，复用 MainWindow、工作区关闭许可和最终布局保存。`PluginEnablementService` 持有设置冻结门，`RestartHandoffSession` 由 Program 持有并借给 DI，避免 Runtime 释放时丢失交接。Program 检查 Shutdown 结构化结果及诊断关闭后才发送最终许可；助手确认许可并等旧进程实际退出后创建一次新 Host。职责、取消和诊断详见[自动重启契约](../../../../docs/reference/host-restart.md)。

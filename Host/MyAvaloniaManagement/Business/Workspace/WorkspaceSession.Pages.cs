@@ -48,6 +48,16 @@ internal sealed partial class WorkspaceSession
         return true;
     }
 
+    /// <summary>
+    /// 为按钮和焦点恢复只检查指定页面，不排序、格式化或投影其他页面。沿用已发布引用表和
+    /// 实时挂接/关闭/可用性规则，不建立第二份 PageId 索引或需要失效通知的长期缓存。
+    /// </summary>
+    internal bool CanActivatePage(WorkspacePageId id)
+    {
+        var page = _publishedPages.Keys.FirstOrDefault(candidate => candidate.PageId == id);
+        return page is not null && CanActivatePage(page);
+    }
+
     private bool IsPublishedPage(ManagedDocumentDockable page) => !_disposed && _rootDock is not null &&
         _ownedDocuments.Contains(page) && DockTreeNavigator.FindDocumentDock(_rootDock, page) is not null;
 

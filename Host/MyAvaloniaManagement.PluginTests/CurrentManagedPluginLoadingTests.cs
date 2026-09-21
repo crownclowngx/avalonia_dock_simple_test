@@ -72,13 +72,13 @@ public sealed class CurrentManagedPluginLoadingTests
             // 真实 ZIP 不能只停在 Loader 或 Registry。WorkspaceSession 必须从同一个冻结目录
             // 取得四个创建入口和插件 Tool 描述符，证明最终 Host 创建链没有使用测试专用注册表。
             var workspace = provider.GetRequiredService<WorkspaceSession>();
-            var entries = workspace.GetAllDocumentCreationEntries().ToArray();
+            var entries = provider.GetRequiredService<WorkspaceCatalog>().GetCreationEntries().ToArray();
             var excel = entries.Single(item => item.DocumentTypeId == MyPlugTestContributionIds.ExcelGetUrlGeneratorDocument);
             Assert.Equal(MyPlugTestContributionIds.Plugin, excel.OwnerId);
             Assert.Equal($"plugin:{MyPlugTestContributionIds.Plugin}/excel-table", excel.IconPath);
             Assert.Equal(
                 4,
-                workspace.GetAllDocumentCreationEntries().Count(entry =>
+                provider.GetRequiredService<WorkspaceCatalog>().GetCreationEntries().Count(entry =>
                     entry.DocumentTypeId.Value.StartsWith(
                         MyPlugTestContributionIds.Plugin.Value + ".document.",
                         StringComparison.Ordinal)));

@@ -205,10 +205,6 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         return false;
     }
 
-    /// <summary>取得当前可用的全部 Document 创建菜单入口。</summary>
-    internal IEnumerable<DocumentCreationMenuEntry> GetAllDocumentCreationEntries() =>
-        _catalog.GetCreationEntries();
-
     /// <summary>解析当前可用且所有权已经冻结的 Document 注册。</summary>
     internal bool TryGetPersistablePluginDocumentRegistration(
         DocumentTypeId documentTypeId,

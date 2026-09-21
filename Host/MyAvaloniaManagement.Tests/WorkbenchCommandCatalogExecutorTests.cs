@@ -28,6 +28,8 @@ public sealed class WorkbenchCommandCatalogExecutorTests
         var catalog = await Task.Run(() => provider.GetRequiredService<WorkbenchCommandCatalog>());
         Assert.Equal(7, catalog.Entries.Count);
         Assert.All(catalog.Entries, entry => Assert.IsType<HostWorkbenchCommandCatalogEntry>(entry));
+        var functions = await Task.Run(() => provider.GetRequiredService<MyAvaloniaManagement.Business.Workspace.DocumentCreationMenuQuery>());
+        Assert.Single(functions.ReadDirectory().Items);
     }
 
     [Theory]

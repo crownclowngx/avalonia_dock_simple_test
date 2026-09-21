@@ -253,7 +253,7 @@ public sealed class HostDockAdapterTests
             new SelectiveToolFactory(new ToolTypeId("myavalonia.host.tool.never")),
             availability: availability);
 
-        Assert.Empty(workspace.GetAllDocumentCreationEntries());
+        Assert.False(workspace.TryGetPersistablePluginDocumentRegistration(documentId, out _));
         Assert.Empty(workspace.GetAvailableToolDescriptors());
         Assert.Throws<InvalidOperationException>(() => activator.ActivateDocument(documentId));
         Assert.Throws<InvalidOperationException>(() => activator.ActivateTool(toolId));

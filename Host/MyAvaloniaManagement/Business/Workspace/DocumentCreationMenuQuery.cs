@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System;
 using MyAvaloniaManagement.Business.Lifecycle;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Workspace;
 
@@ -10,13 +11,13 @@ namespace MyAvaloniaManagement.Business.Workspace;
 /// </summary>
 internal sealed class DocumentCreationMenuQuery
 {
-    private readonly WorkspaceSession _workspace;
+    private readonly WorkspaceCatalog _catalog;
     private readonly PluginAvailabilityReadModel? _availability;
     private readonly HashSet<string> _reportedInvalidPaths = new(StringComparer.Ordinal);
 
-    public DocumentCreationMenuQuery(WorkspaceSession workspace, PluginAvailabilityReadModel? availability = null)
+    public DocumentCreationMenuQuery(WorkspaceCatalog catalog, PluginAvailabilityReadModel? availability = null)
     {
-        _workspace = workspace ?? throw new ArgumentNullException(nameof(workspace));
+        _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
         _availability = availability;
     }
 
@@ -28,7 +29,7 @@ internal sealed class DocumentCreationMenuQuery
     }
 
     /// <summary>读取当前可用入口并构建独立目录，整个过程不会实例化插件页面。</summary>
-    internal DocumentCreationDirectory ReadDirectory() => new(_workspace.GetAllDocumentCreationEntries(), category =>
+    internal DocumentCreationDirectory ReadDirectory() => new(_catalog.GetCreationEntries(), category =>
     {
         lock (_reportedInvalidPaths)
         {
@@ -37,12 +38,15 @@ internal sealed class DocumentCreationMenuQuery
         }
     });
 
+    /// <summary>轻量判定只读取指定身份；分类路径诊断仍在构建真实目录时执行并按原规则去重。</summary>
+    internal bool HasCreationEntry(DocumentTypeId id, CreationIntentId? intentId) => _catalog.HasCreationEntry(id, intentId);
+
     /// <summary>
     /// 获取按分类分组的创建入口；一个文档类型可以贡献多个入口。
     /// </summary>
     public Dictionary<string, List<DocumentCreationMenuEntry>>
         GetCreationEntriesByCategory() =>
-        _workspace.GetAllDocumentCreationEntries()
+        _catalog.GetCreationEntries()
             .GroupBy(entry => entry.MenuCategory)
             .ToDictionary(group => group.Key, group => group.ToList());
 }

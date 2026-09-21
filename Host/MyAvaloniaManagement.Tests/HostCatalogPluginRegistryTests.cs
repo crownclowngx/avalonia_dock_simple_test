@@ -122,7 +122,7 @@ public sealed class HostCatalogPluginRegistryTests
         Assert.Equal(2, context.Workspace.CreatedTools.Count);
         Assert.Equal(
             [HostExtensionIds.WelcomeDocument],
-            context.Workspace.GetAllDocumentCreationEntries()
+            context.Provider.GetRequiredService<WorkspaceCatalog>().GetCreationEntries()
                 .Select(item => item.DocumentTypeId));
     }
 

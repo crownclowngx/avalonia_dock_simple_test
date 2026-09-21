@@ -110,7 +110,7 @@ public sealed class ServiceAndModelTests
             AddDocument<VisibleDocumentD>(services, builder, "uncategorized", "未分类", "其他");
         });
 
-        var groups = new DocumentCreationMenuQuery(context.Workspace)
+        var groups = context.Provider.GetRequiredService<DocumentCreationMenuQuery>()
             .GetCreationEntriesByCategory();
 
         Assert.Equal(2, groups["分类一"].Count);
@@ -142,7 +142,7 @@ public sealed class ServiceAndModelTests
                 false);
         });
 
-        var entries = new DocumentCreationMenuQuery(context.Workspace)
+        var entries = context.Provider.GetRequiredService<DocumentCreationMenuQuery>()
             .GetCreationEntriesByCategory()["测试"];
 
         Assert.Equal(2, entries.Count);

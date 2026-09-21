@@ -60,6 +60,16 @@ internal sealed class WorkspaceCatalog
         return false;
     }
 
+    /// <summary>
+    /// 按精确文档类型和创建意图读取当前可用性，不构建分类树或全量展示记录。没有声明意图的
+    /// 类型才接受默认入口；有意图的类型不能把 null 或未知意图隐式解释为第一项。
+    /// </summary>
+    internal bool HasCreationEntry(DocumentTypeId id, CreationIntentId? intentId) =>
+        TryGetDocument(id, out var registration) &&
+        (registration.Descriptor.CreationIntents.Count == 0
+            ? intentId is null
+            : intentId is not null && registration.Descriptor.CreationIntents.Any(intent => intent.IntentId == intentId));
+
     internal bool TryGetHostDocument(
         DocumentTypeId id,
         out HostWorkspaceDocumentRegistration registration) =>

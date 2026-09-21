@@ -11,6 +11,55 @@ namespace MyAvaloniaManagement.Tests;
 /// <summary>用真实工作区和插件初始化探针验证 V8 身份、发现与执行边界。</summary>
 public sealed class CognitiveUxV8Tests
 {
+    [Fact]
+    public void V19指定功能查询严格区分默认入口和声明意图且不创建页面()
+    {
+        using var context = DocumentTestContext.Create();
+        var query = context.Provider.GetRequiredService<DocumentCreationMenuQuery>();
+        var catalogue = context.Provider.GetRequiredService<WorkspaceCatalog>();
+        Assert.True(query.HasCreationEntry(TestDocumentIds.TypeId, new("sample-intent")));
+        Assert.False(query.HasCreationEntry(TestDocumentIds.TypeId, null));
+        Assert.False(query.HasCreationEntry(TestDocumentIds.TypeId, new("missing")));
+        Assert.False(query.HasCreationEntry(new("myavalonia.plugin.missing.document.test"), null));
+        var welcome = MyAvaloniaManagement.Business.Constants.HostExtensionIds.WelcomeDocument;
+        Assert.True(query.HasCreationEntry(welcome, null));
+        Assert.False(query.HasCreationEntry(welcome, new("sample-intent")));
+        Assert.Equal(catalogue.GetCreationEntries().ToArray(), query.ReadDirectory().Items.Select(item => item.Entry));
+        Assert.Empty(context.Provider.GetRequiredService<DocumentTestProbe>().ActivationContexts);
+        Assert.Empty(context.Workspace.GetDocuments());
+    }
+
+    [Fact]
+    public async Task V19指定页面查询与真实展示一致并在关闭撤销移除和退出后即时重查()
+    {
+        using var context = DocumentTestContext.Create();
+        _ = context.CreateMainWindowViewModel();
+        var page = await context.Workspace.CreateAndPublishDocumentAsync(TestDocumentIds.TypeId, new NewDocumentActivation("目标"));
+        var actions = context.Provider.GetRequiredService<WorkspacePaletteActions>();
+        var identity = new PagePaletteIdentity(page.PageId);
+        void AssertState(bool expected)
+        {
+            Assert.Equal(expected, context.Workspace.CanActivatePage(page.PageId));
+            Assert.Equal(expected, actions.CanExecute(identity));
+            Assert.Equal(expected, context.Workspace.GetOpenPages().Any(item => item.Id == page.PageId && item.CanActivate));
+        }
+        AssertState(true);
+        Assert.False(context.Workspace.CanActivatePage(new WorkspacePageId(Guid.NewGuid())));
+        using (var approval = await context.Provider.GetRequiredService<DocumentCloseCoordinator>().PrepareRangeCloseAsync([page]))
+        {
+            Assert.NotNull(approval);
+            AssertState(false);
+            Assert.NotEmpty(await actions.ExecuteAsync(identity));
+        }
+        AssertState(true);
+        context.Workspace.DockFactory.RemoveDockable(page, collapse: false);
+        AssertState(false);
+        context.Workspace.ReleaseDocument(page);
+        AssertState(false);
+        context.Workspace.BeginShutdown();
+        AssertState(false);
+    }
+
     [Theory]
     [InlineData("Excel", " excel ", "", 0)]
     [InlineData("Excel 审核", "excel", "", 1)]
@@ -118,6 +167,7 @@ public sealed class CognitiveUxV8Tests
         for (var index = 0; index < 3; index++)
         {
             Assert.Equal(before, context.Workspace.GetOpenPages());
+            Assert.True(context.Workspace.CanActivatePage(document.PageId));
             Assert.Equal(beforeTools, query.Capture());
             Assert.Equal(documents, context.Workspace.GetDocuments());
             Assert.Equal(tools, context.Workspace.CreatedTools.Values);
