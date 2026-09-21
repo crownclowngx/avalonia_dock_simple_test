@@ -7,6 +7,23 @@ public sealed class HelpContentTests
 {
     private readonly HelpContentCatalog _catalog = new();
 
+    [Theory]
+    [InlineData("docs/archive/plans/host-v19-complexity-reduction-plan.md")]
+    [InlineData("docs/maintenance/host-v19-complexity-verification.md")]
+    [InlineData("docs/archive/records/host-v19/development-acceptance.md")]
+    [InlineData("docs/archive/records/host-v19/test-matrix.md")]
+    [InlineData("Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md")]
+    public void V19专用文档归档后仍可从嵌入帮助读取和渲染(string path)
+    {
+        var source = _catalog.ReadRepository(path);
+        Assert.StartsWith("# ", source);
+        Assert.True(source.Length > 200);
+        var html = new HelpMarkdownRenderer(_catalog).RenderMarkdown(source);
+        Assert.Contains("<h1", html);
+        Assert.DoesNotContain("HELPMATH", html);
+        Assert.DoesNotContain("](/", source);
+    }
+
     [Fact]
     public void EightChaptersHaveGuidesAndAllFourTheoryOriginalsAreEmbedded()
     {

@@ -1,7 +1,7 @@
 # V19 Host 复杂度收敛开发记录
 
-> 用途：记录 V19 实施、行为修复、专项验证及最终开发门禁的实际证据。日期：2026-09-21。状态：实施中；未进行本轮实机人工验收、安装目录部署或公开发布。
-> 方案：[复杂度收敛计划](../../../roadmap/host-v19-complexity-reduction-plan.md)；矩阵：[专项验证](../../../roadmap/host-v19-complexity-verification.md)。
+> 用途：记录 V19 实施、行为修复、专项验证及最终开发门禁的实际证据。日期：2026-09-21。状态：代码实施与阶段专项已完成；最终完整验证以 [development-evidence.json](development-evidence.json) 为准。本轮未进行新的实机人工验收、安装目录部署或公开发布。
+> 方案：[复杂度收敛计划](../../plans/host-v19-complexity-reduction-plan.md)；矩阵：[专项验证](../../../maintenance/host-v19-complexity-verification.md)。
 
 ## P0：固定输入与基线
 
@@ -20,7 +20,7 @@ P0 两项风险均已通过确定性测试复现：`DocumentCloseTests.V19干净
 
 恢复确认缺口先以局部 `try/finally` 修复，保留原始确认异常及原件/备份内容；P2 再统一创建到发布的回滚义务。该测试还断言 Scope 立即释放、生命周期取消先于模型释放、未发布和零写入。
 
-P1–P6 正在执行。各项真实测试方法、红绿结果、设计取舍和最终验证在完成对应工作后追加；本记录不提前声明覆盖或通过。
+以下按实际阶段追加真实测试、红绿结果和设计取舍。完整 47 项矩阵对应的测试/审查落点见[逐项映射](test-matrix.md)，最终同一输入的结果在非嵌入 JSON 中展开。
 
 恢复最小修复验证：DocumentPersistenceTests 21/21 通过，证据 artifacts/host-v19/p0-risk-reproduction/recovery-minimal-green.trx。
 
@@ -36,7 +36,7 @@ P1–P6 正在执行。各项真实测试方法、红绿结果、设计取舍和
 
 新增 `PendingWorkspaceDocument`，仅持有候选身份和回调 Session 的回滚义务；不直接释放模型/View/Scope。创建、读取路径登记、恢复确认和发布串成同一个局部 using 生命周期，不再逐层约定 nullable pending 的转移。Session 统一撤销部分插入、释放和清除持久化/恢复登记；清理异常只记录诊断，保留原始失败。成功发布后义务解除，重复 Dispose 无副作用。
 
-新增 `V19恢复确认等待期间退出仍由会话持有候选_发布拒绝后清除全部状态`（R01/R03/R05/R07）、`V19候选发布成功后重复释放义务不释放已发布Scope`（R01/R04）及确认异常测试的清理异常参数（R06）。原 `N07N08初始化失败或等待期间退出均不发布并仅释放一次`、`N08目标插入后失败撤销部分写入且重复发布不移动原页面` 继续覆盖失败阶段和目标语义（R02/R04/R08）。
+新增 `V19恢复确认等待期间退出仍由会话持有候选_发布拒绝后清除全部状态`（R04/R06）、`V19候选发布成功后重复释放义务不释放已发布Scope`（R02）及确认异常测试的清理异常参数（R05）。原 `N07N08初始化失败或等待期间退出均不发布并仅释放一次`、`N08目标插入后失败撤销部分写入且重复发布不移动原页面` 继续覆盖失败阶段和目标语义（R03/R04/R08）。
 
 Unit 61/61、Plugin 所有权 56/56、Document/Restart Headless UI 73/73 通过，无跳过。证据目录 `artifacts/host-v19/p2-rollback`，结果分别为 `rollback-final.trx`、`ownership-plugin.trx`、`rollback-ui.trx`。编译阶段发现的测试属性名与命名空间错误已修正，未将编译失败登记为行为红灯。
 
@@ -64,4 +64,12 @@ Unit 181/181、相关 Headless UI 37/37 通过，无跳过；`artifacts/host-v19
 
 ## P6：最终审查中的补充修复
 
-`V19发布与撤回观察者均失败仍释放候选并保留首次异常` 复现了 R04/R06/C09 的另一个边界：Scope 已释放，但多播事件中第一个观察者的异常阻断了后续观察者收到撤回，可能保留旧 Target 引用。最初夹具在 Provider Dispose 时又解析服务的错误已修正；真正行为红灯为 `publication-observer-reproduced.trx`，失败在“释放前收到撤回”断言。现改为通知全部观察者后重抛首次异常，原发布失败、回滚和异常身份不变。相关 Unit 68/68 通过，证据 `artifacts/host-v19/p6-review/publication-observer-green.trx`。
+`V19发布与撤回观察者均失败仍释放候选并保留首次异常` 复现了 R04/R05/C09 的另一个边界：Scope 已释放，但多播事件中第一个观察者的异常阻断了后续观察者收到撤回，可能保留旧 Target 引用。最初夹具在 Provider Dispose 时又解析服务的错误已修正；真正行为红灯为 `publication-observer-reproduced.trx`，失败在“释放前收到撤回”断言。现改为通知全部观察者后重抛首次异常，原发布失败、回滚和异常身份不变。相关 Unit 68/68 通过，证据 `artifacts/host-v19/p6-review/publication-observer-green.trx`。
+
+补齐 M04/M05：`V19工作台执行绑定在UI线程且后台附接先于服务解析被拒绝` 验证真实 Dispatcher 与单例创建，Startup Headless 3/3 通过；`V19目录或绑定失败由Runtime回滚且只释放已创建对象` 两阶段参数 2/2 通过。初稿中误建空诊断集合已删除，失败结果保留。证据分别为 `startup-ui-boundary.trx`、`startup-rollback-green.trx`。
+
+## 最终文档与验证输入
+
+方案移至 archive/plans，可复用验证移至 maintenance；总导航、Host 入口、验证索引、当前契约、设计取舍和后续实机事项同步。新增嵌入帮助读取/渲染测试覆盖五份 V19 专用或设计文档；本仓 Markdown 路径与锚点检查结果写入最终 JSON。当前行为未改变的工具/搜索用户指南按代码与 UI 回归复核，不加入实现术语。
+
+最终流程是固定代码和全部嵌入 Markdown 后运行 `dotnet run --project tools/MyAvaloniaManagement.Gate -- verify`。结果只追加到非嵌入 `development-evidence.json`，记录运行 ID、源码 revision/tree/文件摘要、组计数、完整矩阵参数用例及历史失败/重跑。门禁通过与否以该 JSON 及其指向的原始 summary/TRX 为准，不从阶段测试拼接结论。未新增 Windows CI 或发布门禁，也未变更版本、SDK/public API、用户文件格式与发布阈值。

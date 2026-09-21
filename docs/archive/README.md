@@ -6,6 +6,8 @@
 
 ## 方案与评审
 
+- [V19：Host 复杂度收敛方案](plans/host-v19-complexity-reduction-plan.md)，实际实施见[开发记录](records/host-v19/development-acceptance.md)与[逐项测试映射](records/host-v19/test-matrix.md)。
+
 - [Dock 区域默认居中停靠实施计划](plans/host-dock-area-fill-implementation-plan.md)
 - [Document 拖入已有浮窗崩溃修复方案](plans/host-document-cross-window-layout-crash-fix-plan.md)
 - [MyAvaloniaManagement V11：浮动窗口恢复与 Layout V3 实施计划](plans/host-v11-floating-windows-and-layout-v3-plan.md)

@@ -13,6 +13,48 @@ namespace MyAvaloniaManagement.Tests;
 /// <summary>验证 G2 Catalog/Executor 的无 UI 查询、执行、取消和所有权边界。</summary>
 public sealed class WorkbenchCommandCatalogExecutorTests
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void V19目录或绑定失败由Runtime回滚且只释放已创建对象(bool bindingStage)
+    {
+        var created = 0;
+        var released = 0;
+        var services = new ServiceCollection();
+        services.AddSingleton<MyAvaloniaManagement.Business.Workspace.WorkspaceSession>(_ =>
+            throw new InvalidOperationException("回滚不得解析工作区"));
+        services.AddSingleton(_ => { created++; return new RollbackProbe(() => released++); });
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        using var runtime = new MyAvaloniaManagement.Business.Composition.HostRuntime(provider,
+            new MyAvaloniaManagement.Business.Composition.HostRuntimeShutdown(new RollbackProbe(() => { }), provider,
+                () => { }, new MyAvaloniaManagement.Business.Composition.HostShutdownParticipants(),
+                new MyAvaloniaManagement.Business.Composition.HostResourceRetention(), null));
+        Exception? detected = null;
+        var failure = Assert.ThrowsAny<Exception>(() => MyAvaloniaManagement.Business.Composition.HostRuntime.Initialize(runtime, () =>
+        {
+            try
+            {
+                var host = new HostWorkbenchCommandCatalog([new CommandDescriptor(FirstHostId, "测试", "测试")]);
+                if (bindingStage)
+                {
+                    _ = provider.GetRequiredService<RollbackProbe>();
+                    _ = new HostWorkbenchCommandBindings(host, []);
+                }
+                else
+                    _ = new WorkbenchCommandCatalog(new HostWorkbenchCommandCatalog([
+                        new CommandDescriptor(PluginCommand, "冲突", "冲突")]), PluginRegistryWithCommand());
+            }
+            catch (Exception exception) { detected = exception; throw; }
+        }, new RecordingDiagnosticSink()));
+        Assert.Same(detected, failure);
+        Assert.IsType<HostCompositionException>(failure);
+        Assert.Equal(bindingStage ? 1 : 0, created);
+        Assert.Equal(created, released);
+        Assert.Throws<ObjectDisposedException>(() => provider.GetRequiredService<RollbackProbe>());
+    }
+
+    private sealed class RollbackProbe(Action release) : IDisposable { public void Dispose() => release(); }
+
     [Fact]
     public async Task V19纯命令目录可在后台解析且不创建工作区执行绑定或视图()
     {

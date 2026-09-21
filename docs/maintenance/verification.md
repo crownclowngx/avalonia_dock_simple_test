@@ -51,7 +51,7 @@ Host 整体人工验收已由项目所有者[确认通过](../archive/records/ho
 
 V18 完整开发验证已通过，证据对应当时定稿的代码和嵌入 Markdown，见[开发记录](../archive/records/host-v18/development-acceptance.md)。后续整体手工验收见[2026-09-21 所有者确认](../archive/records/host/manual-acceptance-20260921.md)；输入法、多屏等矩阵保留供以后回归，不从 Headless 结果推定具体设备上的逐项操作。
 
-V19 尚未实施，其[复杂度收敛验证计划](../roadmap/host-v19-complexity-verification.md)与[方案](../roadmap/host-v19-complexity-reduction-plan.md)放在 roadmap，实施后再整理为维护流程与开发记录。
+V19 已实施：[复杂度收敛专用验证](host-v19-complexity-verification.md)保留可复用矩阵，[方案](../archive/plans/host-v19-complexity-reduction-plan.md)已归档；实际测试映射及最终完整开发验证见[开发记录](../archive/records/host-v19/development-acceptance.md)。
 
 ## 正式 Host 封板
 

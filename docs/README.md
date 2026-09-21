@@ -2,7 +2,7 @@
 
 > 用途：主项目唯一总导航。状态：当前；核对日期：2026-09-21。版本事实见[集中基线](reference/platform-baseline.md)，分类与维护规则见[文档维护](maintenance/documentation.md)。
 
-当前 Host 已实现并本机交付 V18 命令面板交互，见[开发记录](archive/records/host-v18/development-acceptance.md)与[本机部署](maintenance/local-deployment.md)。项目所有者于 2026-09-21 [确认主程序手工验收通过](archive/records/host/manual-acceptance-20260921.md)；V19 仍为待实施方案。自动化、人工验收、部署和公开发布各自保留证据。
+最近一次本机交付仍为 V18，见[本机部署](maintenance/local-deployment.md)及项目所有者 2026-09-21 的[手工验收确认](archive/records/host/manual-acceptance-20260921.md)。当前源码已实施 V19 复杂度收敛，见[开发记录](archive/records/host-v19/development-acceptance.md)。V19 自动验证与既有人工验收、部署及公开发布分别留证。
 
 ## 使用工作台
 
@@ -45,7 +45,7 @@
 
 ## 当前结论、待办与历史
 
-- [V19 Host 复杂度收敛方案](roadmap/host-v19-complexity-reduction-plan.md)：代码实施待执行；配套[验证计划](roadmap/host-v19-complexity-verification.md)与方案一同保留在 roadmap，明确关闭与回滚规则、依赖收窄和本地验证要求。
+- [V19 Host 复杂度收敛方案](archive/plans/host-v19-complexity-reduction-plan.md)：已实施并归档；[专用回归验证](maintenance/host-v19-complexity-verification.md)、[逐项测试映射](archive/records/host-v19/test-matrix.md)与[开发记录](archive/records/host-v19/development-acceptance.md)记录关闭、回滚、命令目录、实时查询和工具入口的收敛。
 - [Host 人工验收确认](archive/records/host/manual-acceptance-20260921.md)：项目所有者确认当前主程序通过，专项矩阵保留供后续回归。
 - [V18 命令面板交互方案](archive/plans/host-v18-command-palette-interaction-plan.md)：已实施四类分组、动作和目标校验；配套[专用开发验证](maintenance/host-v18-command-palette-verification.md)及[开发记录](archive/records/host-v18/development-acceptance.md)。
 - [待办与候选](roadmap/README.md)：保留当前开发计划、发布前事项、外部业务边界、实验和未来候选。

@@ -5,6 +5,9 @@ using Avalonia.Media.Imaging;
 using Avalonia.Styling;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using Microsoft.Extensions.DependencyInjection;
+using MyAvaloniaManagement.Business.Commands.Execution;
+using MyAvaloniaManagement.Business.Composition;
 using MyAvaloniaManagement.Business.Startup;
 using MyAvaloniaManagement.ViewModels.Startup;
 using MyAvaloniaManagement.Views;
@@ -15,6 +18,36 @@ namespace MyAvaloniaManagement.UiTests;
 /// <summary>用真实 XAML 和软件渲染核对羽毛首屏、长标识、主题及关闭意图，不把 Headless 当作原生动画验收。</summary>
 public sealed class StartupSplashUiTests
 {
+    [AvaloniaFact]
+    public async Task V19工作台执行绑定在UI线程且后台附接先于服务解析被拒绝()
+    {
+        var creations = 0;
+        using (var context = new UiTestContext(configureContributions: (services, _) =>
+        {
+            var factory = services.Last(item => item.ServiceType == typeof(HostWorkbenchCommandBindings)).ImplementationFactory!;
+            services.AddSingleton(provider =>
+            {
+                Assert.True(Dispatcher.UIThread.CheckAccess());
+                creations++;
+                return (HostWorkbenchCommandBindings)factory(provider);
+            });
+        }))
+        {
+            Assert.Equal(1, creations);
+            Assert.Same(context.Provider.GetRequiredService<HostWorkbenchCommandBindings>(),
+                context.Provider.GetRequiredService<HostWorkbenchCommandBindings>());
+        }
+        var provider = new ServiceCollection().BuildServiceProvider();
+        using var runtime = new HostRuntime(provider, new HostRuntimeShutdown(new EmptyOwner(), provider,
+            () => { }, new HostShutdownParticipants(), new HostResourceRetention(), null));
+        // 参数刻意不提供；若线程检查被移到服务/资源解析之后，测试将收到其他类型的失败。
+        var error = await Task.Run(() => Record.Exception(() => runtime.AttachWorkbench(null!, null!)));
+        Assert.IsType<InvalidOperationException>(error);
+        Assert.Contains("thread", error!.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private sealed class EmptyOwner : IDisposable { public void Dispose() { } }
+
     [AvaloniaFact]
     public async Task 浅深主题与真实进度绑定_保存羽毛首屏截图()
     {

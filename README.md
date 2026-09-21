@@ -8,7 +8,7 @@ MyAvaloniaManagement 是基于 .NET 10、Avalonia 和 Dock 的模块化桌面工
 
 正式支持范围为 Windows x64、同一团队维护的可信进程内插件。更新插件需要退出 Host、整体替换插件目录并重新启动；不提供插件沙箱、在线市场或热卸载。macOS 仍为[实验路径](docs/quick-start/macos-experiment.md)。
 
-当前 Host 已实现并本机交付 V18 命令面板分组、动作提示和页面目标校验，见[开发记录](docs/archive/records/host-v18/development-acceptance.md)与[本机部署](docs/maintenance/local-deployment.md)。项目所有者已于 2026-09-21 [确认主程序手工验收通过](docs/archive/records/host/manual-acceptance-20260921.md)。V19 复杂度收敛仍为待实施方案。
+最近一次本机交付为 V18 命令面板分组、动作提示和页面目标校验，见[本机部署](docs/maintenance/local-deployment.md)及项目所有者 2026-09-21 的[手工验收确认](docs/archive/records/host/manual-acceptance-20260921.md)。当前源码已实施 V19 复杂度收敛，实际开发验证见[V19 开发记录](docs/archive/records/host-v19/development-acceptance.md)；本轮未再次部署或宣称人工验收。
 
 ## 最短启动步骤
 

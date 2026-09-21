@@ -4,13 +4,13 @@
 
 项目所有者于 2026-09-21 [确认当前主程序已完成手工验收](../archive/records/host/manual-acceptance-20260921.md)。当前 V18 与此前 Host 桌面体验的验收待办已收口，专项矩阵保留供后续回归；确认记录没有逐项环境日志，不补写输入法或多屏配置。历次本机部署见[部署索引](../maintenance/local-deployment.md)。
 
-## 当前开发方案
+## 本轮后续验收
 
 | 事项 | 状态 / 范围 | 依据与完成条件 |
 | --- | --- | --- |
-| V19 Host 复杂度收敛 | 方案与验证计划已编写；代码实施和开发验收待执行 | [实施方案](host-v19-complexity-reduction-plan.md)、[验证计划](host-v19-complexity-verification.md)：关闭规则、待发布回滚、命令目录、实时查询和工具用例分阶段收敛；SOLID 优先，先复现风险再修复，执行完整本地开发验证 |
+| V19 实机体验与后续交付 | 代码实施完成；本轮未执行新的人工桌面验收或安装目录部署 | [开发记录](../archive/records/host-v19/development-acceptance.md)、[回归矩阵](../maintenance/host-v19-complexity-verification.md)：后续在实际部署需求下核对主窗/浮窗、保存和恢复、自动收起及多屏体验 |
 
-V19 尚未实施；计划中的本地开发验证不使用 AIFLOW、Windows CI 或发布门禁。最新部署包含 V18 实现和 V19 方案文档，不能据此认定 V19 重构已交付。V18 自动化结果见[开发记录](../archive/records/host-v18/development-acceptance.md)，后续人工确认与部署分别留证。
+V19 方案已[归档](../archive/plans/host-v19-complexity-reduction-plan.md)，本地开发验证不使用 AIFLOW、Windows CI 或发布门禁。最近部署包含 V18 实现和 V19 方案文档，不能据此认定 V19 重构已部署。V18 自动化结果见[开发记录](../archive/records/host-v18/development-acceptance.md)，后续人工确认与部署分别留证。
 
 ## 发布与外部验证
 

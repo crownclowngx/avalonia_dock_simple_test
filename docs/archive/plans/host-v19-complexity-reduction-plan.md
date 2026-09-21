@@ -1,10 +1,10 @@
 # V19：Host 业务复杂度与组织复杂度收敛方案
 
 > 用途：将 Host 代码评估转化为分阶段实施方案，减少重复规则、分散回滚责任和无业务必要的依赖。
-> 状态：已获项目所有者授权实施，P0 基线验证完成，正在逐阶段实施。日期：2026-09-21。实际证据见[开发记录](../archive/records/host-v19/development-acceptance.md)。
+> 状态：P0–P5 已实施并分阶段提交，方案归档；最终完整本地验证以开发记录中的非嵌入 JSON 为准。日期：2026-09-21。实际证据见[开发记录](../records/host-v19/development-acceptance.md)。下文保留设计时的阶段要求，不替代现行实现契约。
 > 调研基线：`c38d71fb45b07b4c0eac778b9ed7ea009d855a19`，编写前工作树干净；实施前重新记录 HEAD、差异和实际调用关系。
 > V19 是 Host 改造序号，不升级产品、程序集、SDK、NuGet 或持久化格式版本。
-> 配套：[开发验证计划](host-v19-complexity-verification.md)。当前行为以[Host 架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)及现行契约为准，本文目标不表示已经实现。
+> 配套：[开发验证计划](../../maintenance/host-v19-complexity-verification.md)。当前行为以[Host 架构](../../../Host/MyAvaloniaManagement/docs/design/architecture.md)及现行契约为准，本文目标不表示已经实现。
 
 ## 1. 目标与首要规定
 
@@ -40,13 +40,13 @@
 
 | 阶段 | 当前证据 | 建议结果 | 优先级 / 变更性质 |
 | --- | --- | --- | --- |
-| P1 关闭规则 | [DocumentCloseCoordinator](../../Host/MyAvaloniaManagement/Business/Documents/DocumentCloseCoordinator.cs)：范围关闭在排空后复查脏状态；单页等待路径直接授权。旧 ConfirmWindowCloseAsync 经 VM/Session 转调后主要由测试调用 | 共享决策规则，保留原生适配；迁移旧入口测试后删除冗余链 | 最高；先验证缺陷，再局部重构 |
-| P2 待发布回滚 | [DocumentPersistenceCoordinator](../../Host/MyAvaloniaManagement/Business/Documents/DocumentPersistenceCoordinator.cs)：备份创建完成后等待 ConfirmRecoveryAsync，该段没有 finally 回收；加载、发布、新建各自维护 pending | 所有待发布文档都有覆盖整个等待期的回滚责任 | 高；先补异常出口，再收敛机制 |
-| P3 命令目录 | [HostWorkbenchCommandCatalog](../../Host/MyAvaloniaManagement/Business/Commands/Catalog/HostWorkbenchCommandCatalog.cs) 的 Registration 持有 Handler；[HostRuntime](../../Host/MyAvaloniaManagement/Business/Composition/HostRuntime.cs) 因间接解析 Workspace 而把目录校验放在 UI 阶段 | 目录只包含描述事实，状态查询与执行共享明确的 Handler 映射 | 高；依赖调整，验证启动时机 |
-| P4 查询依赖 | [DocumentCreationMenuQuery](../../Host/MyAvaloniaManagement/Business/Workspace/DocumentCreationMenuQuery.cs) 通过 Session 访问 Catalog；[WorkspacePaletteActions](../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkspacePaletteActions.cs) 为单项判断调用 ReadDirectory/GetOpenPages | 元数据查询直接消费 Catalog；布尔判断使用按身份的实时查询 | 中；局部重构，不新增长寿命缓存 |
-| P5 工具用例 | [WorkspaceSession](../../Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.cs) 同时存在 ShowTool/OpenTool/SetToolVisibility/TrySetToolVisibility；[ToolDockCoordinator](../../Host/MyAvaloniaManagement/Business/Layout/ToolDockCoordinator.cs) 另有显示和恢复步骤 | 两个清楚的业务入口，共享必要的布局提交步骤 | 中；保留定位、显隐及结果差异 |
+| P1 关闭规则 | [DocumentCloseCoordinator](../../../Host/MyAvaloniaManagement/Business/Documents/DocumentCloseCoordinator.cs)：范围关闭在排空后复查脏状态；单页等待路径直接授权。旧 ConfirmWindowCloseAsync 经 VM/Session 转调后主要由测试调用 | 共享决策规则，保留原生适配；迁移旧入口测试后删除冗余链 | 最高；先验证缺陷，再局部重构 |
+| P2 待发布回滚 | [DocumentPersistenceCoordinator](../../../Host/MyAvaloniaManagement/Business/Documents/DocumentPersistenceCoordinator.cs)：备份创建完成后等待 ConfirmRecoveryAsync，该段没有 finally 回收；加载、发布、新建各自维护 pending | 所有待发布文档都有覆盖整个等待期的回滚责任 | 高；先补异常出口，再收敛机制 |
+| P3 命令目录 | [HostWorkbenchCommandCatalog](../../../Host/MyAvaloniaManagement/Business/Commands/Catalog/HostWorkbenchCommandCatalog.cs) 的 Registration 持有 Handler；[HostRuntime](../../../Host/MyAvaloniaManagement/Business/Composition/HostRuntime.cs) 因间接解析 Workspace 而把目录校验放在 UI 阶段 | 目录只包含描述事实，状态查询与执行共享明确的 Handler 映射 | 高；依赖调整，验证启动时机 |
+| P4 查询依赖 | [DocumentCreationMenuQuery](../../../Host/MyAvaloniaManagement/Business/Workspace/DocumentCreationMenuQuery.cs) 通过 Session 访问 Catalog；[WorkspacePaletteActions](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/WorkspacePaletteActions.cs) 为单项判断调用 ReadDirectory/GetOpenPages | 元数据查询直接消费 Catalog；布尔判断使用按身份的实时查询 | 中；局部重构，不新增长寿命缓存 |
+| P5 工具用例 | [WorkspaceSession](../../../Host/MyAvaloniaManagement/Business/Workspace/WorkspaceSession.cs) 同时存在 ShowTool/OpenTool/SetToolVisibility/TrySetToolVisibility；[ToolDockCoordinator](../../../Host/MyAvaloniaManagement/Business/Layout/ToolDockCoordinator.cs) 另有显示和恢复步骤 | 两个清楚的业务入口，共享必要的布局提交步骤 | 中；保留定位、显隐及结果差异 |
 
-V18 已实现命令面板的目标约束和交互，不能以早期评估时的代码代替当前基线。P3–P5 必须回归 [V18 专用验证](../maintenance/host-v18-command-palette-verification.md)中的目标竞态、共享命令、创建意图和原窗口落点。
+V18 已实现命令面板的目标约束和交互，不能以早期评估时的代码代替当前基线。P3–P5 必须回归 [V18 专用验证](../../maintenance/host-v18-command-palette-verification.md)中的目标竞态、共享命令、创建意图和原窗口落点。
 
 ## 4. SOLID 的落实与审查
 
@@ -194,15 +194,15 @@ P1/P2 分别先做最小缺陷修复，再做结构收敛，保持独立可审�
 
 | 文档 | 实施后的同步内容 |
 | --- | --- |
-| [Document 持久化契约](../reference/document-persistence.md) | 经复现确认的关闭/回滚缺陷修复、警告与关闭判断边界；磁盘格式不变 |
-| [命令契约](../reference/workbench-commands.md)、[启动契约](../reference/host-startup.md) | 目录与绑定时机、失败诊断，原目标/取消政策保持 |
-| [Host 架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md) | 最终依赖、资源所有者、共享关闭规则、待发布回滚和查询路径 |
-| [工具中心指南](../quick-start/tool-center.md)、[搜索指南](../quick-start/workbench-search.md)、[浮窗指南](../quick-start/floating-windows-and-layout.md) | 仅更新被实际修正的可观察行为，不把内部类名搬入用户操作说明 |
-| 本计划、[开发验证计划](host-v19-complexity-verification.md) | 实际阶段状态、矩阵到真实测试方法/参数/断言的映射、剩余事项 |
-| [总导航](../README.md)、[待办](README.md)、[Host 入口](../../Host/MyAvaloniaManagement/docs/README.md)、[验证索引](../maintenance/verification.md) | 同步计划、验证、开发记录和剩余实机项目入口 |
+| [Document 持久化契约](../../reference/document-persistence.md) | 经复现确认的关闭/回滚缺陷修复、警告与关闭判断边界；磁盘格式不变 |
+| [命令契约](../../reference/workbench-commands.md)、[启动契约](../../reference/host-startup.md) | 目录与绑定时机、失败诊断，原目标/取消政策保持 |
+| [Host 架构](../../../Host/MyAvaloniaManagement/docs/design/architecture.md)、[设计取舍](../../../Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md) | 最终依赖、资源所有者、共享关闭规则、待发布回滚和查询路径 |
+| [工具中心指南](../../quick-start/tool-center.md)、[搜索指南](../../quick-start/workbench-search.md)、[浮窗指南](../../quick-start/floating-windows-and-layout.md) | 仅更新被实际修正的可观察行为，不把内部类名搬入用户操作说明 |
+| 本计划、[开发验证计划](../../maintenance/host-v19-complexity-verification.md) | 实际阶段状态、矩阵到真实测试方法/参数/断言的映射、剩余事项 |
+| [总导航](../../README.md)、[待办](../../roadmap/README.md)、[Host 入口](../../../Host/MyAvaloniaManagement/docs/README.md)、[验证索引](../../maintenance/verification.md) | 同步计划、验证、开发记录和剩余实机项目入口 |
 
 后续实施建立 `docs/archive/records/host-v19/development-acceptance.md` 和非嵌入证据 JSON，文件真实存在后再加入链接。记录 HEAD、工作树差异身份、运行时间、实际命令、退出码、TRX 数量、Gate run-id、摘要路径及失败/重跑，不预填成功或覆盖率。
 
-仓库 Markdown 会嵌入 Host。最终完整 verify 在源码与 Markdown 定稿后执行；结果优先记录到非嵌入 JSON，若之后改变嵌入内容，需要重新取得相应输入的验证。完成后按[文档维护规则](../maintenance/documentation.md)归档方案，专用验证留在 maintenance 供后续回归。
+仓库 Markdown 会嵌入 Host。最终完整 verify 在源码与 Markdown 定稿后执行；结果优先记录到非嵌入 JSON，若之后改变嵌入内容，需要重新取得相应输入的验证。完成后按[文档维护规则](../../maintenance/documentation.md)归档方案，专用验证留在 maintenance 供后续回归。
 
 本次文档交付只验证链接、结构、嵌入帮助读取与相关渲染链。P0–P6 尚未执行，不能借用 V17/V18 的开发结果或既往人工验收宣称 V19 已通过。
