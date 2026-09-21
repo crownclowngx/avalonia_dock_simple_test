@@ -61,7 +61,7 @@ Document 可以在本次运行中浮动，重启不会自动重开。布局文�
 | `layout-v3.json.bak` | 上一份有效布局 |
 | `layout-v3.lock` | 写入句柄的载体；文件存在不表示仍被占用 |
 | `layout-v3*.invalid.bak` | 损坏输入的保留副本 |
-| `layout-v2.json` | 首次升级时只读转换，原字节不变 |
+| `layout-v1.json` / `layout-v2.json` | 已退出支持；不读取、迁移或修改，仅有这些文件时使用默认全隐藏工具布局 |
 
 默认目录仍为 `%LOCALAPPDATA%\MyAvaloniaManagement\v2\`。`MYAVALONIA_DATA_DIRECTORY` 表示完整数据根。V1 文件不读取、不迁移、不改写。
 

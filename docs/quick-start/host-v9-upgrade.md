@@ -1,6 +1,6 @@
 # V9：Avalonia / Dock 升级使用与开发验证
 
-> 用途：V9 框架升级的使用与开发说明；状态：V9 范围的证据保留。核对日期：2026-09-21。后续 V11 生产布局已使用 [V3](../reference/dock-layout-snapshot-v3.md)，不能把本文 V9 的 V2 原样保留边界视为今天的写入协议。当前版本与支持范围见[集中基线](../reference/platform-baseline.md)。
+> 用途：V9 框架升级的使用与开发说明；状态：V9 范围的证据保留。核对日期：2026-09-21。后续 V11 生产布局已使用 [V3](../reference/dock-layout-snapshot-v3.md)，V20 又退出了 Layout V2 读取，不能把本文 V9 的 V2 原样保留边界视为今天的运行协议。当前版本与支持范围见[集中基线](../reference/platform-baseline.md)。
 
 版本事实以 [Directory.Version.props](../../Directory.Version.props) 为准；逐阶段证据见 [专用开发验收](../archive/records/host-v9/development-acceptance.md)。
 

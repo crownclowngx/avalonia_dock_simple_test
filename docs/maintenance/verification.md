@@ -53,7 +53,7 @@ V18 完整开发验证已通过，证据对应当时定稿的代码和嵌入 Mar
 
 V19 已实施：[复杂度收敛专用验证](host-v19-complexity-verification.md)保留可复用矩阵，[方案](../archive/plans/host-v19-complexity-reduction-plan.md)已归档；实际测试映射及最终完整开发验证见[开发记录](../archive/records/host-v19/development-acceptance.md)。
 
-V20 尚未实施：[历史布局退役方案](../roadmap/host-v20-layout-retirement-plan.md)与[专用开发验证计划](../roadmap/host-v20-layout-retirement-verification.md)覆盖有效布局测试迁至 V3、Writer Lease、Gate 产物检查自测、旧查询及文档收口。开发阶段仅执行本机专项和完整 `verify`，不使用 AIFLOW、Windows CI 或发布门禁；当前发布 Smoke 断言仍是 V2，计划不表示已经适配。
+V20 已实施：[归档方案](../archive/plans/host-v20-layout-retirement-plan.md)、[专用开发验证](host-v20-layout-retirement-verification.md)与[开发记录](../archive/records/host-v20/development-acceptance.md)覆盖有效布局测试迁至 V3、Writer Lease、Gate 产物检查自测、旧查询及文档收口。仅执行本机专项和完整 `verify`，不使用 AIFLOW、Windows CI 或发布门禁。
 
 ## 正式 Host 封板
 
@@ -65,9 +65,9 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- seal
 dotnet run --project tools/MyAvaloniaManagement.Gate -- seal --repeat
 ```
 
-V11 当前布局已升级为 V3。既有发布 Smoke 的 V2 文件断言尚待适配，代码修改与工具自测已纳入 [V20 待实施方案](../roadmap/host-v20-layout-retirement-plan.md)；发布进程链的实际运行仍留到发布阶段，本次文档交付未运行或放宽它。开发验证见[浮窗与布局专项指南](floating-layout-verification.md)。
+当前布局只支持 V3。V20 已适配发布 Smoke 的共享产物检查并通过工具单测，真实发布进程链本轮未执行；正式发布时仍按本节执行。开发专项见[浮窗与布局指南](floating-layout-verification.md)，不因工具适配降低发布条件。
 
-seal 只支持 Windows x64，要求干净工作树，固定 global.json 的 SDK 和 Release 配置。它创建无硬链接源码克隆，执行本仓验证、MyPlugTest 双次确定性打包、包身份和资产检查、真实包验收、Host-only 覆盖率及真实窗口 layout-v2.json Smoke。
+seal 只支持 Windows x64，要求干净工作树，固定 global.json 的 SDK 和 Release 配置。它创建无硬链接源码克隆，执行本仓验证、MyPlugTest 双次确定性打包、包身份和资产检查、真实包验收、Host-only 覆盖率及真实窗口 layout-v3.json Smoke。
 
 覆盖率合并 Host Unit、Plugin、UI、包验收四份报告，只统计主程序集；最低行/分支阈值为配置中的 84.39% / 70.58%。缺报告或混入其他程序集失败。默认一轮，`--repeat` 才执行第二份隔离工作区并比较稳定证据。
 

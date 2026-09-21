@@ -1,5 +1,7 @@
 # MyAvaloniaManagement 宿主—插件交互架构整理与评审
 
+> V20 归档维护（2026-09-21）：下文引用的 Layout V2 源码已退出当前树；相关源码链接改为原路径文本，正文保留原基线事实。
+
 > 归档说明（2026-09-16）：正文描述当时的基线、方案或验收，不代表当前运行状态。原始命令、版本和结论保留；当前操作见[文档导航](../../README.md)。原路径中的构建产物可能已清理，外部插件材料为可选引用。
 
 > 更新日期：2026-08-23（已同步 Managed Plugin V3 G14 与 Host V4 G0–G8）<br>
@@ -275,7 +277,7 @@ flowchart LR
 
 ### 4.3 布局持久化是唯一严格 V2
 
-**[代码事实]** `DockLayoutStore` 只查找 `layout-v2.json`，采用同目录临时文件和原子替换；严格 Codec 拒绝未知、重复、缺失、大小写错误、错误类型、注释、尾逗号和 schema 1。损坏快照隔离为 `.invalid.bak`；`layout-v1.json` 原样保留。参见 [`DockLayoutStore.cs`](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs) 和 [Layout V2 参考](../../reference/dock-layout-snapshot-v2.md)。
+**[代码事实]** `DockLayoutStore` 只查找 `layout-v2.json`，采用同目录临时文件和原子替换；严格 Codec 拒绝未知、重复、缺失、大小写错误、错误类型、注释、尾逗号和 schema 1。损坏快照隔离为 `.invalid.bak`；`layout-v1.json` 原样保留。参见 `Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs` 和 [Layout V2 参考](../specifications/dock-layout-snapshot-v2.md)。
 
 **[代码事实]** `DockLayoutLifecycle` 保存四向 Pane 比例、Tool 顺序、可见/固定状态和活动 Tool；不存在
 Migrator、浮动字段或历史 ID 归一化。缺失/生命周期不可用插件、缺失 Pane、非法 Dock 或应用异常会隔离整份快照并重建默认布局。

@@ -1,5 +1,7 @@
 # MyAvaloniaManagement V7 独立工具中心与 Tool 显隐改造方案
 
+> V20 归档维护（2026-09-21）：下文引用的 Layout V2 源码已退出当前树；相关源码链接改为原路径文本，正文保留原基线事实。
+
 > 归档说明（2026-09-16）：正文描述当时的基线、方案或验收，不代表当前运行状态。原始命令、版本和结论保留；当前操作见[文档导航](../../README.md)。原路径中的构建产物可能已清理，外部插件材料为可选引用。
 
 > 状态：已实施开发版本；实际验证结果和桌面验收边界见 [V7 实施记录](../records/host-v7/tool-center-and-visibility-acceptance.md)。
@@ -15,7 +17,7 @@
 - [Host V6.1 图标贡献与公共资源](host-v6.1-extensible-icon-contributions-plan.md)。
 - [V6.1 实施验收记录](../records/host-v6.1/icon-contributions-and-resources-acceptance.md)。
 - [Host 内部架构](../../../Host/MyAvaloniaManagement/docs/design/architecture.md)。
-- [Dock 布局快照 V2](../../reference/dock-layout-snapshot-v2.md)。
+- [Dock 布局快照 V2](../specifications/dock-layout-snapshot-v2.md)。
 
 ## 1. 目标与已确定的决策
 
@@ -69,7 +71,7 @@
 | [FunctionCenterWindowService.cs](../../../Host/MyAvaloniaManagement/Business/Presentation/FunctionCenterWindowService.cs) | V6 已有 Runtime 拥有的窗口服务、Owner 绑定、重复激活与关闭清理 | 复用窗口所有权做法，V7 使用非模态展示，不照搬 `ShowDialog` |
 | [HostWorkbenchCommandPresentation.cs](../../../Host/MyAvaloniaManagement/Business/Presentation/Commands/HostWorkbenchCommandPresentation.cs) | 菜单和快捷键由声明式投影生成 | 新入口接入现有 Host Command，不在 XAML 另建执行链 |
 | [HostIconCatalog.cs](../../../Host/MyAvaloniaManagement/Business/Presentation/Icons/HostIconCatalog.cs) | V6.1 支持公共图标和带 Owner 校验的插件专属图标 | 工具列表沿用真实图标契约，查询必须保留来源身份 |
-| [DockLayoutStore.cs](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs) 与 [DockLayoutLifecycle.cs](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutLifecycle.cs) | 先严格读取、校验快照，再检查贡献和恢复布局；未知工具会导致快照拒绝 | 退役管理项需要定向迁移，不能只删除注册 |
+| `Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs` 与 [DockLayoutLifecycle.cs](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutLifecycle.cs) | 先严格读取、校验快照，再检查贡献和恢复布局；未知工具会导致快照拒绝 | 退役管理项需要定向迁移，不能只删除注册 |
 
 当前产品版本是 `3.0.0`，Core/UI SDK 为 `3.4.0`，公共图标包为 `1.0.0`；manifest、Document envelope 与 layout 均保持 schema 2。实施前以 [Directory.Version.props](../../../Directory.Version.props) 复核，不从 V7 名称推导版本升级。
 

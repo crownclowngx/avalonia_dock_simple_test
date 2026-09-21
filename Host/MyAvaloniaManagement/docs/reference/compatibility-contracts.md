@@ -21,7 +21,7 @@ V14 自动重启属于 Host internal 能力，不新增插件 SDK API，不修�
 当前 Document/Tool 模型只通过 `ManagedDocumentDockable` 与 `ManagedToolDockable` 适配 Dock。普通插件
 模型不得创建或继承 Dock；Document 每次创建拥有独立 Scope，Tool 是所属 Provider singleton。View 必须
 来自 Workspace Catalog 的精确冻结工厂并在发布前构造，禁止程序集扫描、类型名猜测和反射回退。该内部实现没有改变
-Plugin SDK public API 或 manifest；Document 信封保持 V2；当前布局写入 V3，V2 仅首次只读转换。
+Plugin SDK public API 或 manifest；Document 信封保持 V2；当前布局仅读写 V3，旧布局不读取或转换。
 
 Core/UI 活动 v3 基线及 Workflow v1 基线分别维护；当前分类、条目数和 verify/seal 区别见
 [Plugin SDK API 兼容基线维护指南](../../../../docs/reference/plugin-sdk-api-compatibility.md)。
@@ -280,11 +280,11 @@ reader 不读取 manifest v1，也不存在 v1/v2 双 reader；清单只解决�
 - 精确字段、ID、数量、深度、比例与尺寸严格验证；坏输入保留 `.invalid.bak`，未来 schema 只读保护。
 - 只记录 Tool 的窗口、分组、显隐与主窗自动隐藏；Document 路径、标题、身份、内容及纯文档浮窗不持久化。
 - 合法但不可用或缺失的工具保留原记录，当前仅投影可用项；空浮窗不显示。
-- 首次无 V3 历史时严格转换 V2，原字节不变；退役内置工具精确清理；V1 不读取或修改。
+- V1/V2 文件不探测、不读取、不迁移、不修改；只有旧文件时默认全隐藏工具并仅保存 V3。退役内置工具在当前合并中精确排除。
 - 自动保存防抖且串行；主窗退出先确认和排空全部文档，再冻结最终快照，拆窗不覆盖它。
 - 重置先确认，保留文档修改、View 和 Scope；应用失败恢复原运行树，已关闭的展示壳可重建。
 
-详细边界见 [Layout V3](../../../../docs/reference/dock-layout-snapshot-v3.md)；[V2](../../../../docs/reference/dock-layout-snapshot-v2.md) 保留为只读输入和旧行为参考。
+详细边界见 [Layout V3](../../../../docs/reference/dock-layout-snapshot-v3.md)；[V2](../../../../docs/archive/specifications/dock-layout-snapshot-v2.md) 仅保留为历史格式参考，已无运行时读取能力。
 
 ## 6. 启动和关闭契约
 

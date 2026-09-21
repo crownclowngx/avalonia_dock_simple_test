@@ -2,7 +2,7 @@
 
 > 用途：维护 Host 实现及外部可观察行为。状态：当前；核对日期：2026-09-21。事实源为本项目源码及测试；主仓入口见[总导航](../../../docs/README.md)。
 
-当前实现包含插件开关、自动重启、启动窗口、Document 浮窗关闭与命令面板创建目标、V17 可读性整理、V18 命令面板交互，以及 V19 关闭、回滚、命令目录、即时查询和工具入口收敛。V19 开发与本机交付分别见[开发记录](../../../docs/archive/records/host-v19/development-acceptance.md)和[部署证据](../../../docs/archive/records/host-v19/local-deployment-20260921.json)。既有[手工验收确认](../../../docs/archive/records/host/manual-acceptance-20260921.md)保持原始范围；[V20](../../../docs/roadmap/host-v20-layout-retirement-plan.md)目前为待实施方案，当前仍保留 Layout V2 首次导入。
+当前实现包含插件开关、自动重启、启动窗口、Document 浮窗关闭与命令面板创建目标、V17 可读性整理、V18 命令面板交互，以及 V19 关闭、回滚、命令目录、即时查询和工具入口收敛。V19 开发与本机交付分别见[开发记录](../../../docs/archive/records/host-v19/development-acceptance.md)和[部署证据](../../../docs/archive/records/host-v19/local-deployment-20260921.json)。既有[手工验收确认](../../../docs/archive/records/host/manual-acceptance-20260921.md)保持原始范围；[V20](../../../docs/archive/plans/host-v20-layout-retirement-plan.md)已退役 Layout V2 并删除旧分组查询，实际开发验证见[本轮记录](../../../docs/archive/records/host-v20/development-acceptance.md)，未执行本机部署或发布。
 
 ## 按修改目的阅读
 
@@ -15,7 +15,7 @@
 | 运行自动化与定位专项回归 | [主仓验证与专项索引](../../../docs/maintenance/verification.md) |
 | 查阅命令面板分组与目标一致性设计 | [V18 交互方案](../../../docs/archive/plans/host-v18-command-palette-interaction-plan.md)、[专用开发验证](../../../docs/maintenance/host-v18-command-palette-verification.md) |
 | 维护收敛后的关闭、回滚、命令和工具边界 | [V19 归档方案](../../../docs/archive/plans/host-v19-complexity-reduction-plan.md)、[专用验证](../../../docs/maintenance/host-v19-complexity-verification.md)、[开发记录](../../../docs/archive/records/host-v19/development-acceptance.md) |
-| 规划 Layout V2 退役、测试迁移与现行入口收敛 | [V20 待实施方案](../../../docs/roadmap/host-v20-layout-retirement-plan.md)、[专用开发验证](../../../docs/roadmap/host-v20-layout-retirement-verification.md) |
+| 理解 Layout V2 退役、测试迁移与现行入口收敛 | [V20 归档方案](../../../docs/archive/plans/host-v20-layout-retirement-plan.md)、[专用开发验证](../../../docs/maintenance/host-v20-layout-retirement-verification.md) |
 | 构建和交付本机安装版 | [本机部署](../../../docs/maintenance/local-deployment.md) |
 | 查阅 V11–V19 方案、设计取舍和原始结果 | [历史归档](../../../docs/archive/README.md) |
 

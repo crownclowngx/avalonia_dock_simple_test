@@ -67,7 +67,7 @@ public sealed class HelpContentTests
     {
         Assert.Equal("activity", _catalog.ResolveLink("docs/theory/attention-centered-dock-workspace-design.md", "./activity-theory-requirements-decomposition.md"));
         Assert.Equal("attention#摘要", _catalog.ResolveLink(null, "help:attention#摘要"));
-        var reference = _catalog.ResolveLink("docs/theory/attention-centered-dock-workspace-design.md", "../reference/dock-layout-snapshot-v2.md");
+        var reference = _catalog.ResolveLink("docs/theory/attention-centered-dock-workspace-design.md", "../archive/specifications/dock-layout-snapshot-v2.md");
         Assert.NotNull(reference);
         Assert.NotNull(_catalog.Find(reference));
         Assert.Null(_catalog.ResolveLink(null, "file:///C:/private.md"));

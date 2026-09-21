@@ -29,7 +29,7 @@
 - [插件状态独立窗口设计](plugin-status-window.md)。
 - [以注意力为中心的工作台设计](../../theory/attention-centered-dock-workspace-design.md)。
 - [Host 内部架构](../../../Host/MyAvaloniaManagement/docs/design/architecture.md)。
-- [布局快照 V2](../../reference/dock-layout-snapshot-v2.md)。
+- [布局快照 V2](../specifications/dock-layout-snapshot-v2.md)。
 
 ## 2. 实施前基线与需要修正的理解
 

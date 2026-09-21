@@ -512,7 +512,7 @@ Legacy public Manager、状态/阶段 DTO、Options、Registration、PlanBuilder
 Legacy `IPluginLifecycle.Order` 同步删除；Bili Tool 和 Harness 只作解除旧 Manager 的最小适配，不提前
 完成 G9–G12。专项门禁、SOLID 取舍、状态矩阵、线格式、退出顺序和回滚边界见
 [G8 专项记录](../records/host-v2/g8-layout-and-lifecycle-v2.md)及
-[Layout V2 参考](../../reference/dock-layout-snapshot-v2.md)。本阶段未使用 AIFLOW，也未运行 Windows CI、
+[Layout V2 参考](../specifications/dock-layout-snapshot-v2.md)。本阶段未使用 AIFLOW，也未运行 Windows CI、
 Windows Smoke、ReleaseAcceptance、发布包或发布门禁。
 
 最终 G8 专项 **142/142**；Host 全量 **389/389**，行覆盖率 **83.05%**、分支覆盖率 **68.65%**。

@@ -1,6 +1,8 @@
 # Dock 布局快照 V2
 
-> 用途：V11 首次升级的只读迁移输入，以及旧 Host V2 行为说明。状态：兼容参考；核对日期：2026-09-16。当前写入与恢复以 [Layout V3](dock-layout-snapshot-v3.md) 为准。V11 使用严格 reader 和纯转换，不调用旧 Store.Load，不改 V2 原字节。下文的整体隔离、退役前备份和禁止浮动描述均属于旧 Host 行为。历史 `layout-v1.json` 不读取、迁移、覆盖或隔离。
+> V20 归档说明（2026-09-21）：该协议的全部运行能力已退役，Host 不再探测、读取、恢复或转换 V2 文件。下文保留退役前历史事实；当前契约见 [Layout V3](../../reference/dock-layout-snapshot-v3.md)。
+
+> 用途：V11 首次升级的只读迁移输入，以及旧 Host V2 行为说明。状态：兼容参考；核对日期：2026-09-16。当前写入与恢复以 [Layout V3](../../reference/dock-layout-snapshot-v3.md) 为准。V11 使用严格 reader 和纯转换，不调用旧 Store.Load，不改 V2 原字节。下文的整体隔离、退役前备份和禁止浮动描述均属于旧 Host 行为。历史 `layout-v1.json` 不读取、迁移、覆盖或隔离。
 
 ## 文件与所有权
 

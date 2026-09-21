@@ -59,6 +59,6 @@
 
 ## 旧布局
 
-原“插件状态”Dock Tool 已退役，看板是独立窗口，不进入工具中心或 `layout-v2.json`。既有布局迁移仍仅清理退役管理 ID，保留其他工具与缺失插件的偏好；首次迁移备份规则保持原样。
+原“插件状态”Dock Tool 已退役，看板是独立窗口，不进入工具中心或布局。当前 Layout V3 合并和工具偏好继续精确排除已退役内置 ID，保留其他工具与暂时缺失插件的记录；旧 V1/V2 布局文件不读取或迁移。
 
 详细规则见[兼容证据契约](../reference/plugin-compatibility.md)，验收工具和故障定位见[开发验证](../maintenance/plugin-compatibility-verification.md)，实现关系见[内部架构](../../Host/MyAvaloniaManagement/docs/design/architecture.md)。

@@ -206,7 +206,7 @@ dotnet test Host/MyAvaloniaManagement.Tests/MyAvaloniaManagement.Tests.csproj -c
 | `docs/quick-start/workflow-action-development.md` | 保留原位，按当前事实维护 | [docs/quick-start/workflow-action-development.md](../../../quick-start/workflow-action-development.md) |
 | `docs/quick-start/workflow-sdk-publication.md` | 合并后删除原文件 | [docs/archive/records/workflow-action/g3.1-workflow-protocol-consistency.md](../workflow-action/g3.1-workflow-protocol-consistency.md#sdk-发布补充) |
 | `docs/reference/dock-layout-snapshot-v1.md` | 归档保留 | [docs/archive/specifications/dock-layout-snapshot-v1.md](../../specifications/dock-layout-snapshot-v1.md) |
-| `docs/reference/dock-layout-snapshot-v2.md` | 保留原位，按当前事实维护 | [docs/reference/dock-layout-snapshot-v2.md](../../../reference/dock-layout-snapshot-v2.md) |
+| `docs/reference/dock-layout-snapshot-v2.md` | 保留原位，按当前事实维护 | [docs/reference/dock-layout-snapshot-v2.md](../../specifications/dock-layout-snapshot-v2.md) |
 | `docs/reference/myavalonia-management-tests.md` | 迁移并修正 | [docs/maintenance/verification.md](../../../maintenance/verification.md) |
 | `docs/reference/plugin-sdk-api-compatibility.md` | 保留原位，按当前事实维护 | [docs/reference/plugin-sdk-api-compatibility.md](../../../reference/plugin-sdk-api-compatibility.md) |
 | `docs/theory/activity-theory-requirements-decomposition.md` | 保留原位，按当前事实维护 | [docs/theory/activity-theory-requirements-decomposition.md](../../../theory/activity-theory-requirements-decomposition.md) |

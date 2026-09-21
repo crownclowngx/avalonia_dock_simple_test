@@ -9,7 +9,7 @@ V19 以真实业务约束区分组织成本，SOLID 是判断顺序：关闭协�
 不为减少行数合并资源所有者，也不为每个具体类机械增加接口。相关实现见[架构](architecture.md)，
 实际验证见[V19 开发记录](../../../../docs/archive/records/host-v19/development-acceptance.md)。
 
-[V20 待实施方案](../../../../docs/roadmap/host-v20-layout-retirement-plan.md)继续使用同一判断标准：产品不再需要的 Layout V2 运行能力退出，有效行为测试改用当前 V3，旧查询入口删除。Session、Store 和保存队列仍各自保持所有权；不为退役新增版本框架或旧文件清理器。当前代码仍保留首次 V2 导入，后续实施才更新对应契约。Workflow 取消锁边界作为独立正确性调查，Manifest 最小整理后置，不把两者混入布局退役。
+[V20 归档方案](../../../../docs/archive/plans/host-v20-layout-retirement-plan.md)落实同一判断标准：产品不再需要的 Layout V2 运行能力退出，有效行为测试改用当前 V3，旧分组查询入口删除。Session、Store 和保存队列仍各自保持所有权；没有新增版本框架或旧文件清理器。目录测试直接观察分类树与完整创建身份。Workflow 取消锁边界与 Manifest 最小整理仍是独立候选，不混入布局退役。
 
 单页与范围关闭共用确认/保存和排空后的脏状态规则，保留同步 Dock 快速路径与一次性许可；已提交
 文件不等于可以关闭仍脏页面。`PendingWorkspaceDocument` 只承担跨 await 的局部回滚义务，成功发布
@@ -31,7 +31,7 @@ V17 的可读性整理遵守 SOLID，优先显露已经存在的变化原因：�
 
 先区分内部重构、外部契约变更和新功能。内部类名、文件组织和协作者可以调整；稳定身份、public API、严格 JSON、取消与释放、工具显隐和诊断边界必须由测试保护。
 
-当前只支持严格 manifest、显式贡献和独立插件 Provider。Document 采用独立 Scope、互斥激活与修订保存；Layout 生产读写 schema 3，首次升级时只读转换 V2，并只对明确退役的内置 Tool 做定向清理。Document V1、Layout V1 与旧策略发现不回流到生产路径。
+当前只支持严格 manifest、显式贡献和独立插件 Provider。Document 采用独立 Scope、互斥激活与修订保存；Layout 仅生产读写 schema 3，不探测或导入旧布局；当前合并与偏好校验只排除明确退役的内置 Tool。Document V1、Layout V1 与旧策略发现不回流到生产路径。
 
 ## 按变化原因分配职责
 

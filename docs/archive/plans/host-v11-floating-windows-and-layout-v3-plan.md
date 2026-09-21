@@ -1,5 +1,7 @@
 # MyAvaloniaManagement V11：浮动窗口恢复与 Layout V3 实施计划
 
+> V20 归档维护（2026-09-21）：下文引用的 Layout V2 源码已退出当前树；相关源码链接改为原路径文本，正文保留原基线事实。
+
 > 归档更新（2026-09-20）：本文保留原阶段方案、操作和验证快照；正文中的“本轮”“未执行”“待验收”指原记录时间。当前 Host 人工验收已由项目所有者确认通过，见[统一验收记录](../records/host/manual-acceptance-20260920.md)；后续候选与发布事项见[待办](../../roadmap/README.md)，现行操作从[文档导航](../../README.md)进入。
 
 > 用途：约束主程序浮动窗口、工具布局保存恢复及配套验证的实施范围。状态：实现已接入，开发门禁结果独立记录，真实桌面验收待补；用户已授权从 master 新建分支并按阶段提交。编写日期：2026-09-16。实际结果见 [V11 开发记录](../records/host-v11/development-acceptance.md)。
@@ -54,7 +56,7 @@
 | [DocumentCloseCoordinator](../../../Host/MyAvaloniaManagement/Business/Documents/DocumentCloseCoordinator.cs) | 同步取消、异步保存、一次性关闭许可和命令排空已经存在；窗口确认按应用退出表达 | 增加有范围的浮窗关闭协调，不能直接把关闭子窗当作应用退出 |
 | [HostRuntimeShutdown](../../../Host/MyAvaloniaManagement/Business/Composition/HostRuntimeShutdown.cs)、[HostShutdownParticipants](../../../Host/MyAvaloniaManagement/Business/Composition/HostShutdownParticipants.cs) | 记录已创建参与者；先停止入口并等待 Command/Document/Workflow，再安全释放或保留资源 | 沿用重构后的唯一关闭所有者；不从浮窗直接 Dispose Runtime/Provider，也不在失败回滚时解析新服务 |
 | [DocumentControlRecycling](../../../Host/MyAvaloniaManagement/Business/Docking/DocumentControlRecycling.cs)、[指针保护](../../../Host/MyAvaloniaManagement/Behaviors/DockTabPointerCaptureGuard.cs) | 已处理正文单实例、同 Presenter 复用、捕获移交与残留状态 | 保留近期修复，补跨 TopLevel 迁移和释放回归，不删除保护层换取浮动 |
-| [布局生命周期](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutLifecycle.cs)、[Mapper](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutSnapshotMapper.cs)、[Store](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs) | V2 只保存四向 Pane 与 Tool；保存已有原子事务；未知或不可用工具会拒绝整份布局 | 引入严格 V3、只读 V2 转换、可用项恢复和自动保存；旧 Store.Load 具有隔离副作用，不能直接作为只读迁移入口 |
+| [布局生命周期](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutLifecycle.cs)、`Host/MyAvaloniaManagement/Business/Layout/DockLayoutSnapshotMapper.cs`、`Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs` | V2 只保存四向 Pane 与 Tool；保存已有原子事务；未知或不可用工具会拒绝整份布局 | 引入严格 V3、只读 V2 转换、可用项恢复和自动保存；旧 Store.Load 具有隔离副作用，不能直接作为只读迁移入口 |
 | [Directory.Version.props](../../../Directory.Version.props)、[VersionPolicyTests](../../../Host/MyAvaloniaManagement.PluginTests/VersionPolicyTests.cs)、[GateChecks](../../../tools/MyAvaloniaManagement.Gate/GateChecks.cs) | 含 V2 文件名及版本断言；发布 Smoke 也硬编码 V2 | 更新当前布局事实与开发契约测试；发布 Smoke 适配作为发布前待办，不在开发阶段运行 |
 | [Host 项目](../../../Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj) | `docs/**/*.md` 和 Host 内部文档嵌入程序 | 文档改变也会改变 Host 产物；最终验证应在文档定稿后进行，V10 旧产物证据不自动适用于 V11 |
 

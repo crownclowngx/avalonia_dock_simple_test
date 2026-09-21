@@ -14,12 +14,12 @@
 | Host Dock 呈现层补丁 | Dock.Avalonia 12.1.0.7-area.5；程序集 12.1.0.6；[固定源码与重建](../../patches/dock-area-fill/README.md) |
 | Semi / Ursa | 12.1.0 / 2.1.0 |
 | manifest / Document envelope | schema 2 |
-| Layout | schema 3；布局文件 layout-v3.json；V2 仅首次只读迁移 |
+| Layout | schema 3；布局文件 layout-v3.json；V1/V2 不探测、不读取、不迁移 |
 | 默认数据根 | `%LOCALAPPDATA%/MyAvaloniaManagement/v2/` |
 
 `MYAVALONIA_DATA_DIRECTORY` 表示完整数据根，不再追加产品名或 v2。产品版本、SDK/API、插件业务版本、程序集身份及数据 schema 各有职责；Host V5–V20 等名称只是改造顺序。
 
-V10–V18 已实现插件看板、兼容报告、浮窗与 Layout V3、插件开关、自动重启、启动窗口、Document 浮窗关闭/新建位置、内部职责与可读性整理，以及命令面板分组和页面目标校验。V19 复杂度收敛也已实施并完成本机交付，开发和产物证据分别见[开发记录](../archive/records/host-v19/development-acceptance.md)与[部署索引](../maintenance/local-deployment.md)。[V20](../roadmap/host-v20-layout-retirement-plan.md)为待实施方案，当前仍保留表中的 V2 首次导入；计划只退出 Dock Layout schema 2，不改变数据根、manifest 或 Document 的 v2 身份。这些阶段未形成新的 Host 公开版本，表中正式版本保持原样。报告绑定实际 Host 运行文件、规则及环境摘要；commit 和产品版本仅辅助定位，脏工作树不以 HEAD 代替内容身份。可选 `plugin.build.json` 与兼容报告独立使用 schema 1，不改变既有 schema 2。契约见[插件兼容证据](plugin-compatibility.md)。
+V10–V18 已实现插件看板、兼容报告、浮窗与 Layout V3、插件开关、自动重启、启动窗口、Document 浮窗关闭/新建位置、内部职责与可读性整理，以及命令面板分组和页面目标校验。V19 复杂度收敛也已实施并完成本机交付，开发和产物证据分别见[开发记录](../archive/records/host-v19/development-acceptance.md)与[部署索引](../maintenance/local-deployment.md)。[V20](../archive/plans/host-v20-layout-retirement-plan.md)已退出 Dock Layout schema 2 并删除旧查询；[开发记录](../archive/records/host-v20/development-acceptance.md)与部署分开，本轮不改变数据根、manifest 或 Document 的 v2 身份。这些阶段未形成新的 Host 公开版本，表中正式版本保持原样。报告绑定实际 Host 运行文件、规则及环境摘要；commit 和产品版本仅辅助定位，脏工作树不以 HEAD 代替内容身份。可选 `plugin.build.json` 与兼容报告独立使用 schema 1，不改变既有 schema 2。契约见[插件兼容证据](plugin-compatibility.md)。
 
 ## 六个包
 

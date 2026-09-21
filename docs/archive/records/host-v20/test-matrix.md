@@ -24,7 +24,7 @@
 | 双坏或只剩隔离历史时不会重新导入过期V2 | 保留双坏/隔离历史断言，增加默认保存后的 V3 验证 | 同名 / L04 |
 | HostDataRootPolicyTests.V2存储不读取改写迁移或删除V1目录 | 替换为 V3 Store，仍验证 v2 数据根与 v1 数据隔离，旧文件原样保留 | 现行存储不读取改写迁移或删除V1目录 / L10 |
 | V3可以读取既有V2文档与布局且不会改写源文件 | Document Envelope V2 读取保持；布局改为 V3 输入，文件只读不改写仍验证 | 现行存储读取V2文档与V3布局且不会改写源文件 / L10 |
-| VersionPolicyTests 的 schema/文件名断言 | 只把 Layout 的 2/layout-v2 改为 3/layout-v3，数据根、SDK、manifest、Document 独立版本保持 | 原版本测试 / L10 |
+| VersionPolicyTests.VersionPolicy_布局V3独立升级且文档协议与数据根保持V2 | 删除重复的旧 Layout 2/layout-v2 断言，保留既有 3/layout-v3、数据根、SDK、manifest、Document 独立版本检查 | 原版本测试 / L10 |
 | PluginStatusMigrationTests.插件状态在隐藏停靠和自动收起状态下均可退役并保留其他布局（false,false / true,false / true,true） | 删除 V2 迁移及 pre-tool-retirement 备份契约，不迁入 V3 | A01 |
 | 仅退役项可以迁移为空而其他未知项和活动工具引用仍保留 | 删除 V2 转换器测试；当前未知项保留由 AvailabilityTests 和 DockLayoutTreeTests 覆盖 | A01、B04 |
 | PluginStatusMigrationTests.历史收藏最近分类与名称一起迁移且缺失插件偏好不会丢失 | 非 Layout 兼容能力，原样保留 | L10 |
@@ -63,4 +63,4 @@
 | A01–A03 | 删除清单、共享异常、RetiredHostToolIds 在 V3 Merge/偏好中的真实消费者；所有权、依赖、中文注释差异审查 |
 | D01–D03 | 文档链接、GitHub 锚点、实际 HelpContentCatalog 嵌入读取/渲染；八章节与理论入口保持 |
 
-最终记录将把以上方法与实际 TRX/命令关联。纯兼容测试退出允许数量下降；失败和重跑保留在证据中，不掩盖迁移错误。
+以上方法对应[开发记录](development-acceptance.md)的分阶段命令和同目录 JSON 中的 TRX、摘要与最终完整门禁。纯兼容测试退出允许数量下降；失败和重跑保留在证据中，不掩盖迁移错误。

@@ -36,7 +36,7 @@ V14 自动重启在 Program 入口先分流无插件助手；正常 Host 由 `Ho
 - 收集显式 Document/Tool/View/Lifecycle 贡献并分派创建请求；
 - 建立和维护四向 Dock 工作区；
 - 严格读写唯一 Document 信封 v2，并编排异步创建、打开、恢复、保存、关闭和资源释放；
-- 严格 Layout V3、V2 只读迁移、可用项投影、工具浮窗与原子保存；
+- 严格 Layout V3、可用项投影、工具浮窗与原子保存；
 - 只向插件提交窗口交互与 Document 生命周期等真实 Host 端口，不拥有插件内部消息；
 - 以窄 UI SDK 端口为插件提供文件选择和剪贴板交互；
 - 为显式 Consumer 注入 caller-bound Workflow Action Gateway，并在 Provider 私有 Scope 内治理调用；
@@ -278,7 +278,7 @@ View；Tool 模型仍是插件 Provider singleton。两个 Adapter 均允许浮�
 `ToolWorkspaceReadModel` 一次遍历布局并合并完整注册目录；`ToolCenterQuery` 只处理元数据、筛选和历史占位；
 `ToolCenterActions` 经 `WorkspaceSession` 提交显隐，并仅在成功访问后记录最近工具。
 收藏与分类使用独立 `tool-center-v1.json`，不复制 Dock 状态。Tool 的模型和已创建 View 仍沿用原有生命周期。
-默认布局先隐藏所有 Tool，再恢复有效旧快照；退役管理 ID 只进行定向删除，V2 原文件只读保留，后续提交写入独立 V3。
+默认布局先隐藏所有 Tool，再恢复有效 V3 快照；已退役内置 ID 在当前布局合并时精确排除，暂时缺失插件仍保留恢复记录。V1/V2 文件不探测、不读取、不修改，只有旧文件时保持默认布局。
 
 ### 插件看板独立窗口
 
@@ -504,11 +504,11 @@ G10 后 Host 自己不再把文件打开、布局刷新和 Tool 显隐绕行到�
 
 `DockLayoutLifecycle` 协调 Prepare、ApplyPending、捕获/保存与退出冻结，只拥有订阅和保存调度。生产写入 Layout V3，文档协议和默认数据根仍各自保持 V2。
 
-当前 Store 仍包含首次只读导入 Layout V2 的路径。[V20 方案](../../../../docs/roadmap/host-v20-layout-retirement-plan.md)拟完整退出该能力并迁移有效测试，尚未实施；旧 `DockLayoutStore`、`DockLayoutSnapshotMapper` 和 `DockLayoutRuntimeValidator` 不属于当前生命周期主链，不能用它们解释现行 V3 的恢复和保存。
+[V20](../../../../docs/archive/plans/host-v20-layout-retirement-plan.md)已删除 Layout V2 模型、编解码、Store、Mapper、运行时校验和转换器。当前恢复只经过 V3 主文件、备份与默认回退；`DockLayoutFormatException` 独立表达安全格式错误。Session、LayoutState、Store 和 Queue 的所有权保持，未引入迁移框架或旧文件清理器。
 
 - `DockLayoutWorkspaceState`：UI 树与纯数据互转，复用原 Tool/Document/View，稳定身份独立于临时框架 ID。
 - `DockLayoutTree`：剔除文档、空分支归并、隐藏和不可用工具记录合并。
-- `DockLayoutV3Json` / `DockLayoutV3Validator`：严格字段及有界结构；`DockLayoutV2Migration` 只读转换旧格式。
+- `DockLayoutV3Json` / `DockLayoutV3Validator`：严格字段及有界结构；共享格式异常只携带错误码和可选稳定身份。
 - `DockLayoutV3Store`：数据根写锁、只读保护、坏文件保留、有效备份和原子提交。
 - `DockLayoutSaveQueue`：750 毫秒合并、后台串行写入、失败重试、最终排空与释放。
 - `DockLayoutTransferCheckpoint`：恢复失败时还原原集合和窗口，业务实例不复活也不重建。
@@ -581,7 +581,7 @@ Document 则由 Plugin Registry 确认 owner 后请求所属插件的 Scope Mana
 | Scope 与控件缓存释放 | PluginTests |
 | 同步顺序、重入、异常、并发、Provider/Runtime 隔离及订阅释放 | MyPlugTest 消息测试、Document Scope 测试；外部插件自行回归 |
 | 布局严格解析、隔离、回退 | 布局生命周期与存储测试 |
-| Layout V3 严格字段、V2 原件保留、V1 不读取、不可用工具保留记录 | `DockLayoutV3StoreTests`、`DockLayoutV3BoundaryTests`、`DockLayoutAvailabilityTests` |
+| Layout V3 严格字段、V1/V2 忽略、不可用工具保留记录 | `DockLayoutV3StoreTests`、`DockLayoutV3BoundaryTests`、`DockLayoutAvailabilityTests` |
 | 生命周期排序、幂等、失败/超时/取消、反向停止和脱敏 | `PluginLifecycleCoordinatorTests` |
 | V5 真实容器释放、启动回滚、取消通知、迟到边界、间接创建与诊断关闭 | `HostLifecycleOwnershipTests` |
 | Command 合并目录、Context、当前 Target 状态/执行、租约关闭和诊断脱敏 | `WorkbenchCommand*Tests`、主仓 Gate verify |

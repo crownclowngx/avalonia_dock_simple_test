@@ -1,8 +1,8 @@
 # V20：历史布局退役与现行入口收敛专用开发验证
 
 > 用途：验证 Layout V2 完整退役、现行 Dock 行为测试迁移、验证工具适配、旧查询删除及文档一致性。
-> 状态：待实施的验证计划；矩阵不表示已经覆盖或通过。日期：2026-09-21。
-> 设计、删除范围与阶段顺序见 [V20 方案](host-v20-layout-retirement-plan.md)。实施完成后本页转入 maintenance；实际结果另存有日期的开发记录。
+> 状态：当前可复用开发验证指南；实际结果见[开发记录](../archive/records/host-v20/development-acceptance.md)与[逐方法映射](../archive/records/host-v20/test-matrix.md)。日期：2026-09-21。
+> 设计、删除范围与阶段顺序见 [V20 方案](../archive/plans/host-v20-layout-retirement-plan.md)。本页属于 maintenance；实际结果另存有日期的开发记录。
 
 ## 1. 执行边界
 
@@ -12,7 +12,7 @@ SOLID 是首要规定，设计模式朴素使用，详细中文注释与设计�
 
 可执行范围是本机 Unit、Plugin、Headless UI、Gate 工具自测、仅操作临时目录及专属子进程的 Writer Lease 专项，以及完整开发 `verify`。Gate 的发布产物检查可修改并通过共享检查方法的单测验证，不能以测试名义启动发布流程。
 
-`verify` 的执行范围以[开发门禁说明](../maintenance/verification.md)与 [GateExecutionGraph](../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs) 为准：固定补丁准备、locked restore、Release 零警告构建、SDK/Host/Plugin/Headless/MyPlugTest 测试、契约及已发布 API 比较、MyPlugTest 打包与真实 ZIP 验收。它不执行发布 Windows Smoke，也不自动证明 Gate 新增检查的覆盖。
+`verify` 的执行范围以[开发门禁说明](verification.md)与 [GateExecutionGraph](../../tools/MyAvaloniaManagement.Gate/GateExecutionGraph.cs) 为准：固定补丁准备、locked restore、Release 零警告构建、SDK/Host/Plugin/Headless/MyPlugTest 测试、契约及已发布 API 比较、MyPlugTest 打包与真实 ZIP 验收。它不执行发布 Windows Smoke，也不自动证明 Gate 新增检查的覆盖。
 
 ## 2. 基线与测试迁移纪律
 
@@ -25,11 +25,7 @@ SOLID 是首要规定，设计模式朴素使用，详细中文注释与设计�
 7. 零发现、未执行、缺输入、失败、超时和跳过不得登记为通过。必需矩阵无有效断言时保持未完成。
 8. 测试总数可以因退役下降；不得为保留 V19 总数增加无意义测试，也不得借减少测试删除现行覆盖。
 
-实施时建立如下逐项映射，填写真实值后进入开发记录，计划阶段不虚构新测试方法名：
-
-| 旧测试方法及参数 | 原行为断言 | 删除/迁移/已有覆盖及理由 | 新落点与关键断言 | 矩阵编号 | 实际运行证据 |
-| --- | --- | --- | --- | --- | --- |
-| P0 逐项填写 | 写出可观察行为 | 说明对应产品边界 | 不只写测试类名 | 对应下表 | 命令、TRX 或审查记录 |
+逐项映射已建立在[测试去向表](../archive/records/host-v20/test-matrix.md)，包括原方法及参数、有效断言、删除理由、新落点与实际运行证据。
 
 ## 3. L：布局文件和退役边界
 
@@ -80,7 +76,7 @@ L01/L02 是对已退出输入的忽略测试，允许出现字面量 `layout-v2.
 | G03 | 开发与发布执行边界保持 | Gate 自测/审查确认 `verify` 不启动 Windows Smoke、覆盖率或 seal；现有发布政策不降低 |
 | G04 | 工具结果与发布资格分别记录 | 脚本、自测及本地 V3 文件往返有实际证据；发布 Windows Smoke 明确为本轮未执行 |
 
-目前没有证据表明现有 Gate 自测已覆盖 G01/G02；实施时补足，不以 `Gate.Tests` 全绿替代新增检查路径的直接断言。若提取小型检查方法，应由真实发布入口复用，禁止只为测试写第二份判断。
+G01/G02 由 `LayoutArtifactTests` 直接调用真实发布入口复用的 `AssertWindowsSmokeLayoutArtifact` 验证。新增 15 组用例覆盖有效产物、缺失/仅旧文件、损坏 JSON、错误字段类型/版本及新产物目录出现旧文件；不启动真实发布进程。
 
 本轮不运行发布 Windows Smoke，不添加绕过 seal 的发布命令。Headless 生命周期、真实临时文件和 Store 往返验证开发行为；原生发布进程启动及退出证据留到实际发布阶段。
 
@@ -101,7 +97,7 @@ L01/L02 是对已退出输入的忽略测试，允许出现字面量 `layout-v2.
 | A01 | V2 删除范围与共享职责 | 退役类型/导入分支不存在；异常已归位，偏好仍需的 RetiredHostToolIds 保留；非 Layout v2 未改 |
 | A02 | 所有权与依赖方向 | Session、Store、Queue、Scope 和 Provider 所有者保持；未引入新迁移/清理框架、Service Locator 或宽接口 |
 | A03 | 中文注释和设计理由 | Store 回退/只读、异常、工具进程、Gate 检查、测试目的等解释与实际代码一致，无过期 V2 所有权说明 |
-| D01 | 当前契约与架构一致 | Layout 主链、V20 状态、V19 交付事实准确；实施前不提前删除仍有效的 V2 行为说明 |
+| D01 | 当前契约与架构一致 | Layout 主链、V20 状态、V19 交付事实准确；仅 V3 参与恢复，旧输入忽略与有意兼容变化准确区分 |
 | D02 | 历史原文与帮助入口 | 旧 reference 归档后当前链接可用，历史证据事实保持；八章节、理论原文和架构入口保持 |
 | D03 | 专用文档与全部变更链接 | 检查新增/修改 Markdown 的本仓文件及锚点；新方案和验证页可从实际嵌入资源读取并渲染 |
 
@@ -109,7 +105,7 @@ L01/L02 是对已退出输入的忽略测试，允许出现字面量 `layout-v2.
 
 ## 8. 实施阶段的本机命令
 
-以下均为**待执行模板**，不是本次文档交付已经运行的结果。各命令串行执行，每条检查退出码；失败时停止进入下一阶段并保留日志。P0 完整开发 `verify` 先准备当前补丁、locked restore 和 Release 输入：
+以下是可复用命令模板；本次实际时间、输出和退出码见开发记录。各命令串行执行，每条检查退出码；失败时停止进入下一阶段并保留日志。P0 完整开发 `verify` 先准备当前补丁、locked restore 和 Release 输入：
 
 ```powershell
 dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
@@ -145,17 +141,9 @@ dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warn
 
 ## 9. 文档交付与实施最终验证分别执行
 
-### 9.1 本次仅文档交付
+### 9.1 文档与嵌入帮助
 
-检查方案状态、命令和链接，重新构建并运行既有帮助专项，显式验证新文档的嵌入读取和渲染。不执行 V20 行为矩阵、Writer Lease 适配验证或 Gate 修改自测，因为本次没有实施这些修改。
-
-```powershell
-git diff --check
-dotnet test Host/MyAvaloniaManagement.Tests -c Release -m:1 -warnaserror --filter 'FullyQualifiedName~HelpContentTests'
-dotnet test Host/MyAvaloniaManagement.UiTests -c Release -m:1 -warnaserror --filter 'FullyQualifiedName~HelpWindowTests'
-```
-
-既有帮助测试不自动覆盖每份新资源；另行检查两份 V20 文档经真实 HelpContentCatalog 可读取、与源文件一致、链接可定位并能经 HelpMarkdownRenderer 渲染。仅文档验证通过不能写成 V20 实施完成或完整开发门禁通过。
+运行 HelpContentTests 与 HelpWindowTests；另用实际 HelpContentCatalog/HelpMarkdownRenderer 检查所有变更文档与嵌入原文一致、归档 V2 与 V20 导航可定位、Markdown 可渲染。本仓文件链接和 GitHub 锚点做全仓一次性检查；原有帮助渲染器对中文锚点的差异单列，不能误报为本轮新增断链。
 
 ### 9.2 实施后的最终输入
 

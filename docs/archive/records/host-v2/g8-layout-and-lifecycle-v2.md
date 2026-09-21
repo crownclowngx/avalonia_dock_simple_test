@@ -72,7 +72,7 @@ Core SDK 的 `IPluginLifecycle.InitializeAsync/ShutdownAsync` 不变。Legacy `I
 
 ## Layout V2
 
-当前线格式与完整恢复规则见 [Dock 布局快照 V2](../../../reference/dock-layout-snapshot-v2.md)。根、Pane 和 Tool 字段集合均精确固定；`activeToolId` 仅允许字符串或 `null`。注释、尾逗号、未知/重复/缺失/大小写错误字段、错误类型和 schema 1 均整体拒绝。
+当前线格式与完整恢复规则见 [Dock 布局快照 V2](../../specifications/dock-layout-snapshot-v2.md)。根、Pane 和 Tool 字段集合均精确固定；`activeToolId` 仅允许字符串或 `null`。注释、尾逗号、未知/重复/缺失/大小写错误字段、错误类型和 schema 1 均整体拒绝。
 
 V2 删除浮动字段、两向到四向 Migrator、历史 Tool ID 归一化和 layout 专用 Legacy ID Map。`Files`、旧短 ID、GUID 和 V1 字段不会映射为当前 Tool。旧 `layout-v1.json` 保持原样。
 

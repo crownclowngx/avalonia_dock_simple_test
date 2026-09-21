@@ -6,6 +6,8 @@
 
 ## 方案与评审
 
+- [V20：历史布局退役与现行入口收敛](plans/host-v20-layout-retirement-plan.md)，见[开发记录](records/host-v20/development-acceptance.md)、[测试去向](records/host-v20/test-matrix.md)及[专用开发验证](../maintenance/host-v20-layout-retirement-verification.md)。
+
 - [V19：Host 复杂度收敛方案](plans/host-v19-complexity-reduction-plan.md)，实际实施见[开发记录](records/host-v19/development-acceptance.md)与[逐项测试映射](records/host-v19/test-matrix.md)。
 
 - [Dock 区域默认居中停靠实施计划](plans/host-dock-area-fill-implementation-plan.md)
@@ -40,6 +42,8 @@
 
 ## 旧格式
 
+- [Dock 布局快照 V2（V20 已完整退役）](specifications/dock-layout-snapshot-v2.md)
+
 - [Dock 结构布局快照 V1（历史事实）](specifications/dock-layout-snapshot-v1.md)
 - [Document 保存 V1 设计](specifications/document-persistence-v1-design.md)
 
@@ -52,6 +56,11 @@
 - [2026-09-20 Host 人工验收确认](records/host/manual-acceptance-20260920.md)
 - [2026-09-20 文档整理、漂移修正及处置清单](records/documentation/reorganization-20260920.md)
 - [2026-09-16 文档重组与原始处置清单](records/documentation/reorganization-20260916.md)
+
+### host-v20
+
+- [历史布局退役开发记录](records/host-v20/development-acceptance.md)、[最终开发证据](records/host-v20/development-evidence.json)
+- [逐项测试去向与矩阵](records/host-v20/test-matrix.md)；本轮无部署或发布。
 
 ### host-v19
 

@@ -1,11 +1,15 @@
 # V20：Host 历史布局能力退役与现行入口收敛方案
 
+> V20 归档维护（2026-09-21）：下文引用的 Layout V2 源码已退出当前树；相关源码链接改为原路径文本，正文保留原基线事实。
+
 > 用途：删除已经失去业务意义的 Dock Layout V2 能力，保留现行布局行为的验证，并减少旧入口和过时说明带来的理解负担。
-> 状态：待实施；本次交付为方案及专用开发验证文档，不代表代码、工具或测试已经完成退役。日期：2026-09-21。
+> 状态：实现与专项已完成，归档保留实施前评审。日期：2026-09-21。实际阶段、失败与重跑见[开发记录](../records/host-v20/development-acceptance.md)；最终完整开发状态以同目录非嵌入 JSON 为准。
 > 调研基线：`master` / `661ac7e4565afc86c2c90ee810259d84378fc61a`，编写前工作树干净。实施前重新确认 HEAD、差异及实际调用关系。
-> 配套：[V20 专用开发验证](host-v20-layout-retirement-verification.md)。V19 已完成实施和本机交付，分别见[开发记录](../archive/records/host-v19/development-acceptance.md)与[部署证据](../archive/records/host-v19/local-deployment-20260921.json)。
+> 配套：[V20 专用开发验证](../../maintenance/host-v20-layout-retirement-verification.md)。V19 已完成实施和本机交付，分别见[开发记录](../records/host-v19/development-acceptance.md)与[部署证据](../records/host-v19/local-deployment-20260921.json)。
 
 V20 是 Host 改造序号，不升级产品、程序集、SDK、NuGet 包或现行 Layout schema。部署记录中的实际源码及 EXE 身份以原 JSON 为准，不能把记录提交的 HEAD 当作构建输入。历史测试数量不作为 V20 的测试数量目标。
+
+> 阅读约定：以下正文保留 `661ac7e` 基线上的计划与当时文档请求；后续所有者已授权按计划实施并提交。正文中的“当前”“待实施”和旧类型名称指原评审时点，不表示运行时仍支持 V2。
 
 ## 1. 目标与首要规定
 
@@ -53,17 +57,17 @@ V20 是 Host 改造序号，不升级产品、程序集、SDK、NuGet 包或现�
 
 ## 3. 当前代码依据与删除清单
 
-当前 [DockLayoutLifecycle](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutLifecycle.cs) 借用 Session 的 `LayoutState` 应用和捕获布局，使用 `DockLayoutV3Store` 读取，通过 `DockLayoutSaveQueue` 保存。旧 Store 不在生产组合根中，但 [V3 Store.Load](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutV3Store.cs) 仍在没有 V3 历史且可写时调用 V2 reader 和转换器。
+当前 [DockLayoutLifecycle](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutLifecycle.cs) 借用 Session 的 `LayoutState` 应用和捕获布局，使用 `DockLayoutV3Store` 读取，通过 `DockLayoutSaveQueue` 保存。旧 Store 不在生产组合根中，但 [V3 Store.Load](../../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutV3Store.cs) 仍在没有 V3 历史且可写时调用 V2 reader 和转换器。
 
 | 当前对象 | 拟处理 | 必须先核对的依赖 |
 | --- | --- | --- |
-| [DockLayoutSnapshotV2.cs](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutSnapshotV2.cs) | 删除 V2 快照、Pane/Tool 记录及专属验证 | 测试夹具、版本测试、现行有效断言 |
-| [DockLayoutSnapshotV2Json.cs](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutSnapshotV2Json.cs) | 删除 V2 reader/writer | 同文件的 `DockLayoutFormatException` 仍被 V3 使用，先归位 |
-| [DockLayoutV2Migration.cs](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutV2Migration.cs) | 删除转换器 | V3 Store 导入分支、迁移专项测试 |
-| [DockLayoutStore.cs](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs) | 删除旧读写、隔离和备份实现 | TestHostContext、UiTestContext 及测试文件构造 |
-| [DockLayoutSnapshotMapper.cs](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutSnapshotMapper.cs) | 删除旧 Dock 双向映射 | 四向布局、自动收起等仍有效的行为测试 |
-| [DockLayoutRuntimeValidator.cs](../../Host/MyAvaloniaManagement/Business/Layout/DockLayoutRuntimeValidator.cs) | 删除 V2 运行时校验 | 旧可用性测试、架构图和源码注释 |
-| [RetiredToolLayoutMigration.cs](../../Host/MyAvaloniaManagement/Business/Layout/RetiredToolLayoutMigration.cs) | 删除 V2 专用退役工具转换 | `RetiredHostToolIds` 仍由工具偏好校验使用，不随迁移器删除 |
+| `Host/MyAvaloniaManagement/Business/Layout/DockLayoutSnapshotV2.cs` | 删除 V2 快照、Pane/Tool 记录及专属验证 | 测试夹具、版本测试、现行有效断言 |
+| `Host/MyAvaloniaManagement/Business/Layout/DockLayoutSnapshotV2Json.cs` | 删除 V2 reader/writer | 同文件的 `DockLayoutFormatException` 仍被 V3 使用，先归位 |
+| `Host/MyAvaloniaManagement/Business/Layout/DockLayoutV2Migration.cs` | 删除转换器 | V3 Store 导入分支、迁移专项测试 |
+| `Host/MyAvaloniaManagement/Business/Layout/DockLayoutStore.cs` | 删除旧读写、隔离和备份实现 | TestHostContext、UiTestContext 及测试文件构造 |
+| `Host/MyAvaloniaManagement/Business/Layout/DockLayoutSnapshotMapper.cs` | 删除旧 Dock 双向映射 | 四向布局、自动收起等仍有效的行为测试 |
+| `Host/MyAvaloniaManagement/Business/Layout/DockLayoutRuntimeValidator.cs` | 删除 V2 运行时校验 | 旧可用性测试、架构图和源码注释 |
+| `Host/MyAvaloniaManagement/Business/Layout/RetiredToolLayoutMigration.cs` | 删除 V2 专用退役工具转换 | `RetiredHostToolIds` 仍由工具偏好校验使用，不随迁移器删除 |
 | `DockLayoutV3Store.Load()` 中的 V2 导入 | 删除旧文件探测与导入条件 | 有效主文件/备份、未来格式、只读和坏文件保存行为 |
 
 `DockLayoutFormatException` 的设计职责是报告当前布局格式错误，应迁到现行布局位置并修正只描述 V2 的注释，保持错误码和异常语义。`RetiredHostToolIds` 的现行偏好约束继续保留，按实际调用修正注释，不把它当成 V2 兼容层。
@@ -94,7 +98,7 @@ V20 是 Host 改造序号，不升级产品、程序集、SDK、NuGet 包或现�
 
 实施前建立逐项表：旧测试方法与参数、原行为断言、删除或迁移理由、新测试方法与参数、验证矩阵编号、实际运行结果。纯兼容测试删除允许总数下降；V19 测试数量不是最低条数，不用无意义测试补齐数字。
 
-重点检查 [DockFourWayLayoutTests](../../Host/MyAvaloniaManagement.PluginTests/DockFourWayLayoutTests.cs)、[DockLayoutAvailabilityTests](../../Host/MyAvaloniaManagement.PluginTests/DockLayoutAvailabilityTests.cs)、[AutoHideRestoreVisualTests](../../Host/MyAvaloniaManagement.UiTests/AutoHideRestoreVisualTests.cs)、[ToolCenterUiTests](../../Host/MyAvaloniaManagement.UiTests/ToolCenterUiTests.cs)、数据根/版本/工具偏好测试及两个测试容器。
+重点检查 [DockFourWayLayoutTests](../../../Host/MyAvaloniaManagement.PluginTests/DockFourWayLayoutTests.cs)、[DockLayoutAvailabilityTests](../../../Host/MyAvaloniaManagement.PluginTests/DockLayoutAvailabilityTests.cs)、[AutoHideRestoreVisualTests](../../../Host/MyAvaloniaManagement.UiTests/AutoHideRestoreVisualTests.cs)、[ToolCenterUiTests](../../../Host/MyAvaloniaManagement.UiTests/ToolCenterUiTests.cs)、数据根/版本/工具偏好测试及两个测试容器。
 
 旧可用性测试中的“任何未知项都拒绝整个 V2 布局”不能机械迁到 V3。按当前 V3 契约保留其有效目的，例如缺失工具不创建实例、可恢复记录仍保留、可用项仍正确显示；退出的旧恢复政策按理由删除，不修改 V3 去迎合旧预期。
 
@@ -102,13 +106,13 @@ V20 是 Host 改造序号，不升级产品、程序集、SDK、NuGet 包或现�
 
 ### 6.1 Writer Lease 验证
 
-[Verify-LayoutV3WriterLease.ps1](../../tools/Verify-LayoutV3WriterLease.ps1) 当前仍要求新实例转换 V2。实施时删除该场景，改用 V3 验证，保留同根唯一写入者、不同数据根隔离、只读会话不自动接管及专属持锁进程退出后新实例可取得写锁。
+[Verify-LayoutV3WriterLease.ps1](../../../tools/Verify-LayoutV3WriterLease.ps1) 当前仍要求新实例转换 V2。实施时删除该场景，改用 V3 验证，保留同根唯一写入者、不同数据根隔离、只读会话不自动接管及专属持锁进程退出后新实例可取得写锁。
 
 脚本继续只在隔离临时目录加载当前 Store，不启动桌面、CI 或发布流程。保留就绪信号、有界等待、专属子进程回收及清理前绝对路径检查；不操作用户 Host 进程或真实数据根。
 
 ### 6.2 发布检查代码可以适配，发布流程不在本轮执行
 
-[GateChecks](../../tools/MyAvaloniaManagement.Gate/GateChecks.cs) 当前 Windows Smoke 仍断言 `layout-v2.json` / schema 2。V20 将检查及受影响消息改为当前 V3 文件/schema，并补充实际被该调用路径复用的产物验证单元测试。
+[GateChecks](../../../tools/MyAvaloniaManagement.Gate/GateChecks.cs) 当前 Windows Smoke 仍断言 `layout-v2.json` / schema 2。V20 将检查及受影响消息改为当前 V3 文件/schema，并补充实际被该调用路径复用的产物验证单元测试。
 
 如果需要测试隔离，最多提取同一 Gate 类中的小型产物检查方法，让发布入口与工具单测调用同一实现；不新增发布执行器、测试模式或通用验证框架。测试直接覆盖临时产物，不启动发布 Windows Smoke。
 
@@ -116,7 +120,7 @@ V20 是 Host 改造序号，不升级产品、程序集、SDK、NuGet 包或现�
 
 ## 7. 旧查询入口收敛
 
-[DocumentCreationMenuQuery.GetCreationEntriesByCategory](../../Host/MyAvaloniaManagement/Business/Workspace/DocumentCreationMenuQuery.cs) 当前只被 [ServiceAndModelTests](../../Host/MyAvaloniaManagement.Tests/ServiceAndModelTests.cs) 中两个测试使用。
+[DocumentCreationMenuQuery.GetCreationEntriesByCategory](../../../Host/MyAvaloniaManagement/Business/Workspace/DocumentCreationMenuQuery.cs) 当前只被 [ServiceAndModelTests](../../../Host/MyAvaloniaManagement.Tests/ServiceAndModelTests.cs) 中两个测试使用。
 
 迁移分类测试到 `ReadDirectory().Categories` 的分类与 `EntryCount`；迁移多 Intent 测试到 `Items` 中精确 DocumentTypeId 和 CreationIntentId，并保留声明顺序断言。随后删除旧方法及不再使用的依赖。
 
