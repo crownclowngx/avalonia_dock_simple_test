@@ -498,6 +498,32 @@ public sealed class DocumentPersistenceTests
         Assert.Empty(context.Storage.Writes);
     }
 
+    [Fact]
+    public async Task V19恢复确认异常必须立即释放候选且不改动输入文件()
+    {
+        using var context = DocumentTestContext.Create();
+        var primary = Path.Combine(context.TempDirectory, "confirmation-failed.mamdoc");
+        var backup = primary + DocumentRecoveryRegistry.BackupSuffix;
+        context.Storage.AddFile(primary, "{broken");
+        context.Storage.AddFile(backup, Serialize("备份", "尚未采用"));
+        var files = context.Storage.Files.ToDictionary();
+        var failure = new InvalidOperationException("recovery-dialog-failed");
+        context.Interactions.ConfirmRecoveryException = failure;
+        _ = context.CreateMainWindowViewModel();
+
+        var actual = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            context.Provider.GetRequiredService<DocumentPersistenceCoordinator>().OpenPathAsync(primary));
+
+        Assert.Same(failure, actual);
+        Assert.Single(context.Interactions.RecoveryRequests);
+        Assert.Empty(GetDocuments(context));
+        var probe = context.Provider.GetRequiredService<DocumentTestProbe>();
+        Assert.Equal(1, probe.DisposeCount);
+        Assert.True(probe.ClosingObservedDuringDispose);
+        Assert.Empty(context.Storage.Writes);
+        Assert.Equal(files.OrderBy(pair => pair.Key), context.Storage.Files.OrderBy(pair => pair.Key));
+    }
+
     private sealed class PluginBoundaryException(string message) : Exception(message);
 
     /// <summary>

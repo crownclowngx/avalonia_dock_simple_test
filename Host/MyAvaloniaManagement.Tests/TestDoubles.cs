@@ -253,6 +253,7 @@ internal sealed class TestDocumentInteractionService : IDocumentInteractionServi
     public TaskCompletionSource<DocumentCloseChoice>? PendingCloseChoice { get; set; }
     public TaskCompletionSource<string>? ErrorShown { get; set; }
     public Exception? ConfirmCloseException { get; set; }
+    public Exception? ConfirmRecoveryException { get; set; }
     public Exception? ShowErrorException { get; set; }
 
     public Task<DocumentCloseChoice> ConfirmCloseAsync(
@@ -278,6 +279,7 @@ internal sealed class TestDocumentInteractionService : IDocumentInteractionServi
     public Task<bool> ConfirmRecoveryAsync(string fileName)
     {
         RecoveryRequests.Add(fileName);
+        if (ConfirmRecoveryException is { } exception) return Task.FromException<bool>(exception);
         return Task.FromResult(
             RecoveryChoices.Count != 0 && RecoveryChoices.Dequeue());
     }

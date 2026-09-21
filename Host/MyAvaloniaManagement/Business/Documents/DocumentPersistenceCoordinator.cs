@@ -186,13 +186,28 @@ internal sealed class DocumentPersistenceCoordinator(
                 exception);
         }
 
-        if (!await interactionService.ConfirmRecoveryAsync(Path.GetFileName(primaryPath)))
+        // 候选已持有真实 Scope。确认窗口既可能拒绝也可能抛出异常，必须从 await 前就承担
+        // 回滚义务；发布方法接管义务以后才清空本地候选，防止异常路径出现无人释放的间隙。
+        ManagedDocumentDockable? pending = backup;
+        try
         {
-            workspace.ReleaseDocument(backup);
-            primaryFailure.Throw();
+            if (!await interactionService.ConfirmRecoveryAsync(Path.GetFileName(primaryPath)))
+                primaryFailure.Throw();
+            pending = null;
+            PublishLoadedDocument(backup, primaryPath);
         }
-
-        PublishLoadedDocument(backup, primaryPath);
+        finally
+        {
+            if (pending is not null)
+            {
+                try { workspace.ReleaseDocument(pending); }
+                catch (Exception exception)
+                {
+                    // 清理错误进入诊断，不覆盖导致本轮打开失败的原始异常。
+                    DocumentPersistenceErrorMapper.Report("DOCUMENT_RECOVERY_ROLLBACK_FAILED", exception);
+                }
+            }
+        }
     }
 
     private async Task<ManagedDocumentDockable> CreateLoadedDocumentAsync(string filePath)
