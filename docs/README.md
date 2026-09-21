@@ -45,6 +45,7 @@
 
 ## 当前结论、待办与历史
 
+- [V19 Host 复杂度收敛方案](roadmap/host-v19-complexity-reduction-plan.md)：方案文档交付，代码实施待执行；配套[专用开发验证](maintenance/host-v19-complexity-verification.md)，明确 SOLID、关闭与回滚规则、依赖收窄和完整本地验证要求。
 - [Host 人工验收确认](archive/records/host/manual-acceptance-20260920.md)：项目所有者确认通过，专项矩阵保留供后续回归。
 - [V18 命令面板交互方案](archive/plans/host-v18-command-palette-interaction-plan.md)：已实施四类分组、动作和目标校验；配套[专用开发验证](maintenance/host-v18-command-palette-verification.md)及[开发记录](archive/records/host-v18/development-acceptance.md)。
 - [待办与候选](roadmap/README.md)：保留当前开发计划、发布前事项、外部业务边界、实验和未来候选。

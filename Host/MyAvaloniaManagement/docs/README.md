@@ -14,6 +14,7 @@
 | 查阅版本、支持平台与包职责 | [集中基线](../../../docs/reference/platform-baseline.md) |
 | 运行自动化与定位专项回归 | [主仓验证与专项索引](../../../docs/maintenance/verification.md) |
 | 查阅命令面板分组与目标一致性设计 | [V18 交互方案](../../../docs/archive/plans/host-v18-command-palette-interaction-plan.md)、[专用开发验证](../../../docs/maintenance/host-v18-command-palette-verification.md) |
+| 评估和收敛重复规则、回滚责任及无必要依赖 | [V19 复杂度收敛方案](../../../docs/roadmap/host-v19-complexity-reduction-plan.md)、[专用开发验证](../../../docs/maintenance/host-v19-complexity-verification.md)；当前为文档交付，代码实施待执行 |
 | 构建和交付本机安装版 | [本机部署](../../../docs/maintenance/local-deployment.md) |
 | 查阅 V11–V18 方案、设计取舍和原始结果 | [历史归档](../../../docs/archive/README.md) |
 

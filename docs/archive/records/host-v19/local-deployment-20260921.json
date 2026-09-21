@@ -1,0 +1,355 @@
+{
+  "schemaVersion": 1,
+  "recordType": "host-local-single-exe-deployment-with-v19-planning-documents",
+  "status": "completed",
+  "date": "2026-09-21",
+  "target": "D:\\data\\avalonia",
+  "executable": "D:\\data\\avalonia\\MyAvaloniaManagement.exe",
+  "sourceRevision": "c38d71fb45b07b4c0eac778b9ed7ea009d855a19",
+  "sourceWorkingTreeCleanAtArchive": false,
+  "sourceWorktreeOverlay": [
+    {
+      "path": "docs/maintenance/host-v19-complexity-verification.md",
+      "sha256": "4BC9BD5014A9D2C207A2A2537BD8F83F3A76ADEC2EAE659298309B2C13B542B8"
+    },
+    {
+      "path": "docs/maintenance/verification.md",
+      "sha256": "1BF66192B0D3EFD3EADE25A25973193B71C9EBF93A7FA9F16A4094A8F05A813D"
+    },
+    {
+      "path": "docs/README.md",
+      "sha256": "7A2E64D390256228FC345C32B0278862574AC2CBBC77F8B5CAA15F05B5AC66C1"
+    },
+    {
+      "path": "docs/roadmap/host-v19-complexity-reduction-plan.md",
+      "sha256": "0D6030373540DD60396D1A3E54C5209783BFA887A8A846D21C3F9FD891DF9704"
+    },
+    {
+      "path": "docs/roadmap/README.md",
+      "sha256": "AF77FBB3A69AAAFF0E562721B0E566F5DF4943346583476053D36CFA05A40C77"
+    },
+    {
+      "path": "Host/MyAvaloniaManagement/docs/README.md",
+      "sha256": "F8EAFC8FB2D1511001108001C279F0A45953BBD4707742A54E93A01B16BFFBFC"
+    }
+  ],
+  "sourceWorktreeOverlaySha256": "350CD48066F53C0BD9DEE93D792704E5E5203E16A052EF86762D1843EE8F217B",
+  "buildRevision": "c38d71fb45b07b4c0eac778b9ed7ea009d855a19-worktree.350cd48066f5",
+  "scope": "Current V18 implementation plus six V19 planning/navigation Markdown changes; V19 code refactor not implemented.",
+  "format": "Release win-x64; self-contained compressed single executable; native libraries bundled; trimming disabled; Controls and HelpWeb external",
+  "build": {
+    "passed": true,
+    "revision": "c38d71fb45b07b4c0eac778b9ed7ea009d855a19",
+    "sdk": "10.0.302",
+    "startedAtUtc": "2026-09-21T08:37:05.312365+08:00",
+    "finishedAtUtc": "2026-09-21T08:37:17.056794+08:00",
+    "restoreArguments": [
+      "restore",
+      "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj",
+      "-r",
+      "win-x64",
+      "-p:SelfContained=true",
+      "-p:PublishSingleFile=true",
+      "-p:PublishTrimmed=false",
+      "-p:SkipPluginDeploy=true",
+      "--nologo"
+    ],
+    "publishArguments": [
+      "publish",
+      "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj",
+      "-c",
+      "Release",
+      "-r",
+      "win-x64",
+      "--self-contained",
+      "true",
+      "--no-restore",
+      "--nologo",
+      "-p:PublishSingleFile=true",
+      "-p:IncludeNativeLibrariesForSelfExtract=true",
+      "-p:EnableCompressionInSingleFile=true",
+      "-p:PublishTrimmed=false",
+      "-p:SkipPluginDeploy=true",
+      "-p:DebugType=embedded",
+      "-p:CopyOutputSymbolsToPublishDirectory=false",
+      "-p:SourceRevisionId=c38d71fb45b07b4c0eac778b9ed7ea009d855a19-worktree.350cd48066f5",
+      "-warnaserror",
+      "-m:1",
+      "-o",
+      "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v19\\deployment-20260921-083539\\publish"
+    ],
+    "restoreExitCode": 0,
+    "publishExitCode": 0,
+    "warningsAsErrors": true,
+    "exeSha256": "4104ABA008D34633245878E0366C7436FB75E258AB52B7C517E1AA11C74753AC",
+    "exeBytes": 53739708,
+    "exeProductVersion": "3.0.0+c38d71fb45b07b4c0eac778b9ed7ea009d855a19-worktree.350cd48066f5",
+    "avaloniaPatchReceipt": {
+      "identity": "avalonia-12.1.2-host-layout.1",
+      "fingerprint": "9DB8A580DD77C384C8969F2284FFB27240CCFF35424CA23E1DB38E44DE3BA46C",
+      "commit": "d3c867a9e2de379249b03dbeb3495bd7f076a81a",
+      "sdk": "10.0.302",
+      "publicSigned": true,
+      "assembly": "Avalonia.Base, Version=12.1.2.0, Culture=neutral, PublicKeyToken=c8d484a7012f9a8b",
+      "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+      "pdbSha256": "6AFB032E58490DFB8176C69FB9F6395655AD72CD59E18CE3E0A521C55B22DC67",
+      "buildRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\9DB8A580DD77C384-0493837b",
+      "isolatedRestore": false,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "testTrx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\9DB8A580DD77C384-0493837b\\results\\layout-patch.trx",
+      "testSha256": "4000E0EC0E605EFAC455072F965857340B3CB8E4EE42C121DB3568510EB21809"
+    },
+    "dockPackageSha256": "F697CFF4F1411C6B437DB3803671B761B441AB75CD7BED11E6AC0787389B33C9"
+  },
+  "bundleVerification": {
+    "passed": true,
+    "version": "6.0",
+    "entryCount": 238,
+    "rootDllCount": 0,
+    "runtimeConfig": {
+      "runtimeOptions": {
+        "tfm": "net10.0",
+        "includedFrameworks": [
+          {
+            "name": "Microsoft.NETCore.App",
+            "version": "10.0.10"
+          }
+        ],
+        "configProperties": {
+          "MVVMTOOLKIT_ENABLE_INOTIFYPROPERTYCHANGING_SUPPORT": true,
+          "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+          "System.Runtime.InteropServices.BuiltInComInterop.IsSupported": true,
+          "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+        }
+      }
+    },
+    "avaloniaSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+    "dockSha256": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1",
+    "hostSha256": "01092688AA13901ABFF6F908058161754FB312D8FBBACBDBE8D50C0C6EA916D7"
+  },
+  "embeddedDocumentsVerification": [
+    {
+      "path": "docs/maintenance/host-v19-complexity-verification.md",
+      "sha256": "4BC9BD5014A9D2C207A2A2537BD8F83F3A76ADEC2EAE659298309B2C13B542B8",
+      "matchesSource": true
+    },
+    {
+      "path": "docs/maintenance/verification.md",
+      "sha256": "1BF66192B0D3EFD3EADE25A25973193B71C9EBF93A7FA9F16A4094A8F05A813D",
+      "matchesSource": true
+    },
+    {
+      "path": "docs/README.md",
+      "sha256": "7A2E64D390256228FC345C32B0278862574AC2CBBC77F8B5CAA15F05B5AC66C1",
+      "matchesSource": true
+    },
+    {
+      "path": "docs/roadmap/host-v19-complexity-reduction-plan.md",
+      "sha256": "0D6030373540DD60396D1A3E54C5209783BFA887A8A846D21C3F9FD891DF9704",
+      "matchesSource": true
+    },
+    {
+      "path": "docs/roadmap/README.md",
+      "sha256": "AF77FBB3A69AAAFF0E562721B0E566F5DF4943346583476053D36CFA05A40C77",
+      "matchesSource": true
+    },
+    {
+      "path": "Host/MyAvaloniaManagement/docs/README.md",
+      "sha256": "F8EAFC8FB2D1511001108001C279F0A45953BBD4707742A54E93A01B16BFFBFC",
+      "matchesSource": true
+    }
+  ],
+  "startupVerification": {
+    "passed": true,
+    "exitCode": 0,
+    "pid": 19324,
+    "startedAtUtc": "2026-09-21T08:37:58.7432193+08:00",
+    "finishedAtUtc": "2026-09-21T08:38:00.758051+08:00",
+    "exeSha256": "4104ABA008D34633245878E0366C7436FB75E258AB52B7C517E1AA11C74753AC",
+    "isolatedData": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v19\\deployment-20260921-083539\\startup-data",
+    "isolatedBundleCache": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v19\\deployment-20260921-083539\\bundle-cache",
+    "dotnetRootOverride": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v19\\deployment-20260921-083539\\nonexistent-dotnet",
+    "externalPluginsLoaded": false,
+    "originalUserDataTouched": false,
+    "layout": {
+      "schemaVersion": 3,
+      "mainWindow": {
+        "id": "main",
+        "bounds": {
+          "x": 320,
+          "y": 204,
+          "width": 1904,
+          "height": 1104,
+          "maximized": false,
+          "screen": {
+            "x": 0,
+            "y": 0,
+            "width": 2560,
+            "height": 1552,
+            "scaling": 1
+          }
+        },
+        "root": {
+          "kind": "split",
+          "id": "node-ceb51b6c0b4e4e6fab4c9eb73f4dd091",
+          "proportion": 1,
+          "orientation": "horizontal",
+          "children": [
+            {
+              "kind": "tools",
+              "id": "node-30c9e399de9f44408c1ffed1f994b2a3",
+              "proportion": 0.09375,
+              "orientation": null,
+              "children": [],
+              "toolIds": [
+                "myavalonia.host.tool.file-system-tree"
+              ],
+              "activeToolId": null
+            },
+            {
+              "kind": "documents",
+              "id": "Documents",
+              "proportion": 0.7880434782608696,
+              "orientation": null,
+              "children": [],
+              "toolIds": [],
+              "activeToolId": null
+            },
+            {
+              "kind": "tools",
+              "id": "node-524726d988f747e6a933ea393ac318a7",
+              "proportion": 0.11820652173913043,
+              "orientation": null,
+              "children": [],
+              "toolIds": [
+                "myavalonia.host.tool.plugin-menu"
+              ],
+              "activeToolId": null
+            }
+          ],
+          "toolIds": [],
+          "activeToolId": null
+        }
+      },
+      "floatingWindows": [],
+      "tools": [
+        {
+          "id": "myavalonia.host.tool.file-system-tree",
+          "state": "hidden",
+          "returnDockId": "LeftTools",
+          "returnOrder": 0
+        },
+        {
+          "id": "myavalonia.host.tool.plugin-menu",
+          "state": "hidden",
+          "returnDockId": "RightTools",
+          "returnOrder": 0
+        }
+      ]
+    },
+    "stderrEmpty": true,
+    "method": "Actual self-contained bundled EXE, empty Controls, isolated data/cache, nonexistent DOTNET_ROOT, existing auto-close hook; not the formal Windows Smoke gate."
+  },
+  "deployment": {
+    "passed": true,
+    "deploymentCompleted": true,
+    "target": "D:\\data\\avalonia",
+    "sourceRevision": "c38d71fb45b07b4c0eac778b9ed7ea009d855a19",
+    "backupCreated": true,
+    "backupRoot": "D:\\data\\avalonia-backups\\deployment-20260921-083539",
+    "backupFiles": [
+      {
+        "path": "MyAvaloniaManagement.exe",
+        "sha256": "145D5FAAE04950841E6B8B3DEDC240E6869E9A5E0FD452937A32B2450BE788FB"
+      }
+    ],
+    "backupPolicy": "Verified backup of changed existing files before replacement",
+    "replacedFiles": [
+      "MyAvaloniaManagement.exe"
+    ],
+    "filesBefore": 664,
+    "filesAfter": 664,
+    "deliveryFilesVerified": 139,
+    "retainedFilesUnchanged": 525,
+    "controlsFilesUnchanged": 525,
+    "controlsDirectories": 12,
+    "exeSha256": "4104ABA008D34633245878E0366C7436FB75E258AB52B7C517E1AA11C74753AC",
+    "exeBytes": 53739708,
+    "rootDllCount": 0,
+    "completedAtUtc": "2026-09-21T08:38:44.1483917+08:00"
+  },
+  "cleanup": {
+    "passed": true,
+    "removed": [
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v19\\deployment-20260921-083539\\source",
+        "directory": true,
+        "files": 1589,
+        "bytes": 305468451
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v19\\deployment-20260921-083539\\publish",
+        "directory": true,
+        "files": 145,
+        "bytes": 181824915
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v19\\deployment-20260921-083539\\startup-data",
+        "directory": true,
+        "files": 3,
+        "bytes": 1829
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v19\\deployment-20260921-083539\\bundle-cache",
+        "directory": true,
+        "files": 3,
+        "bytes": 18839080
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v19\\deployment-20260921-083539\\source.zip",
+        "directory": false,
+        "files": 1,
+        "bytes": 9490734
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v19\\deployment-20260921-083539\\extracted-Avalonia.Base.dll",
+        "directory": false,
+        "files": 1,
+        "bytes": 2355200
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v19\\deployment-20260921-083539\\extracted-Dock.Avalonia.dll",
+        "directory": false,
+        "files": 1,
+        "bytes": 322560
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v19\\deployment-20260921-083539\\extracted-MyAvaloniaManagement.runtimeconfig.json",
+        "directory": false,
+        "files": 1,
+        "bytes": 518
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v19\\deployment-20260921-083539\\extracted-MyAvaloniaManagement.dll",
+        "directory": false,
+        "files": 1,
+        "bytes": 4763648
+      }
+    ],
+    "filesRemoved": 1745,
+    "bytesRemoved": 523066935,
+    "completedAtUtc": "2026-09-21T08:39:32.166975+08:00",
+    "retained": "Build logs, scripts, JSON manifests and verification receipts",
+    "scope": "Only this deployment task; installed EXE, Controls, user data and earlier task artifacts untouched"
+  },
+  "sourceValidation": "Previous document-only turn: HelpContentTests 10 passed and HelpWindowTests 4 passed; links and embedded rendering verified. This deployment: warnings-as-errors publish, bundle identity, embedded Markdown byte comparison, isolated startup/normal exit, Layout V3, installed-file hashes. No new implementation-level verification claimed.",
+  "windowsCi": "not-run",
+  "formalReleaseGates": "not-run",
+  "aiflow": "not-used",
+  "publicPublication": "not-run",
+  "evidenceDirectory": "artifacts/host-v19/deployment-20260921-083539",
+  "evidenceNote": "Isolated source including bin/obj, publish staging, startup data, bundle cache and extracted verification files were removed. Small logs/scripts/receipts and the verified old EXE rollback backup remain. Existing development outputs from other tasks, installed Controls and user data are outside cleanup scope.",
+  "finalizedAtUtc": "2026-09-21T00:40:13.002185+00:00"
+}

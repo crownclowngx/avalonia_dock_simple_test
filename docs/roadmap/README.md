@@ -4,6 +4,14 @@
 
 当前 Host 的人工验收已由项目所有者实际手工使用后[确认通过](../archive/records/host/manual-acceptance-20260920.md)。原工具中心、搜索、看板、V11–V17 与 Dock 修复的重复 Host 桌面待办已收口，完成计划移入[历史归档](../archive/README.md)。历次本机部署见[部署索引](../maintenance/local-deployment.md)。
 
+## 当前开发方案
+
+| 事项 | 状态 / 范围 | 依据与完成条件 |
+| --- | --- | --- |
+| V19 Host 复杂度收敛 | 方案与专用验证规范已编写；代码实施和开发验收待执行 | [实施方案](host-v19-complexity-reduction-plan.md)、[专用开发验证](../maintenance/host-v19-complexity-verification.md)：关闭规则、待发布回滚、命令目录、实时查询和工具用例分阶段收敛；SOLID 优先，先复现风险再修复，执行完整本地开发验证 |
+
+V19 当前交付为文档；不使用 AIFLOW、Windows CI 或发布门禁。V18 的既有实现和独立实机待办保持原状态。
+
 ## 已实施功能的实机体验待办
 
 | 事项 | 状态 / 范围 | 依据与完成条件 |
@@ -26,7 +34,7 @@ V18 代码、当前文档和专项已完成；最终完整开发门禁以开发�
 
 | 候选 | 范围与依据 |
 | --- | --- |
-| 清单解析、工作区关闭与 Workflow 编排继续改善可读性 | [V17 已归档方案](../archive/plans/host-v17-readability-refactor-plan.md)中未纳入实施的候选，先明确独立目标与行为保护 |
+| 清单解析与 Workflow 编排继续改善可读性 | [V17 已归档方案](../archive/plans/host-v17-readability-refactor-plan.md)中未纳入实施的候选，先明确独立目标与行为保护；关闭规则的具体收敛已进入上方 V19 方案 |
 | Workflow 下载与跨插件业务闭环 | [原始 Workflow 方案](../archive/plans/ai-workflow-plugin-exploration.md)：先确认实际插件现状和责任仓库，再验证真实下载、后续加密的取消/失败及源文件保留 |
 | AI 候选规划、破坏性能力、定义持久化 | 同一原始方案中的独立产品候选，分别确认需求与边界，不作为当前手工编排的前提 |
 
