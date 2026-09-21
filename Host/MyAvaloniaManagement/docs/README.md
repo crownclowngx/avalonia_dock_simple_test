@@ -16,6 +16,7 @@
 | 查阅命令面板分组与目标一致性设计 | [V18 交互方案](../../../docs/archive/plans/host-v18-command-palette-interaction-plan.md)、[专用开发验证](../../../docs/maintenance/host-v18-command-palette-verification.md) |
 | 维护收敛后的关闭、回滚、命令和工具边界 | [V19 归档方案](../../../docs/archive/plans/host-v19-complexity-reduction-plan.md)、[专用验证](../../../docs/maintenance/host-v19-complexity-verification.md)、[开发记录](../../../docs/archive/records/host-v19/development-acceptance.md) |
 | 理解 Layout V2 退役、测试迁移与现行入口收敛 | [V20 归档方案](../../../docs/archive/plans/host-v20-layout-retirement-plan.md)、[专用开发验证](../../../docs/maintenance/host-v20-layout-retirement-verification.md) |
+| 审视开发门禁、测试职责和验证成本 | [V21 待实施方案](../../../docs/roadmap/host-v21-gate-and-test-efficiency-plan.md)、[专用开发验证计划](../../../docs/roadmap/host-v21-gate-and-test-efficiency-verification.md) |
 | 构建和交付本机安装版 | [本机部署](../../../docs/maintenance/local-deployment.md) |
 | 查阅 V11–V19 方案、设计取舍和原始结果 | [历史归档](../../../docs/archive/README.md) |
 

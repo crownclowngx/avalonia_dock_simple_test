@@ -55,6 +55,8 @@ V19 已实施：[复杂度收敛专用验证](host-v19-complexity-verification.m
 
 V20 已实施：[归档方案](../archive/plans/host-v20-layout-retirement-plan.md)、[专用开发验证](host-v20-layout-retirement-verification.md)与[开发记录](../archive/records/host-v20/development-acceptance.md)覆盖有效布局测试迁至 V3、Writer Lease、Gate 产物检查自测、旧查询及文档收口。仅执行本机专项和完整 `verify`，不使用 AIFLOW、Windows CI 或发布门禁。
 
+待实施的 [V21 开发门禁与测试效能收敛方案](../roadmap/host-v21-gate-and-test-efficiency-plan.md)配有[专用开发验证计划](../roadmap/host-v21-gate-and-test-efficiency-verification.md)，覆盖夹具、UI 等待、测试去向和 Gate 证据。V21 尚未改变本页现行命令、阶段顺序与发布政策；其开发验收不执行下述发布门禁。
+
 ## 正式 Host 封板
 
 仅在具备发布验收条件时使用：
