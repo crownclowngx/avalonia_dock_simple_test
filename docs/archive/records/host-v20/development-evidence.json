@@ -1,10 +1,1433 @@
 {
   "schemaVersion": 1,
   "phase": "V20",
-  "status": "final-verification-pending",
-  "baselineRunId": "20260921-084050-20e812160548",
-  "completedStages": ["P0", "P1", "P2", "P3"],
-  "finalVerify": null,
+  "status": "development-complete",
+  "recordedAtUtc": "2026-09-21T09:08:53.504126+00:00",
+  "branch": "codex/host-v20-layout-retirement",
+  "testedSourceRevision": "cbce3ea96ab04551177bcfca62c614329ca03f40",
+  "postVerificationChangePolicy": "最终门禁后仅回填本非嵌入 JSON；生产源码、测试、工具与嵌入 Markdown 不再改变。",
+  "sdk": "10.0.302",
+  "baseline": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "exitCode": 0,
+    "path": "artifacts/gate/20260921-084050-20e812160548/summary.json",
+    "sha256": "bfb0f5eaaa8b96a6b483cbfdb6051894e416cdec99f8b9c80b52c179e1afdf5c",
+    "summary": {
+      "schemaVersion": 2,
+      "runId": "20260921-084050-20e812160548",
+      "profile": "verify",
+      "scope": "all",
+      "passed": true,
+      "startedAtUtc": "2026-09-21T08:40:50.1648768+00:00",
+      "finishedAtUtc": "2026-09-21T08:43:56.756746+00:00",
+      "sources": {
+        "main": {
+          "revision": "20e8121605484fd4ae89a10b1f1ba173d30e680e",
+          "tree": "9464d9adaa708243245e16a8e457f6507b1f9f7a",
+          "clean": true,
+          "files": 1078,
+          "sha256": "662E73C08789527EEE5160F32A26537BDDA99F0FCCEA0458F61C3EA64CC4C631"
+        }
+      },
+      "host": {
+        "releaseEligible": false,
+        "publishable": false
+      },
+      "repeatability": {
+        "requested": false,
+        "verified": false
+      },
+      "passes": [
+        {
+          "pass": 1,
+          "passed": true,
+          "evidenceRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-084050-20e812160548\\pass-1",
+          "stages": [
+            {
+              "id": "avalonia-layout-patch",
+              "status": "passed",
+              "durationMilliseconds": 685,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-084050-20e812160548\\pass-1"
+            },
+            {
+              "id": "dock-patch",
+              "status": "passed",
+              "durationMilliseconds": 602,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-084050-20e812160548\\pass-1"
+            },
+            {
+              "id": "restore",
+              "status": "passed",
+              "durationMilliseconds": 4637,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-084050-20e812160548\\pass-1"
+            },
+            {
+              "id": "build",
+              "status": "passed",
+              "durationMilliseconds": 15967,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-084050-20e812160548\\pass-1"
+            },
+            {
+              "id": "tests",
+              "status": "passed",
+              "durationMilliseconds": 158146,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-084050-20e812160548\\pass-1"
+            },
+            {
+              "id": "contracts",
+              "status": "passed",
+              "durationMilliseconds": 4162,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-084050-20e812160548\\pass-1"
+            },
+            {
+              "id": "packages",
+              "status": "passed",
+              "durationMilliseconds": 16,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-084050-20e812160548\\pass-1"
+            },
+            {
+              "id": "package-acceptance",
+              "status": "passed",
+              "durationMilliseconds": 1518,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-084050-20e812160548\\pass-1"
+            }
+          ],
+          "packages": {
+            "my-plug-test": {
+              "pluginId": "myavalonia.plugin.my-plug-test",
+              "archivePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-084050-20e812160548\\pass-1\\packages\\my-plug-test\\build-1\\MyPlugTest-win-x64.zip",
+              "sha256": "B555539A6005A3D4BDB87425A271B71A1861017AAF3AD49C77881303B502505D",
+              "files": 8,
+              "manifestSha256": "93B4006555E65634300C0E1AF204CCC345A1739B432AD6FD9CDC384E2A567AE1",
+              "deterministic": false
+            }
+          }
+        }
+      ]
+    },
+    "totalPassed": 1342,
+    "tests": [
+      {
+        "path": "artifacts/gate/20260921-084050-20e812160548/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "167a2c0b8eed06371870d575d37c21204ad0047eef4a1bdb9116c84d9b09aa99",
+        "times": {
+          "creation": "2026-09-21T16:41:24.7984281+08:00",
+          "queuing": "2026-09-21T16:41:24.7984284+08:00",
+          "start": "2026-09-21T16:41:24.0843004+08:00",
+          "finish": "2026-09-21T16:42:30.1128276+08:00"
+        },
+        "counts": {
+          "total": 292,
+          "executed": 292,
+          "passed": 292,
+          "failed": 0,
+          "notExecuted": 0
+        },
+        "failedCases": []
+      },
+      {
+        "path": "artifacts/gate/20260921-084050-20e812160548/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "d4dd92b9a1cd97a725b6d672f81f1b59a143dfef0c83102fec47af23ef6cadf1",
+        "times": {
+          "creation": "2026-09-21T16:42:32.5449171+08:00",
+          "queuing": "2026-09-21T16:42:32.5449174+08:00",
+          "start": "2026-09-21T16:42:30.8776576+08:00",
+          "finish": "2026-09-21T16:43:49.0226128+08:00"
+        },
+        "counts": {
+          "total": 289,
+          "executed": 289,
+          "passed": 289,
+          "failed": 0,
+          "notExecuted": 0
+        },
+        "failedCases": []
+      },
+      {
+        "path": "artifacts/gate/20260921-084050-20e812160548/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "33311d59cce0c063079998750c61c21d5f8c7743775784009f7c65b76efa181f",
+        "times": {
+          "creation": "2026-09-21T16:41:21.9662675+08:00",
+          "queuing": "2026-09-21T16:41:21.9662682+08:00",
+          "start": "2026-09-21T16:41:21.3709485+08:00",
+          "finish": "2026-09-21T16:41:23.2259023+08:00"
+        },
+        "counts": {
+          "total": 658,
+          "executed": 658,
+          "passed": 658,
+          "failed": 0,
+          "notExecuted": 0
+        },
+        "failedCases": []
+      },
+      {
+        "path": "artifacts/gate/20260921-084050-20e812160548/pass-1/tests/my-plug-test/my-plug-test.trx",
+        "sha256": "321d03613a0e7b136feae22cbcc1ddc3294c32b98fd8a2fa4359373377ab86c5",
+        "times": {
+          "creation": "2026-09-21T16:43:50.9554375+08:00",
+          "queuing": "2026-09-21T16:43:50.9554380+08:00",
+          "start": "2026-09-21T16:43:50.4840971+08:00",
+          "finish": "2026-09-21T16:43:50.9810234+08:00"
+        },
+        "counts": {
+          "total": 11,
+          "executed": 11,
+          "passed": 11,
+          "failed": 0,
+          "notExecuted": 0
+        },
+        "failedCases": []
+      },
+      {
+        "path": "artifacts/gate/20260921-084050-20e812160548/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+        "sha256": "0d7ff8ed4447e05e8eeec8f8e20dd0a5bbc678efde1f186e09c9a520a8e26870",
+        "times": {
+          "creation": "2026-09-21T16:43:56.6801282+08:00",
+          "queuing": "2026-09-21T16:43:56.6801286+08:00",
+          "start": "2026-09-21T16:43:55.9588835+08:00",
+          "finish": "2026-09-21T16:43:56.6852262+08:00"
+        },
+        "counts": {
+          "total": 1,
+          "executed": 1,
+          "passed": 1,
+          "failed": 0,
+          "notExecuted": 0
+        },
+        "failedCases": []
+      },
+      {
+        "path": "artifacts/gate/20260921-084050-20e812160548/pass-1/tests/sdk/sdk.trx",
+        "sha256": "6d844e82a13c3406375de79d619dbc1a2cc6b05220b2ec1e7dd1b6ceb9378134",
+        "times": {
+          "creation": "2026-09-21T16:41:14.1435899+08:00",
+          "queuing": "2026-09-21T16:41:14.1435900+08:00",
+          "start": "2026-09-21T16:41:13.5960014+08:00",
+          "finish": "2026-09-21T16:41:20.6352858+08:00"
+        },
+        "counts": {
+          "total": 91,
+          "executed": 91,
+          "passed": 91,
+          "failed": 0,
+          "notExecuted": 0
+        },
+        "failedCases": []
+      }
+    ]
+  },
+  "finalVerify": {
+    "command": "dotnet run --project tools/MyAvaloniaManagement.Gate -- verify",
+    "exitCode": 0,
+    "path": "artifacts/gate/20260921-090510-cbce3ea96ab0/summary.json",
+    "sha256": "39c69560700fc8303b2c5399958054252cfa781913ca56d949343fde2f9bd680",
+    "summary": {
+      "schemaVersion": 2,
+      "runId": "20260921-090510-cbce3ea96ab0",
+      "profile": "verify",
+      "scope": "all",
+      "passed": true,
+      "startedAtUtc": "2026-09-21T09:05:10.2079226+00:00",
+      "finishedAtUtc": "2026-09-21T09:08:08.4599055+00:00",
+      "sources": {
+        "main": {
+          "revision": "cbce3ea96ab04551177bcfca62c614329ca03f40",
+          "tree": "e0fe841f21285ced0a271557f86b92fe017652d1",
+          "clean": true,
+          "files": 1075,
+          "sha256": "F0E9ACE38811031427DBCCD5FBA9157CCC0530398BE12BB9A2C680BD3CE6FD5B"
+        }
+      },
+      "host": {
+        "releaseEligible": false,
+        "publishable": false
+      },
+      "repeatability": {
+        "requested": false,
+        "verified": false
+      },
+      "passes": [
+        {
+          "pass": 1,
+          "passed": true,
+          "evidenceRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-090510-cbce3ea96ab0\\pass-1",
+          "stages": [
+            {
+              "id": "avalonia-layout-patch",
+              "status": "passed",
+              "durationMilliseconds": 654,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-090510-cbce3ea96ab0\\pass-1"
+            },
+            {
+              "id": "dock-patch",
+              "status": "passed",
+              "durationMilliseconds": 614,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-090510-cbce3ea96ab0\\pass-1"
+            },
+            {
+              "id": "restore",
+              "status": "passed",
+              "durationMilliseconds": 2317,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-090510-cbce3ea96ab0\\pass-1"
+            },
+            {
+              "id": "build",
+              "status": "passed",
+              "durationMilliseconds": 11150,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-090510-cbce3ea96ab0\\pass-1"
+            },
+            {
+              "id": "tests",
+              "status": "passed",
+              "durationMilliseconds": 156982,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-090510-cbce3ea96ab0\\pass-1"
+            },
+            {
+              "id": "contracts",
+              "status": "passed",
+              "durationMilliseconds": 4302,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-090510-cbce3ea96ab0\\pass-1"
+            },
+            {
+              "id": "packages",
+              "status": "passed",
+              "durationMilliseconds": 17,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-090510-cbce3ea96ab0\\pass-1"
+            },
+            {
+              "id": "package-acceptance",
+              "status": "passed",
+              "durationMilliseconds": 1652,
+              "evidencePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-090510-cbce3ea96ab0\\pass-1"
+            }
+          ],
+          "packages": {
+            "my-plug-test": {
+              "pluginId": "myavalonia.plugin.my-plug-test",
+              "archivePath": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\gate\\20260921-090510-cbce3ea96ab0\\pass-1\\packages\\my-plug-test\\build-1\\MyPlugTest-win-x64.zip",
+              "sha256": "1A0D03CE0DAEB07BDA8BB1D3F11F11D149EDB6C9ACE6AB24F59B481D17AEF6CF",
+              "files": 8,
+              "manifestSha256": "93B4006555E65634300C0E1AF204CCC345A1739B432AD6FD9CDC384E2A567AE1",
+              "deterministic": false
+            }
+          }
+        }
+      ]
+    },
+    "totalPassed": 1325,
+    "tests": [
+      {
+        "path": "artifacts/gate/20260921-090510-cbce3ea96ab0/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "73dc7259ccf35f6b8ed93123c2988788aa5e637f7a3bc3bea85243f175f85692",
+        "times": {
+          "creation": "2026-09-21T17:05:33.7928671+08:00",
+          "queuing": "2026-09-21T17:05:33.7928677+08:00",
+          "start": "2026-09-21T17:05:32.7799156+08:00",
+          "finish": "2026-09-21T17:06:41.3444501+08:00"
+        },
+        "counts": {
+          "total": 280,
+          "executed": 280,
+          "passed": 280,
+          "failed": 0,
+          "notExecuted": 0
+        },
+        "failedCases": []
+      },
+      {
+        "path": "artifacts/gate/20260921-090510-cbce3ea96ab0/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "70f0f9a06b49b2bf1b2201973d3eda8f83f44c0ef2cdd32eb0634143930a2848",
+        "times": {
+          "creation": "2026-09-21T17:06:44.0019014+08:00",
+          "queuing": "2026-09-21T17:06:44.0019018+08:00",
+          "start": "2026-09-21T17:06:42.2126485+08:00",
+          "finish": "2026-09-21T17:08:01.0697648+08:00"
+        },
+        "counts": {
+          "total": 289,
+          "executed": 289,
+          "passed": 289,
+          "failed": 0,
+          "notExecuted": 0
+        },
+        "failedCases": []
+      },
+      {
+        "path": "artifacts/gate/20260921-090510-cbce3ea96ab0/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "a73f292334ec4b2a47aa7381e84887ce433488314d65e303657d26564513c651",
+        "times": {
+          "creation": "2026-09-21T17:05:30.4025332+08:00",
+          "queuing": "2026-09-21T17:05:30.4025334+08:00",
+          "start": "2026-09-21T17:05:29.7794857+08:00",
+          "finish": "2026-09-21T17:05:31.7864091+08:00"
+        },
+        "counts": {
+          "total": 653,
+          "executed": 653,
+          "passed": 653,
+          "failed": 0,
+          "notExecuted": 0
+        },
+        "failedCases": []
+      },
+      {
+        "path": "artifacts/gate/20260921-090510-cbce3ea96ab0/pass-1/tests/my-plug-test/my-plug-test.trx",
+        "sha256": "d7d9960b8bb288803185dd6ab19f66f29aa1e6e8f03de172ec3ca4faee38c2ab",
+        "times": {
+          "creation": "2026-09-21T17:08:02.3826144+08:00",
+          "queuing": "2026-09-21T17:08:02.3826151+08:00",
+          "start": "2026-09-21T17:08:01.8887173+08:00",
+          "finish": "2026-09-21T17:08:02.4089880+08:00"
+        },
+        "counts": {
+          "total": 11,
+          "executed": 11,
+          "passed": 11,
+          "failed": 0,
+          "notExecuted": 0
+        },
+        "failedCases": []
+      },
+      {
+        "path": "artifacts/gate/20260921-090510-cbce3ea96ab0/pass-1/tests/my-plug-test-package/my-plug-test-package.trx",
+        "sha256": "69e28e904a85082e3d325153478cc9fd0247db1a689005de2dfb1e864d9efbe7",
+        "times": {
+          "creation": "2026-09-21T17:08:08.3765996+08:00",
+          "queuing": "2026-09-21T17:08:08.3766003+08:00",
+          "start": "2026-09-21T17:08:07.6310454+08:00",
+          "finish": "2026-09-21T17:08:08.3815526+08:00"
+        },
+        "counts": {
+          "total": 1,
+          "executed": 1,
+          "passed": 1,
+          "failed": 0,
+          "notExecuted": 0
+        },
+        "failedCases": []
+      },
+      {
+        "path": "artifacts/gate/20260921-090510-cbce3ea96ab0/pass-1/tests/sdk/sdk.trx",
+        "sha256": "aceeb837a7e88249b2560efca7535b874d472915dc16ffab568c003daa44d67b",
+        "times": {
+          "creation": "2026-09-21T17:05:26.7908900+08:00",
+          "queuing": "2026-09-21T17:05:26.7908903+08:00",
+          "start": "2026-09-21T17:05:26.2490486+08:00",
+          "finish": "2026-09-21T17:05:28.9380696+08:00"
+        },
+        "counts": {
+          "total": 91,
+          "executed": 91,
+          "passed": 91,
+          "failed": 0,
+          "notExecuted": 0
+        },
+        "failedCases": []
+      }
+    ]
+  },
+  "specializedTests": [
+    {
+      "path": "artifacts/host-v20/p1-migration/plugin/migrated-plugin.trx",
+      "sha256": "fcfefb64000c68819eab967c7b8214201c1cc221cbf81c3a400b625bd18b55ad",
+      "times": {
+        "creation": "2026-09-21T16:47:02.9178777+08:00",
+        "queuing": "2026-09-21T16:47:02.9178782+08:00",
+        "start": "2026-09-21T16:47:02.3418568+08:00",
+        "finish": "2026-09-21T16:47:03.0663176+08:00"
+      },
+      "counts": {
+        "total": 59,
+        "executed": 59,
+        "passed": 56,
+        "failed": 3,
+        "notExecuted": 0
+      },
+      "failedCases": [
+        {
+          "name": "MyAvaloniaManagement.PluginTests.DockFourWayLayoutTests.RuntimeVerticalSplitImmediatelyUsesFullWidthStableDockAndRestores(operation: Top, expectedAlignment: Top, expectedPaneId: \"TopPane\", expectedDockId: \"TopTools\")",
+          "outcome": "Failed"
+        },
+        {
+          "name": "MyAvaloniaManagement.PluginTests.DockFourWayLayoutTests.RuntimeVerticalSplitImmediatelyUsesFullWidthStableDockAndRestores(operation: Bottom, expectedAlignment: Bottom, expectedPaneId: \"BottomPane\", expectedDockId: \"BottomTools\")",
+          "outcome": "Failed"
+        },
+        {
+          "name": "MyAvaloniaManagement.PluginTests.DockFourWayLayoutTests.ExpandedPinnedAndHiddenToolsPreserveDistinctStatesAndPinnedOrder",
+          "outcome": "Failed"
+        }
+      ],
+      "stage": "p1-migration/plugin",
+      "command": "dotnet test Host/MyAvaloniaManagement.PluginTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DockFourWayLayoutTests|FullyQualifiedName~DockLayoutAvailabilityTests' --logger 'trx;LogFileName=migrated-plugin.trx' --results-directory artifacts/host-v20/p1-migration/plugin",
+      "exitCode": 1
+    },
+    {
+      "path": "artifacts/host-v20/p1-migration/plugin-rerun/migrated-plugin.trx",
+      "sha256": "c68d8e2d10e93d56de71240ea08fe83ad3669ebc8ca85e67d15cbd49d8020ed4",
+      "times": {
+        "creation": "2026-09-21T16:47:29.2228823+08:00",
+        "queuing": "2026-09-21T16:47:29.2228824+08:00",
+        "start": "2026-09-21T16:47:28.5845947+08:00",
+        "finish": "2026-09-21T16:47:29.2940184+08:00"
+      },
+      "counts": {
+        "total": 59,
+        "executed": 59,
+        "passed": 59,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "failedCases": [],
+      "stage": "p1-migration/plugin-rerun",
+      "command": "dotnet test Host/MyAvaloniaManagement.PluginTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DockFourWayLayoutTests|FullyQualifiedName~DockLayoutAvailabilityTests' --logger 'trx;LogFileName=migrated-plugin.trx' --results-directory artifacts/host-v20/p1-migration/plugin-rerun",
+      "exitCode": 0
+    },
+    {
+      "path": "artifacts/host-v20/p1-migration/ui/migrated-ui.trx",
+      "sha256": "4f2cd6790c45374e330eafa0758958f3dca679df15309d1362699c92026b534a",
+      "times": {
+        "creation": "2026-09-21T16:47:46.4734030+08:00",
+        "queuing": "2026-09-21T16:47:46.4734035+08:00",
+        "start": "2026-09-21T16:47:44.6595140+08:00",
+        "finish": "2026-09-21T16:48:14.7731046+08:00"
+      },
+      "counts": {
+        "total": 17,
+        "executed": 17,
+        "passed": 17,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "failedCases": [],
+      "stage": "p1-migration/ui",
+      "command": "dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~AutoHideRestoreVisualTests|FullyQualifiedName~ToolCenterUiTests' --logger 'trx;LogFileName=migrated-ui.trx' --results-directory artifacts/host-v20/p1-migration/ui",
+      "exitCode": 0
+    },
+    {
+      "path": "artifacts/host-v20/p1-migration/unit/migrated-unit.trx",
+      "sha256": "6c1da05d2521d055b2d333e9f9ab59247446db60cdb429fa5ad6ad79287376b3",
+      "times": {
+        "creation": "2026-09-21T16:48:31.2035290+08:00",
+        "queuing": "2026-09-21T16:48:31.2035297+08:00",
+        "start": "2026-09-21T16:48:30.4387083+08:00",
+        "finish": "2026-09-21T16:48:31.2090643+08:00"
+      },
+      "counts": {
+        "total": 6,
+        "executed": 6,
+        "passed": 6,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "failedCases": [],
+      "stage": "p1-migration/unit",
+      "command": "dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~HostDataRootPolicyTests' --logger 'trx;LogFileName=migrated-unit.trx' --results-directory artifacts/host-v20/p1-migration/unit",
+      "exitCode": 0
+    },
+    {
+      "path": "artifacts/host-v20/p1-retirement/unit/layout-unit.trx",
+      "sha256": "f94993f5dbed1e77b9d314a2e1cfa37a303bc20637ca1f6093f89a9e9130245f",
+      "times": {
+        "creation": "2026-09-21T16:51:11.6192347+08:00",
+        "queuing": "2026-09-21T16:51:11.6192350+08:00",
+        "start": "2026-09-21T16:51:10.9600960+08:00",
+        "finish": "2026-09-21T16:51:12.4281572+08:00"
+      },
+      "counts": {
+        "total": 89,
+        "executed": 89,
+        "passed": 89,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "failedCases": [],
+      "stage": "p1-retirement/unit",
+      "command": "dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DockLayout|FullyQualifiedName~HostDataRootPolicyTests|FullyQualifiedName~PluginStatusMigrationTests|FullyQualifiedName~WorkspaceSessionAndDockFactoryTests|FullyQualifiedName~ToolCenterTests' --logger 'trx;LogFileName=layout-unit.trx' --results-directory artifacts/host-v20/p1-retirement/unit",
+      "exitCode": 0
+    },
+    {
+      "path": "artifacts/host-v20/p1-retirement/plugin/layout-plugin.trx",
+      "sha256": "b2f81273252f88bcbc09c4293acc251cd9c0d4265aaf38a64c2cae169f11dd44",
+      "times": {
+        "creation": "2026-09-21T16:51:36.3989666+08:00",
+        "queuing": "2026-09-21T16:51:36.3989668+08:00",
+        "start": "2026-09-21T16:51:35.7892423+08:00",
+        "finish": "2026-09-21T16:51:36.6329836+08:00"
+      },
+      "counts": {
+        "total": 92,
+        "executed": 92,
+        "passed": 92,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "failedCases": [],
+      "stage": "p1-retirement/plugin",
+      "command": "dotnet test Host/MyAvaloniaManagement.PluginTests -c Release --no-restore -m:1 -warnaserror --filter '(FullyQualifiedName~DockFourWayLayoutTests|FullyQualifiedName~DockLayoutAvailabilityTests|FullyQualifiedName~VersionPolicyTests|FullyQualifiedName~HostLifecycleOwnershipTests|FullyQualifiedName~DocumentScopeManagerTests)&Category!=PackageAcceptance' --logger 'trx;LogFileName=layout-plugin.trx' --results-directory artifacts/host-v20/p1-retirement/plugin",
+      "exitCode": 0
+    },
+    {
+      "path": "artifacts/host-v20/p1-retirement/ui/layout-ui.trx",
+      "sha256": "7b3389bc3faa57ae3434a55d02132fa5382cd0655657e866dce9fb9f35aa39da",
+      "times": {
+        "creation": "2026-09-21T16:52:23.1355610+08:00",
+        "queuing": "2026-09-21T16:52:23.1355616+08:00",
+        "start": "2026-09-21T16:52:19.8584183+08:00",
+        "finish": "2026-09-21T16:53:37.2278047+08:00"
+      },
+      "counts": {
+        "total": 119,
+        "executed": 119,
+        "passed": 119,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "failedCases": [],
+      "stage": "p1-retirement/ui",
+      "command": "dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~DockLayoutV3UiTests|FullyQualifiedName~AutoHideRestoreVisualTests|FullyQualifiedName~DockToolWindowCloseUiTests|FullyQualifiedName~DockToolSplitUiTests|FullyQualifiedName~ToolCenterUiTests|FullyQualifiedName~DocumentWindowV16UiTests|FullyQualifiedName~HostRestartUiTests' --logger 'trx;LogFileName=layout-ui.trx' --results-directory artifacts/host-v20/p1-retirement/ui",
+      "exitCode": 0
+    },
+    {
+      "path": "artifacts/host-v20/p3-query/unit/query-unit.trx",
+      "sha256": "aa709dd87580b62e8730a6467451e1ee514ae827b932da23a2bd54915b05d455",
+      "times": {
+        "creation": "2026-09-21T16:55:54.7890299+08:00",
+        "queuing": "2026-09-21T16:55:54.7890305+08:00",
+        "start": "2026-09-21T16:55:54.0012509+08:00",
+        "finish": "2026-09-21T16:55:55.0395625+08:00"
+      },
+      "counts": {
+        "total": 73,
+        "executed": 73,
+        "passed": 73,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "failedCases": [],
+      "stage": "p3-query/unit",
+      "command": "dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~ServiceAndModelTests|FullyQualifiedName~PluginNavigationTests|FullyQualifiedName~CognitiveUxV8Tests|FullyQualifiedName~CommandPaletteV18' --logger 'trx;LogFileName=query-unit.trx' --results-directory artifacts/host-v20/p3-query/unit",
+      "exitCode": 0
+    },
+    {
+      "path": "artifacts/host-v20/p3-query/ui/query-ui.trx",
+      "sha256": "b37d0172cdb791dfee6e17b21d26151f51adcbbf57ccfb177bb03f689c632f92",
+      "times": {
+        "creation": "2026-09-21T16:56:17.2985503+08:00",
+        "queuing": "2026-09-21T16:56:17.2985509+08:00",
+        "start": "2026-09-21T16:56:13.9719845+08:00",
+        "finish": "2026-09-21T16:56:25.7076991+08:00"
+      },
+      "counts": {
+        "total": 27,
+        "executed": 27,
+        "passed": 27,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "failedCases": [],
+      "stage": "p3-query/ui",
+      "command": "dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~PluginNavigationUiTests|FullyQualifiedName~CommandPaletteV18UiTests|FullyQualifiedName~CognitiveUxV8UiTests' --logger 'trx;LogFileName=query-ui.trx' --results-directory artifacts/host-v20/p3-query/ui",
+      "exitCode": 0
+    },
+    {
+      "path": "artifacts/host-v20/p4-documents/unit/help-unit.trx",
+      "sha256": "30a198737765d114ae6e3cd2a97ffcfb2a96b6730231aaf78bc65dd8cbc644b2",
+      "times": {
+        "creation": "2026-09-21T17:02:37.9169708+08:00",
+        "queuing": "2026-09-21T17:02:37.9169713+08:00",
+        "start": "2026-09-21T17:02:37.2105596+08:00",
+        "finish": "2026-09-21T17:02:38.0516216+08:00"
+      },
+      "counts": {
+        "total": 15,
+        "executed": 15,
+        "passed": 15,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "failedCases": [],
+      "stage": "p4-documents/unit",
+      "command": "dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~HelpContentTests' --logger 'trx;LogFileName=help-unit.trx' --results-directory artifacts/host-v20/p4-documents/unit",
+      "exitCode": 0
+    },
+    {
+      "path": "artifacts/host-v20/p4-documents/unit-final/help-unit.trx",
+      "sha256": "820cf6a37af8e0f5c718b1cd96c6c0321cf4f9d7e67c9e75b7bd1bb24b6f81cc",
+      "times": {
+        "creation": "2026-09-21T17:04:30.5915025+08:00",
+        "queuing": "2026-09-21T17:04:30.5915031+08:00",
+        "start": "2026-09-21T17:04:29.9162672+08:00",
+        "finish": "2026-09-21T17:04:30.6998596+08:00"
+      },
+      "counts": {
+        "total": 15,
+        "executed": 15,
+        "passed": 15,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "failedCases": [],
+      "stage": "p4-documents/unit-final",
+      "command": "dotnet test Host/MyAvaloniaManagement.Tests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~HelpContentTests' --logger 'trx;LogFileName=help-unit.trx' --results-directory artifacts/host-v20/p4-documents/unit-final",
+      "exitCode": 0
+    },
+    {
+      "path": "artifacts/host-v20/p4-documents/ui/help-ui.trx",
+      "sha256": "5fbbbb36ff9eae80248d45bda054db44fa1bc5096d222e6ce6102951acf3ac81",
+      "times": {
+        "creation": "2026-09-21T17:03:38.1206713+08:00",
+        "queuing": "2026-09-21T17:03:38.1206717+08:00",
+        "start": "2026-09-21T17:03:34.8233855+08:00",
+        "finish": "2026-09-21T17:03:38.2927097+08:00"
+      },
+      "counts": {
+        "total": 4,
+        "executed": 4,
+        "passed": 4,
+        "failed": 0,
+        "notExecuted": 0
+      },
+      "failedCases": [],
+      "stage": "p4-documents/ui",
+      "command": "dotnet test Host/MyAvaloniaManagement.UiTests -c Release --no-restore -m:1 -warnaserror --filter 'FullyQualifiedName~HelpWindowTests' --logger 'trx;LogFileName=help-ui.trx' --results-directory artifacts/host-v20/p4-documents/ui",
+      "exitCode": 0
+    }
+  ],
+  "gateUnitTests": {
+    "path": "artifacts/host-v20/p2-tools/gate-unit-rerun/gate-unit.trx",
+    "sha256": "ff98ff121685ddb84745a9a97e7d6f34945ca86a42f159e77574c62656c27f47",
+    "times": {
+      "creation": "2026-09-21T16:55:08.7540768+08:00",
+      "queuing": "2026-09-21T16:55:08.7540771+08:00",
+      "start": "2026-09-21T16:55:08.2655247+08:00",
+      "finish": "2026-09-21T16:55:10.1431328+08:00"
+    },
+    "counts": {
+      "total": 83,
+      "executed": 83,
+      "passed": 83,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "failedCases": [],
+    "command": "dotnet test tools/MyAvaloniaManagement.Gate.Tests -c Release -m:1 -warnaserror --logger 'trx;LogFileName=gate-unit.trx' --results-directory artifacts/host-v20/p2-tools/gate-unit-rerun",
+    "exitCode": 0
+  },
+  "writerLease": {
+    "command": "pwsh -NoProfile -File tools/Verify-LayoutV3WriterLease.ps1 -AssemblyPath Host/MyAvaloniaManagement/bin/Release/net10.0/MyAvaloniaManagement.dll",
+    "exitCode": 0,
+    "result": {
+      "test": "layout-v3-cross-process-lease",
+      "passed": true,
+      "checks": [
+        "holder-ready-after-save",
+        "same-root-read-only",
+        "read-only-v3-load",
+        "read-only-save-rejected",
+        "other-root-v3-save",
+        "old-reader-no-takeover",
+        "crash-releases-lease",
+        "new-writer-v3-load",
+        "new-writer-v3-save",
+        "previous-v3-backup"
+      ],
+      "assemblySha256": "de3942b3e65063dbf0474b419bd22e7e867e9db91646d86ab760b9df229e0487"
+    },
+    "path": "artifacts/host-v20/p4-documents/final-writer-lease.json",
+    "sha256": "fbf17f583891c2856b66c9fcc9e59faa760155495a5149a068e53ad17f20e92c",
+    "firstPhaseResult": {
+      "test": "layout-v3-cross-process-lease",
+      "passed": true,
+      "checks": [
+        "holder-ready-after-save",
+        "same-root-read-only",
+        "read-only-v3-load",
+        "read-only-save-rejected",
+        "other-root-v3-save",
+        "old-reader-no-takeover",
+        "crash-releases-lease",
+        "new-writer-v3-load",
+        "new-writer-v3-save",
+        "previous-v3-backup"
+      ],
+      "assemblySha256": "07a4fcb0b58c843ef469b514e46be61162d73ea46a84060ed21c7d2dc818fe26"
+    }
+  },
+  "documentation": {
+    "command": "pwsh -NoProfile -File artifacts/host-v20/documentation/verify-docs.ps1",
+    "exitCode": 0,
+    "path": "artifacts/host-v20/p4-documents/document-checks.json",
+    "sha256": "bd54fec198c5531b1cd3d47e7cce5bc56ecfa44ef6e24d51f9dd69889b22d3bd",
+    "result": {
+      "recordedAtUtc": "2026-09-21T09:08:50.4000467+00:00",
+      "scope": "v20-implementation-documentation",
+      "markdownFiles": 227,
+      "changedMarkdownFiles": 30,
+      "localLinks": 1904,
+      "anchors": 26,
+      "failures": [],
+      "helpAnchorDifferences": [
+        {
+          "href": "../workflow-action/g3.1-workflow-protocol-consistency.md#sdk-%E5%8F%91%E5%B8%83%E8%A1%A5%E5%85%85",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/documentation/reorganization-20260916.md",
+          "changed": true
+        },
+        {
+          "href": "../workflow-action/g3.1-workflow-protocol-consistency.md#sdk-%E5%8F%91%E5%B8%83%E8%A1%A5%E5%85%85",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/documentation/reorganization-20260916.md",
+          "changed": true
+        },
+        {
+          "href": "../../plans/host-v1-sealing-readiness-plan.md#g0%E6%81%A2%E5%A4%8D%E7%BB%BF%E8%89%B2%E5%9F%BA%E7%BA%BF",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/host-v1/g0-green-baseline.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/host-v1-sealing-readiness-plan.md#g1%E5%86%BB%E7%BB%93-v1-%E6%94%AF%E6%8C%81%E8%BE%B9%E7%95%8C%E4%B8%8E%E7%89%88%E6%9C%AC%E7%BA%BF",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/host-v1/g1-support-boundary-and-version-lines.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/host-v1-sealing-readiness-plan.md#g2%E5%B0%86-host-%E5%AE%9E%E7%8E%B0%E7%A7%BB%E5%87%BA%E6%8F%92%E4%BB%B6-api",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/host-v1/g2-host-api-surface.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/host-v1-sealing-readiness-plan.md#g3%E5%BD%A2%E6%88%90%E6%AD%A3%E5%BC%8F-plugin-sdk",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/host-v1/g3-plugin-sdk-and-ui-profile.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/host-v1-sealing-readiness-plan.md#g4%E5%88%A0%E9%99%A4-legacy-%E4%BA%8C%E8%BF%9B%E5%88%B6%E6%8F%92%E4%BB%B6%E8%B7%AF%E5%BE%84",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/host-v1/g4-managed-only-plugin-loading.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/host-v2-breaking-refactor-plan.md#g0%E5%86%BB%E7%BB%93%E7%BB%BF%E8%89%B2%E5%9F%BA%E7%BA%BF%E5%B7%B2%E5%AE%8C%E6%88%90",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/host-v2/g0-green-baseline.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/host-v2-breaking-refactor-plan.md#g1%E5%BB%BA%E7%AB%8B-v2-%E7%89%88%E6%9C%AC%E4%B8%8E%E6%95%B0%E6%8D%AE%E8%BE%B9%E7%95%8C%E5%B7%B2%E5%AE%8C%E6%88%90",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/host-v2/g1-version-and-data-boundaries.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/host-v3-breaking-refactor-plan.md#g0%E5%86%BB%E7%BB%93-v2-%E7%BB%BF%E8%89%B2%E5%9F%BA%E7%BA%BF%E5%B7%B2%E5%AE%8C%E6%88%90",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/host-v3/g0-green-baseline.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/host-v3-breaking-refactor-plan.md#g1%E5%BB%BA%E7%AB%8B-v3-%E7%89%88%E6%9C%AC%E4%B8%8E%E6%95%B0%E6%8D%AE%E8%BE%B9%E7%95%8C%E5%B7%B2%E5%AE%8C%E6%88%90",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/host-v3/g1-version-and-data-boundaries.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/host-v3-breaking-refactor-plan.md#g2%E5%BB%BA%E7%AB%8B%E4%BF%AE%E8%AE%A2%E5%8C%96-document-%E4%BF%9D%E5%AD%98%E5%B7%B2%E5%AE%8C%E6%88%90",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/host-v3/g2-revisioned-document-save.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/host-v3-breaking-refactor-plan.md#g3%E5%BB%BA%E7%AB%8B%E4%BA%92%E6%96%A5-document-%E6%BF%80%E6%B4%BB%E5%B7%B2%E5%AE%8C%E6%88%90",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/host-v3/g3-exclusive-document-activation.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/host-v3-breaking-refactor-plan.md#g4%E6%94%B6%E7%B4%A7%E6%8F%92%E4%BB%B6%E6%B3%A8%E5%86%8C%E6%89%80%E6%9C%89%E6%9D%83%E4%B8%8E-id-%E5%BD%92%E5%B1%9E%E5%B7%B2%E5%AE%8C%E6%88%90",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/host-v3/g4-plugin-registration-ownership.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/workbench-command-introduction-plan.md#g0%E5%86%BB%E7%BB%93%E5%9F%BA%E7%BA%BF%E8%AF%AD%E4%B9%89%E5%92%8C-public-api-%E5%86%B3%E7%AD%96",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/workbench-command/g0-facts-semantics-public-api.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/workbench-command-introduction-plan.md#g1%E5%BB%BA%E7%AB%8B%E5%85%BC%E5%AE%B9%E6%96%B0%E5%A2%9E%E7%9A%84-command-%E5%A5%91%E7%BA%A6%E4%B8%8E%E6%B3%A8%E5%86%8C%E5%A3%B0%E6%98%8E",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/workbench-command/g1-command-contracts-registration-declarations.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/workbench-command-introduction-plan.md#g10%E8%B7%A8%E4%BB%93%E5%BA%93%E9%9B%86%E6%88%90%E5%9B%9E%E5%BD%92%E6%96%87%E6%A1%A3%E5%90%8C%E6%AD%A5%E4%B8%8E%E5%B0%81%E6%9D%BF",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/workbench-command/g10-cross-repository-integration-sealing.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/workbench-command-introduction-plan.md#g2%E5%BB%BA%E7%AB%8B%E6%97%A0-ui-command-catalog-%E4%B8%8E-executor",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/workbench-command/g2-command-catalog-executor.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/workbench-command-introduction-plan.md#g3%E5%BB%BA%E7%AB%8B-context-v1-%E4%B8%8E%E6%B4%BB%E5%8A%A8-document-target-%E8%B7%AF%E7%94%B1",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/workbench-command/g3-context-active-document-target-routing.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/workbench-command-introduction-plan.md#g4%E8%BF%81%E7%A7%BB-host-%E6%89%93%E5%BC%80%E4%BF%9D%E5%AD%98%E5%AE%8C%E6%88%90%E7%AC%AC%E4%B8%80%E4%B8%AA%E7%9C%9F%E5%AE%9E%E9%97%AD%E7%8E%AF",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/workbench-command/g4-host-open-save-presentation-loop.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/workbench-command-introduction-plan.md#g5%E5%BB%BA%E7%AB%8B%E5%A3%B0%E6%98%8E%E5%BC%8F-menu-%E4%B8%8E-keybinding-projection",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/workbench-command/g5-declarative-menu-keybinding-projection.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/workbench-command-introduction-plan.md#g6%E5%AE%8C%E6%88%90-sdk-33-%E5%80%99%E9%80%89%E5%8C%85%E6%A8%A1%E6%9D%BF%E5%92%8C%E7%8B%AC%E7%AB%8B%E6%B6%88%E8%B4%B9%E9%97%A8%E7%A6%81",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/workbench-command/g6-sdk-candidate-template-independent-consumption.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/workbench-command-introduction-plan.md#g7%E8%BF%81%E7%A7%BB%E5%A4%96%E9%83%A8-workflowstudio-%E4%B8%89%E6%9D%A1%E7%9C%9F%E5%AE%9E%E5%91%BD%E4%BB%A4",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/workbench-command/g7-workflow-studio-three-real-commands.md",
+          "changed": false
+        },
+        {
+          "href": "../../plans/ai-workflow-plugin-exploration.md#g0%E5%86%BB%E7%BB%93%E4%BA%8B%E5%AE%9E%E5%91%BD%E5%90%8D%E4%BB%93%E5%BA%93%E4%B8%8E-sdk-%E5%85%BC%E5%AE%B9%E8%B7%AF%E7%BA%BF",
+          "reason": "help renderer anchor differs",
+          "source": "docs/archive/records/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md",
+          "changed": false
+        },
+        {
+          "href": "../archive/plans/host-dock-area-fill-implementation-plan.md#8-%E7%9C%9F%E5%AE%9E%E6%A1%8C%E9%9D%A2%E9%AA%8C%E6%94%B6%E7%9F%A9%E9%98%B5",
+          "reason": "help renderer anchor differs",
+          "source": "docs/maintenance/dock-area-fill-verification.md",
+          "changed": false
+        },
+        {
+          "href": "../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md#3-document-%E5%A5%91%E7%BA%A6",
+          "reason": "help renderer anchor differs",
+          "source": "docs/theory/attention-centered-dock-workspace-design.md",
+          "changed": true
+        }
+      ],
+      "externalRelativeLinks": [
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md",
+          "source": "docs/archive/plans/ai-workflow-plugin-exploration.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/src/BiliDownloaderPlugin.Plugin/Messaging/IBiliDownloaderEventBus.cs",
+          "source": "docs/archive/plans/host-plugin-architecture-review.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md",
+          "source": "docs/archive/plans/host-plugin-architecture-review.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md",
+          "source": "docs/archive/plans/host-plugin-architecture-review.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md",
+          "source": "docs/archive/plans/host-plugin-architecture-review.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/src/BiliDownloaderPlugin.Plugin/Plugin/BiliDownloaderPluginModule.cs",
+          "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-workflow-studio/src/WorkflowStudio.Plugin/Plugin/WorkflowStudioModule.cs",
+          "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-classic-game/src/ClassicGamePlugin.Plugin/Plugin/ClassicGamePluginModule.cs",
+          "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-novel-generate/src/NovelGeneratePlugin.Plugin/Plugin/NovelCommands.cs",
+          "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-novel-generate/src/NovelGeneratePlugin.Plugin/Features/Main/MainDocument.Workbench.cs",
+          "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-layer-unpack/src/LayerUnpackPlugin.Plugin/Workflow/ArchiveWorkflowActions.cs",
+          "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v2/g10-datang-accounting-help-v2.md",
+          "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v2/g11-my-small-tools-v2.md",
+          "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md",
+          "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v2/g10-datang-accounting-help-v2.md",
+          "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v2/g11-my-small-tools-v2.md",
+          "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md",
+          "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md",
+          "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md",
+          "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md",
+          "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md",
+          "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md",
+          "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md",
+          "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md",
+          "source": "docs/archive/records/host-v3/g13-remove-v2-production-surface.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../../avalonia_dock_plug_test/myavalonia-baidu-netdisk/docs/plan-history/v6.1-plugin-icons.md",
+          "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/v6.1-plugin-icons.md",
+          "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../../avalonia_dock_plug_test/myavalonia-classic-game/docs/plan-history/v6.1-plugin-icons.md",
+          "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/v6.1-plugin-icons.md",
+          "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../../avalonia_dock_plug_test/myavalonia-fractal-art/docs/plan-history/v6.1-plugin-icons.md",
+          "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../../avalonia_dock_plug_test/myavalonia-image-lab/docs/plan-history/v6.1-plugin-icons.md",
+          "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../../avalonia_dock_plug_test/myavalonia-layer-unpack/docs/plan-history/v6.1-plugin-icons.md",
+          "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/v6.1-plugin-icons.md",
+          "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../../avalonia_dock_plug_test/myavalonia-workflow-studio/docs/plan-history/v6.1-plugin-icons.md",
+          "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+          "exists": true
+        },
+        {
+          "href": "../../../../../avalonia_dock_plug_test/myavalonia-xiancai-business-worker/docs/plan-history/v6.1-plugin-icons.md",
+          "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+          "exists": true
+        },
+        {
+          "href": "../../avalonia_dock_plug_test/myavalonia-workflow-studio/README.md",
+          "source": "docs/README.md",
+          "exists": true
+        },
+        {
+          "href": "../../avalonia_dock_plug_test/myavalonia-bili-downloader/README.md",
+          "source": "docs/README.md",
+          "exists": true
+        },
+        {
+          "href": "../../avalonia_dock_plug_test/myavalonia-video-security-player/README.md",
+          "source": "docs/README.md",
+          "exists": true
+        },
+        {
+          "href": "../../avalonia_dock_plug_test/myavalonia-datang-work/README.md",
+          "source": "docs/README.md",
+          "exists": true
+        },
+        {
+          "href": "../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/secret-video-player/design/architecture-design.md",
+          "source": "docs/theory/attention-centered-dock-workspace-design.md",
+          "exists": true
+        },
+        {
+          "href": "../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/secret-video-player/plan-history/G7.1-UI-RESPONSIBILITY-REFACTOR.md",
+          "source": "docs/theory/attention-centered-dock-workspace-design.md",
+          "exists": true
+        }
+      ],
+      "embeddedResources": [
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/archive/plans/host-plugin-architecture-review.md",
+          "bytes": 56055,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/archive/plans/host-v11-floating-windows-and-layout-v3-plan.md",
+          "bytes": 45359,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+          "bytes": 47974,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/archive/plans/host-v20-layout-retirement-plan.md",
+          "bytes": 19314,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/archive/plans/host-v7-tool-center-and-visibility-plan.md",
+          "bytes": 41364,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+          "bytes": 44750,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/archive/README.md",
+          "bytes": 19459,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/archive/records/documentation/reorganization-20260916.md",
+          "bytes": 38213,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/archive/records/host-v2/g8-layout-and-lifecycle-v2.md",
+          "bytes": 8792,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/archive/records/host-v20/development-acceptance.md",
+          "bytes": 5502,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/archive/records/host-v20/test-matrix.md",
+          "bytes": 9268,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/archive/specifications/dock-layout-snapshot-v1.md",
+          "bytes": 5514,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/archive/specifications/dock-layout-snapshot-v2.md",
+          "bytes": 4933,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/maintenance/floating-layout-verification.md",
+          "bytes": 8594,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/maintenance/host-v20-layout-retirement-verification.md",
+          "bytes": 18554,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/maintenance/verification.md",
+          "bytes": 7482,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/quick-start/floating-windows-and-layout.md",
+          "bytes": 6908,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/quick-start/host-v9-upgrade.md",
+          "bytes": 6855,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/quick-start/plugin-status.md",
+          "bytes": 6304,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/quick-start/tool-center.md",
+          "bytes": 5459,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/README.md",
+          "bytes": 6635,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/reference/dock-layout-snapshot-v3.md",
+          "bytes": 8269,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/reference/platform-baseline.md",
+          "bytes": 5012,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/roadmap/README.md",
+          "bytes": 4757,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "docs/theory/attention-centered-dock-workspace-design.md",
+          "bytes": 60467,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "Host/MyAvaloniaManagement/docs/design/architecture.md",
+          "bytes": 58243,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+          "bytes": 17670,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "Host/MyAvaloniaManagement/docs/README.md",
+          "bytes": 3301,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md",
+          "bytes": 30072,
+          "rendered": true
+        },
+        {
+          "sourceEqualsEmbedded": true,
+          "path": "README.md",
+          "bytes": 4801,
+          "rendered": true
+        }
+      ],
+      "implementationMatrix": "see-development-evidence",
+      "fullVerify": "recorded-separately",
+      "releaseGates": "not-run"
+    }
+  },
+  "testCaseChanges": {
+    "reason": "旧协议测试退出；现行行为迁至 V3，新增旧输入忽略与安全诊断。逐方法和参数映射见 test-matrix.md。",
+    "baselineTotal": 1342,
+    "finalTotal": 1325,
+    "removedOrRenamed": [
+      "MyAvaloniaManagement.PluginTests.DockFourWayLayoutTests.V2Tool方向映射到对应Dock(dockSide: Bottom, expectedAlignment: Bottom, expectedDockId: \"BottomTools\")",
+      "MyAvaloniaManagement.PluginTests.DockFourWayLayoutTests.V2Tool方向映射到对应Dock(dockSide: Left, expectedAlignment: Left, expectedDockId: \"LeftTools\")",
+      "MyAvaloniaManagement.PluginTests.DockFourWayLayoutTests.V2Tool方向映射到对应Dock(dockSide: Right, expectedAlignment: Right, expectedDockId: \"RightTools\")",
+      "MyAvaloniaManagement.PluginTests.DockFourWayLayoutTests.V2Tool方向映射到对应Dock(dockSide: Top, expectedAlignment: Top, expectedDockId: \"TopTools\")",
+      "MyAvaloniaManagement.PluginTests.DockFourWayLayoutTests.运行时校验器稳定返回激活Pane和ToolDock错误码",
+      "MyAvaloniaManagement.PluginTests.DockLayoutAvailabilityTests.未注册工具保留在V3且不隔离合法V2输入",
+      "MyAvaloniaManagement.PluginTests.DockLayoutAvailabilityTests.生命周期未就绪的工具不投影但保留可见意图和原V2字节",
+      "MyAvaloniaManagement.PluginTests.DockLayoutStoreTests.V1文件不读取不迁移也不隔离",
+      "MyAvaloniaManagement.PluginTests.DockLayoutStoreTests.V2严格拒绝未知重复缺失浮动字段和V1版本",
+      "MyAvaloniaManagement.PluginTests.DockLayoutStoreTests.V2结构校验覆盖空对象版本集合和全部Id重复边界",
+      "MyAvaloniaManagement.PluginTests.DockLayoutStoreTests.严格Json编解码器拒绝空流和空快照参数",
+      "MyAvaloniaManagement.PluginTests.DockLayoutStoreTests.合法V2快照可以原子往返且不留下临时文件",
+      "MyAvaloniaManagement.PluginTests.DockLayoutStoreTests.已有V2布局通过原子替换更新",
+      "MyAvaloniaManagement.PluginTests.DockLayoutStoreTests.快照模型只包含V2结构字段和原生布尔状态",
+      "MyAvaloniaManagement.PluginTests.DockLayoutStoreTests.损坏Json整体隔离且日志不包含原文(json: \"{\\\"schemaVersion\\\":2,//comment\\n\\\"panes\\\":[],\\\"too\"···)",
+      "MyAvaloniaManagement.PluginTests.DockLayoutStoreTests.损坏Json整体隔离且日志不包含原文(json: \"{\\\"schemaVersion\\\":2,\\\"panes\\\":[],\\\"tools\\\":[],\\\"a\"···)",
+      "MyAvaloniaManagement.PluginTests.DockLayoutStoreTests.损坏Json整体隔离且日志不包含原文(json: \"{not-json:password=ShouldNeverReachLogs}\")",
+      "MyAvaloniaManagement.PluginTests.DockLayoutStoreTests.重复顺序非法比例隐藏Pinned和错误活动项均被拒绝",
+      "MyAvaloniaManagement.Tests.DockLayoutV3StoreTests.V2只读转换并保留V1和V2原始字节(invalid: False)",
+      "MyAvaloniaManagement.Tests.DockLayoutV3StoreTests.V2只读转换并保留V1和V2原始字节(invalid: True)",
+      "MyAvaloniaManagement.Tests.DockLayoutV3Tests.V2转换保留比例顺序隐藏与自动隐藏且不修改输入",
+      "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.V2存储不读取改写迁移或删除V1目录",
+      "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.V3可以读取既有V2文档与布局且不会改写源文件",
+      "MyAvaloniaManagement.Tests.PluginStatusMigrationTests.仅退役项可以迁移为空而其他未知项和活动工具引用仍保留",
+      "MyAvaloniaManagement.Tests.PluginStatusMigrationTests.插件状态在隐藏停靠和自动收起状态下均可退役并保留其他布局(visible: False, pinned: False)",
+      "MyAvaloniaManagement.Tests.PluginStatusMigrationTests.插件状态在隐藏停靠和自动收起状态下均可退役并保留其他布局(visible: True, pinned: False)",
+      "MyAvaloniaManagement.Tests.PluginStatusMigrationTests.插件状态在隐藏停靠和自动收起状态下均可退役并保留其他布局(visible: True, pinned: True)",
+      "MyAvaloniaManagement.Tests.ToolCenterTests.仅管理项可迁移为空且其他未知工具不会被吞掉",
+      "MyAvaloniaManagement.Tests.ToolCenterTests.旧管理项迁移幂等并在覆盖前保留原始字节(visible: False, pinned: False)",
+      "MyAvaloniaManagement.Tests.ToolCenterTests.旧管理项迁移幂等并在覆盖前保留原始字节(visible: True, pinned: False)",
+      "MyAvaloniaManagement.Tests.ToolCenterTests.旧管理项迁移幂等并在覆盖前保留原始字节(visible: True, pinned: True)",
+      "MyAvaloniaManagement.UiTests.ToolCenterUiTests.旧布局定向迁移保留有效工具且新增工具默认隐藏并可全隐藏重启"
+    ],
+    "addedOrRenamed": [
+      "MyAvaloniaManagement.PluginTests.DockFourWayLayoutTests.Tool方向映射到对应Dock(dockSide: Bottom, expectedAlignment: Bottom, expectedDockId: \"BottomTools\")",
+      "MyAvaloniaManagement.PluginTests.DockFourWayLayoutTests.Tool方向映射到对应Dock(dockSide: Left, expectedAlignment: Left, expectedDockId: \"LeftTools\")",
+      "MyAvaloniaManagement.PluginTests.DockFourWayLayoutTests.Tool方向映射到对应Dock(dockSide: Right, expectedAlignment: Right, expectedDockId: \"RightTools\")",
+      "MyAvaloniaManagement.PluginTests.DockFourWayLayoutTests.Tool方向映射到对应Dock(dockSide: Top, expectedAlignment: Top, expectedDockId: \"TopTools\")",
+      "MyAvaloniaManagement.PluginTests.DockLayoutAvailabilityTests.未注册工具不创建实例且保留V3恢复记录",
+      "MyAvaloniaManagement.PluginTests.DockLayoutAvailabilityTests.生命周期未就绪的工具不投影但保留V3可见意图",
+      "MyAvaloniaManagement.Tests.DockLayoutV3StoreTests.损坏V3保留原件和诊断副本且错误不回显原文(json: \"{\\\"schemaVersion\\\":3,//comment\\n}\")",
+      "MyAvaloniaManagement.Tests.DockLayoutV3StoreTests.损坏V3保留原件和诊断副本且错误不回显原文(json: \"{\\\"schemaVersion\\\":3,}\")",
+      "MyAvaloniaManagement.Tests.DockLayoutV3StoreTests.损坏V3保留原件和诊断副本且错误不回显原文(json: \"{not-json:password=ShouldNeverReachLogs}\")",
+      "MyAvaloniaManagement.Tests.DockLayoutV3StoreTests.旧布局不参与恢复或诊断且仍可保存V3(scenario: \"broken\")",
+      "MyAvaloniaManagement.Tests.DockLayoutV3StoreTests.旧布局不参与恢复或诊断且仍可保存V3(scenario: \"locked\")",
+      "MyAvaloniaManagement.Tests.DockLayoutV3StoreTests.旧布局不参与恢复或诊断且仍可保存V3(scenario: \"valid\")",
+      "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.现行存储不读取改写迁移或删除V1目录",
+      "MyAvaloniaManagement.Tests.HostDataRootPolicyTests.现行存储读取V2文档与V3布局且不会改写源文件",
+      "MyAvaloniaManagement.UiTests.ToolCenterUiTests.V3恢复可见工具且新增工具默认隐藏并可全隐藏重启"
+    ]
+  },
+  "review": {
+    "deletedProductionTypes": [
+      "DockLayoutSnapshotV2",
+      "DockLayoutSnapshotV2Json",
+      "DockLayoutV2Migration",
+      "DockLayoutStore",
+      "DockLayoutSnapshotMapper",
+      "DockLayoutRuntimeValidator",
+      "RetiredToolLayoutMigration"
+    ],
+    "legacyProductionReferences": 0,
+    "legacyQueryReferences": 0,
+    "nonLayoutVersionDiffs": 0,
+    "removedCoverageEntries": [
+      "Business/Layout/DockLayoutSnapshotV2.cs",
+      "Business/Layout/DockLayoutSnapshotV2Json.cs"
+    ],
+    "remainingCoverageThresholdsUnchanged": true,
+    "solidOwnership": "Session/Scope、LayoutState、Store、Queue 所有权未改变；只归位共享异常和提取 Gate 本类内产物检查。",
+    "comments": "关键职责、恢复顺序、异常、临时进程及测试意图使用中文说明。",
+    "history": "仅修复归档链接并附退役说明，未重写历史结果。"
+  },
+  "failuresAndRetries": [
+    {
+      "stage": "P1 migration plugin",
+      "exitCode": 1,
+      "passed": 56,
+      "failed": 3,
+      "trx": "artifacts/host-v20/p1-migration/plugin/migrated-plugin.trx",
+      "resolution": "修正 V3 归一化比例与根隐藏集合断言，未改生产行为；重跑 59 通过。"
+    },
+    {
+      "stage": "P2 gate unit build",
+      "exitCode": 1,
+      "testExecution": "not-started",
+      "command": "dotnet test tools/MyAvaloniaManagement.Gate.Tests -c Release -m:1 -warnaserror --logger 'trx;LogFileName=gate-unit.trx' --results-directory artifacts/host-v20/p2-tools/gate-unit",
+      "reason": "新测试类未定义私有 TemporaryDirectory，编译失败；输出保留于任务工具记录，无 TRX。",
+      "resolution": "补齐专属临时目录助手后 83 项通过。"
+    },
+    {
+      "stage": "P4 embedded documentation",
+      "exitCode": 1,
+      "reason": "测试输出目录携带早于最终 test-matrix.md 的嵌入资源；核对主动拒绝。",
+      "resolution": "重新构建定稿文档，30 份嵌入原文全部一致，最终 verify 使用相同文档。"
+    }
+  ],
+  "notExecuted": [
+    "AIFLOW",
+    "Windows CI",
+    "seal",
+    "release Windows Smoke",
+    "release coverage",
+    "release repeatability",
+    "installation deployment",
+    "package upload",
+    "release tags"
+  ],
   "releaseGatesExecuted": false,
+  "releaseEligible": false,
   "deployed": false
 }
