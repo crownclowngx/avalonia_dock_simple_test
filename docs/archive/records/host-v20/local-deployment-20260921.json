@@ -1,8 +1,1879 @@
 {
   "schemaVersion": 1,
   "recordType": "host-v20-local-single-exe-deployment",
-  "status": "pending",
+  "status": "completed",
   "date": "2026-09-21",
   "target": "D:\\data\\avalonia",
-  "note": "构建前占位；实际构建、交付、核验和清理完成后仅回填此非嵌入 JSON。"
+  "executable": "D:\\data\\avalonia\\MyAvaloniaManagement.exe",
+  "sourceRevision": "c9a1891960cb5f3a42d7ed91d3a1cc32b85636d2",
+  "sourceWorkingTreeCleanAtArchive": true,
+  "sourceArchiveSha256": "189C5547D8227B0A1BA7448999165341AC524C56720BFD51B4024BD93CAB4B3F",
+  "branch": "codex/host-v20-layout-retirement",
+  "format": "Release win-x64; compressed self-contained single executable; native libraries bundled; trimming disabled; Controls and HelpWeb external",
+  "build": {
+    "passed": true,
+    "revision": "c9a1891960cb5f3a42d7ed91d3a1cc32b85636d2",
+    "sdk": "10.0.302",
+    "startedAtUtc": "2026-09-21T09:35:50.0094512+00:00",
+    "finishedAtUtc": "2026-09-21T09:36:19.5891113+00:00",
+    "restoreArguments": [
+      "restore",
+      "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj",
+      "-r",
+      "win-x64",
+      "-p:SelfContained=true",
+      "-p:PublishSingleFile=true",
+      "-p:PublishTrimmed=false",
+      "-p:SkipPluginDeploy=true",
+      "--nologo"
+    ],
+    "publishArguments": [
+      "publish",
+      "Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj",
+      "-c",
+      "Release",
+      "-r",
+      "win-x64",
+      "--self-contained",
+      "true",
+      "--no-restore",
+      "--nologo",
+      "-p:PublishSingleFile=true",
+      "-p:IncludeNativeLibrariesForSelfExtract=true",
+      "-p:EnableCompressionInSingleFile=true",
+      "-p:PublishTrimmed=false",
+      "-p:SkipPluginDeploy=true",
+      "-p:DebugType=embedded",
+      "-p:CopyOutputSymbolsToPublishDirectory=false",
+      "-p:SourceRevisionId=c9a1891960cb5f3a42d7ed91d3a1cc32b85636d2",
+      "-warnaserror",
+      "-m:1",
+      "-o",
+      "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\publish"
+    ],
+    "restoreExitCode": 0,
+    "publishExitCode": 0,
+    "warningsAsErrors": true,
+    "exeSha256": "B8F8653192E6B8CF979F1FC4C5F6285F99B9190B7F9E487210DF31B001774879",
+    "exeBytes": 53747825,
+    "exeProductVersion": "3.0.0+c9a1891960cb5f3a42d7ed91d3a1cc32b85636d2",
+    "avaloniaPatchReceipt": {
+      "identity": "avalonia-12.1.2-host-layout.1",
+      "fingerprint": "9DB8A580DD77C384C8969F2284FFB27240CCFF35424CA23E1DB38E44DE3BA46C",
+      "commit": "d3c867a9e2de379249b03dbeb3495bd7f076a81a",
+      "sdk": "10.0.302",
+      "publicSigned": true,
+      "assembly": "Avalonia.Base, Version=12.1.2.0, Culture=neutral, PublicKeyToken=c8d484a7012f9a8b",
+      "dllSha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+      "pdbSha256": "6AFB032E58490DFB8176C69FB9F6395655AD72CD59E18CE3E0A521C55B22DC67",
+      "buildRoot": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\9DB8A580DD77C384-0493837b",
+      "isolatedRestore": false,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "testTrx": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\avalonia-cross-window-layout\\build\\9DB8A580DD77C384-0493837b\\results\\layout-patch.trx",
+      "testSha256": "4000E0EC0E605EFAC455072F965857340B3CB8E4EE42C121DB3568510EB21809"
+    },
+    "dockPackageSha256": "F697CFF4F1411C6B437DB3803671B761B441AB75CD7BED11E6AC0787389B33C9"
+  },
+  "bundleVerification": {
+    "passed": true,
+    "exeSha256": "B8F8653192E6B8CF979F1FC4C5F6285F99B9190B7F9E487210DF31B001774879",
+    "exeBytes": 53747825,
+    "version": "6.0",
+    "entryCount": 238,
+    "runtimeConfig": {
+      "runtimeOptions": {
+        "tfm": "net10.0",
+        "includedFrameworks": [
+          {
+            "name": "Microsoft.NETCore.App",
+            "version": "10.0.10"
+          }
+        ],
+        "configProperties": {
+          "MVVMTOOLKIT_ENABLE_INOTIFYPROPERTYCHANGING_SUPPORT": true,
+          "System.Reflection.Metadata.MetadataUpdater.IsSupported": false,
+          "System.Runtime.InteropServices.BuiltInComInterop.IsSupported": true,
+          "System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization": false
+        }
+      }
+    },
+    "rootDllCount": 0,
+    "extracted": {
+      "MyAvaloniaManagement.dll": {
+        "bytes": 4819456,
+        "sha256": "DB9630720B2C6A37AC84FBBBEA700147CAD6F40A3A5CFFA20EBF48BEC3BB7715",
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\extracted-MyAvaloniaManagement.dll"
+      },
+      "MyAvaloniaManagement.runtimeconfig.json": {
+        "bytes": 518,
+        "sha256": "2FAE6F878A44B3E9A04976EF9BD48FDE573446DFC4ABB29B239C5217D6E3F541",
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\extracted-MyAvaloniaManagement.runtimeconfig.json"
+      },
+      "Dock.Avalonia.dll": {
+        "bytes": 322560,
+        "sha256": "89ED5D3A7E8DAC404FBDB2DCDAB180A91B7B821588B8FC40F3772E82D3E173E1",
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\extracted-Dock.Avalonia.dll"
+      },
+      "Avalonia.Base.dll": {
+        "bytes": 2355200,
+        "sha256": "AE0319053909561CADA1C3020D1AB28A913FBE55CA330E7E127594CE60397BEF",
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\extracted-Avalonia.Base.dll"
+      }
+    }
+  },
+  "embeddedDocumentsVerification": {
+    "passed": true,
+    "documents": 202,
+    "resourceCount": 202,
+    "failed": 0,
+    "assemblySha256": "DB9630720B2C6A37AC84FBBBEA700147CAD6F40A3A5CFFA20EBF48BEC3BB7715",
+    "checks": [
+      {
+        "path": "docs/archive/plans/ai-workflow-plugin-exploration.md",
+        "sourceSha256": "B1671F071A3F5EAA50A56E0799E5688CE11AAF064BE996AA65F1E7EF9D445084",
+        "embeddedSha256": "B1671F071A3F5EAA50A56E0799E5688CE11AAF064BE996AA65F1E7EF9D445084",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/avalonia-dock-upgrade-assessment-20260916.md",
+        "sourceSha256": "845BEF903CC084CABA190CEC69A2A7D17C3D27E75B114DE5E42CA52A733FC17C",
+        "embeddedSha256": "845BEF903CC084CABA190CEC69A2A7D17C3D27E75B114DE5E42CA52A733FC17C",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-dock-area-fill-implementation-plan.md",
+        "sourceSha256": "A5849E420057EC178D2DFED7EDDD67FA40735FC41B23D61F12066F0E220E9925",
+        "embeddedSha256": "A5849E420057EC178D2DFED7EDDD67FA40735FC41B23D61F12066F0E220E9925",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-document-cross-window-layout-crash-fix-plan.md",
+        "sourceSha256": "CA17095DBEDA7D329396F7EED4F823BEFB75F246939A17C2EB3BBB0A53CA94D4",
+        "embeddedSha256": "CA17095DBEDA7D329396F7EED4F823BEFB75F246939A17C2EB3BBB0A53CA94D4",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-plugin-architecture-review.md",
+        "sourceSha256": "8543955CC9B8B7C9D0F861976C8A65E62EF8DBFD147354165FC139762CF01DD5",
+        "embeddedSha256": "8543955CC9B8B7C9D0F861976C8A65E62EF8DBFD147354165FC139762CF01DD5",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v1-sealing-readiness-plan.md",
+        "sourceSha256": "0AA340C36FFFE6EA47D276C697CD3841B8AFE19A469A6C99E8BE8BA12D503F58",
+        "embeddedSha256": "0AA340C36FFFE6EA47D276C697CD3841B8AFE19A469A6C99E8BE8BA12D503F58",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v10-plugin-compatibility-and-dashboard-plan.md",
+        "sourceSha256": "2FD12C3C3E74492FF5F58BCC9C2A2BB77CBCCD8CC5A6D3BC1FA75DE197DC6578",
+        "embeddedSha256": "2FD12C3C3E74492FF5F58BCC9C2A2BB77CBCCD8CC5A6D3BC1FA75DE197DC6578",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v11-floating-windows-and-layout-v3-plan.md",
+        "sourceSha256": "7EC999D9D26C5CE335CA2FE210785DE596F01A2840D66E5C33D4EC03172A3C85",
+        "embeddedSha256": "7EC999D9D26C5CE335CA2FE210785DE596F01A2840D66E5C33D4EC03172A3C85",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v11-p1-tool-split-fix-plan.md",
+        "sourceSha256": "85C65B854F0792053FBC5F7BDD9F32F87FE23053E100DE48416CFEB0A2596ACD",
+        "embeddedSha256": "85C65B854F0792053FBC5F7BDD9F32F87FE23053E100DE48416CFEB0A2596ACD",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v11-p2-tool-window-close-fix-plan.md",
+        "sourceSha256": "FF81BFD29738A6307327C201427A8CA6F11985CD5348D3C3AA18CC3B318FFB41",
+        "embeddedSha256": "FF81BFD29738A6307327C201427A8CA6F11985CD5348D3C3AA18CC3B318FFB41",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v12-internal-refactor-plan.md",
+        "sourceSha256": "5462C39B1A2C295EB1F91BE621E7A557082110B03549CB9052507FE5DEFE1EC2",
+        "embeddedSha256": "5462C39B1A2C295EB1F91BE621E7A557082110B03549CB9052507FE5DEFE1EC2",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v13-plugin-enablement-plan.md",
+        "sourceSha256": "E9B66F2F254837664750FEB8C5EF74C7A4D7E6497AC09B582A27E3EE83F96478",
+        "embeddedSha256": "E9B66F2F254837664750FEB8C5EF74C7A4D7E6497AC09B582A27E3EE83F96478",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v14-automatic-restart-plan.md",
+        "sourceSha256": "0638D226C22D7B1A58498E803CB593554475769512FE944A68832ED928D15D54",
+        "embeddedSha256": "0638D226C22D7B1A58498E803CB593554475769512FE944A68832ED928D15D54",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v15-startup-splash-plan.md",
+        "sourceSha256": "CA73716B3841943BF7C21D9763AA7AAF90D08F337485759C688ECA9494035AFE",
+        "embeddedSha256": "CA73716B3841943BF7C21D9763AA7AAF90D08F337485759C688ECA9494035AFE",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v16-document-floating-close-and-creation-target-plan.md",
+        "sourceSha256": "0D7AD7BF8E0C59ADBB0E30A6F1635233BD99F9DFFD0A49F5E2B4CFAFA9E4DE3A",
+        "embeddedSha256": "0D7AD7BF8E0C59ADBB0E30A6F1635233BD99F9DFFD0A49F5E2B4CFAFA9E4DE3A",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v17-readability-refactor-plan.md",
+        "sourceSha256": "A6347AA675C51D9EF7008F3A9E4C230DA36906E65EC3530A0E41E0156B19ADDF",
+        "embeddedSha256": "A6347AA675C51D9EF7008F3A9E4C230DA36906E65EC3530A0E41E0156B19ADDF",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "sourceSha256": "6B8916600952E2FAAFF349AA4278C1A38666545FB0C7ED2F8D2C9A20C44DBD92",
+        "embeddedSha256": "6B8916600952E2FAAFF349AA4278C1A38666545FB0C7ED2F8D2C9A20C44DBD92",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v19-complexity-reduction-plan.md",
+        "sourceSha256": "E8DFEA262EC1E75FB96CFB487AFECEAE4B93807467802E0D49FA5E1DC08803D4",
+        "embeddedSha256": "E8DFEA262EC1E75FB96CFB487AFECEAE4B93807467802E0D49FA5E1DC08803D4",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "sourceSha256": "8445345CD00CCE5C0EC92602DB03E702FFFB557DB8EC484EF00037B3A829D1C9",
+        "embeddedSha256": "8445345CD00CCE5C0EC92602DB03E702FFFB557DB8EC484EF00037B3A829D1C9",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v20-layout-retirement-plan.md",
+        "sourceSha256": "3841C175717010CAA2E579EE8093E53BDB7CAFC692DBED288A6F85DF0240DC97",
+        "embeddedSha256": "3841C175717010CAA2E579EE8093E53BDB7CAFC692DBED288A6F85DF0240DC97",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "sourceSha256": "3BBE18EBB49E5803A62CDB6521091E2917293502FE48CCA07CF1A585BCCCE78B",
+        "embeddedSha256": "3BBE18EBB49E5803A62CDB6521091E2917293502FE48CCA07CF1A585BCCCE78B",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v4-breaking-refactor-plan.md",
+        "sourceSha256": "1B923EF25C2900EBBFAA71747A816F80DF3F6082494B4C4749145AE414C23455",
+        "embeddedSha256": "1B923EF25C2900EBBFAA71747A816F80DF3F6082494B4C4749145AE414C23455",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v5-lifecycle-ownership-repair-plan.md",
+        "sourceSha256": "5700C63EB91298D06A798A80A5DB77A8758A810A2969B3B036510829EB4719AE",
+        "embeddedSha256": "5700C63EB91298D06A798A80A5DB77A8758A810A2969B3B036510829EB4719AE",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v6-plugin-navigation-and-function-center-plan.md",
+        "sourceSha256": "A53C003FA1BA2E0420F3EED240E2A407A257E1DF155B0C78B185AFFC55656BFD",
+        "embeddedSha256": "A53C003FA1BA2E0420F3EED240E2A407A257E1DF155B0C78B185AFFC55656BFD",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v6.1-extensible-icon-contributions-plan.md",
+        "sourceSha256": "6B534106C46F3DFA0762F42E8F8C859BA647A5CA592A49BF77C5B897402D6451",
+        "embeddedSha256": "6B534106C46F3DFA0762F42E8F8C859BA647A5CA592A49BF77C5B897402D6451",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v7-tool-center-and-visibility-plan.md",
+        "sourceSha256": "C093CED1631EEFC3FF3026FE8FAD58831096E7CFAC7EAAB1D2CF7409CB45BB42",
+        "embeddedSha256": "C093CED1631EEFC3FF3026FE8FAD58831096E7CFAC7EAAB1D2CF7409CB45BB42",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v8-cognitive-ux-convergence-plan.md",
+        "sourceSha256": "9DEB3C5D57AFC17BBC983EE7CDDB709536D860292D2712F19E72E0DB56E4D75F",
+        "embeddedSha256": "9DEB3C5D57AFC17BBC983EE7CDDB709536D860292D2712F19E72E0DB56E4D75F",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/host-v9-avalonia-dock-upgrade-plan.md",
+        "sourceSha256": "49F594016F3FF6AFE465997A29EB002B216FF9156BE80F7FB82E58AF696F92E0",
+        "embeddedSha256": "49F594016F3FF6AFE465997A29EB002B216FF9156BE80F7FB82E58AF696F92E0",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/plugin-status-window.md",
+        "sourceSha256": "764FD64BA59EA0BABA71457E2147DBD2A360FD44EFC596468AE36632A38BD6AC",
+        "embeddedSha256": "764FD64BA59EA0BABA71457E2147DBD2A360FD44EFC596468AE36632A38BD6AC",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/plans/workbench-command-introduction-plan.md",
+        "sourceSha256": "FDE50218549D23A9DD2D3701BCBD73E7414DFC9FCA6AE478557D75489E0C023E",
+        "embeddedSha256": "FDE50218549D23A9DD2D3701BCBD73E7414DFC9FCA6AE478557D75489E0C023E",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/README.md",
+        "sourceSha256": "E09C6D83D1109EB3E0550203B2E739667F4C61CB84E39FA694D4E68151FB0A62",
+        "embeddedSha256": "E09C6D83D1109EB3E0550203B2E739667F4C61CB84E39FA694D4E68151FB0A62",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/dock-area-fill/cross-window-layout-crash-20260917.md",
+        "sourceSha256": "A8B380636EF03D896D93548EE7A5ECF062CCA55EC5673C502AABF73B80DB1175",
+        "embeddedSha256": "A8B380636EF03D896D93548EE7A5ECF062CCA55EC5673C502AABF73B80DB1175",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/dock-area-fill/cross-window-layout-deployment-guide.md",
+        "sourceSha256": "29F1ED0536CF1C6D363441970C17321C127A6BD43D2C528BE864A49D41E53D25",
+        "embeddedSha256": "29F1ED0536CF1C6D363441970C17321C127A6BD43D2C528BE864A49D41E53D25",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/dock-area-fill/cross-window-layout-fix.md",
+        "sourceSha256": "5FC3A4D69FCAC42CF5C7D3C53262E4BA529F20A00A9620D147A4C4AC43FF336D",
+        "embeddedSha256": "5FC3A4D69FCAC42CF5C7D3C53262E4BA529F20A00A9620D147A4C4AC43FF336D",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/dock-area-fill/development-acceptance.md",
+        "sourceSha256": "10603098ECAE9CA7B807A3A5D9A9934DB8AB650FCA46BDA8237B1F11B9FA4329",
+        "embeddedSha256": "10603098ECAE9CA7B807A3A5D9A9934DB8AB650FCA46BDA8237B1F11B9FA4329",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/documentation/reorganization-20260916.md",
+        "sourceSha256": "D1997FF24271EC9A5DBCA7DC64D55D8B3A0E25FB3A1D8CAF9A8099B2234B33F4",
+        "embeddedSha256": "D1997FF24271EC9A5DBCA7DC64D55D8B3A0E25FB3A1D8CAF9A8099B2234B33F4",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/documentation/reorganization-20260920.md",
+        "sourceSha256": "93ACC9AA013C41AC46B7EC16C56E64C28E82A5BE53DBE73BFA19127DBF5065CF",
+        "embeddedSha256": "93ACC9AA013C41AC46B7EC16C56E64C28E82A5BE53DBE73BFA19127DBF5065CF",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/documentation/reorganization-20260921.md",
+        "sourceSha256": "10A9F1688E653344A75E23A654E8876D0C2EFF1672372AA839029F1325E8AB1D",
+        "embeddedSha256": "10A9F1688E653344A75E23A654E8876D0C2EFF1672372AA839029F1325E8AB1D",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g0-green-baseline.md",
+        "sourceSha256": "626612B4B9383C1ABCBA647002ECD324803C9DD3A3E1ED5ED7A934718B01D6CA",
+        "embeddedSha256": "626612B4B9383C1ABCBA647002ECD324803C9DD3A3E1ED5ED7A934718B01D6CA",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g1-support-boundary-and-version-lines.md",
+        "sourceSha256": "910EB49952EDE8653B0A4EFDE92BB1DAD90FA1692A2BCC07DEABC8C08DACF79E",
+        "embeddedSha256": "910EB49952EDE8653B0A4EFDE92BB1DAD90FA1692A2BCC07DEABC8C08DACF79E",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g10-host-internal-coordination.md",
+        "sourceSha256": "332ED0AA2CEF676ECAC360E19DBA2C824BFF3DED14F71A6F82EC63EF59ADFCC7",
+        "embeddedSha256": "332ED0AA2CEF676ECAC360E19DBA2C824BFF3DED14F71A6F82EC63EF59ADFCC7",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g11-low-value-public-surface-cleanup.md",
+        "sourceSha256": "D7EA4F1D542DCC0EBA5FB9E0BA22F2B9C4CD3F83CD311FF52DBD133108B347D3",
+        "embeddedSha256": "D7EA4F1D542DCC0EBA5FB9E0BA22F2B9C4CD3F83CD311FF52DBD133108B347D3",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g12-unified-plugin-build-and-deployment.md",
+        "sourceSha256": "CC21AC1461A7F2388BDE8E00ADDFFF4D273B2FDAD8BCF2E1806AAA2207EDFC8D",
+        "embeddedSha256": "CC21AC1461A7F2388BDE8E00ADDFFF4D273B2FDAD8BCF2E1806AAA2207EDFC8D",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g13-plugin-sdk-api-compatibility-baseline.md",
+        "sourceSha256": "D495887D528DD1F948237B6E9764EF88E04BABB287EF81FAFCA2CD22D8E4298A",
+        "embeddedSha256": "D495887D528DD1F948237B6E9764EF88E04BABB287EF81FAFCA2CD22D8E4298A",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g14-windows-release-gate.md",
+        "sourceSha256": "5451CC843C167AF9590A13F43A48950C950D2D5FEA30971F205813B58BBD6DEC",
+        "embeddedSha256": "5451CC843C167AF9590A13F43A48950C950D2D5FEA30971F205813B58BBD6DEC",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g15-host-diagnostic-redaction.md",
+        "sourceSha256": "D709BC5A44FB935DFF87C4B62D6290DC6E495487FCB6A6FAA388E88F560C3EC2",
+        "embeddedSha256": "D709BC5A44FB935DFF87C4B62D6290DC6E495487FCB6A6FAA388E88F560C3EC2",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g16-documentation-and-v1-baseline.md",
+        "sourceSha256": "A3EF1C3E1558370F9DE2CBCA7950D6C3135616DC94F289299D70D7B7F69889D7",
+        "embeddedSha256": "A3EF1C3E1558370F9DE2CBCA7950D6C3135616DC94F289299D70D7B7F69889D7",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g2-host-api-surface.md",
+        "sourceSha256": "3F34F2399202A03F9E7BD12BA0948CECC0D1DB981C4146FD606F115EBC7D8084",
+        "embeddedSha256": "3F34F2399202A03F9E7BD12BA0948CECC0D1DB981C4146FD606F115EBC7D8084",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g3-plugin-sdk-and-ui-profile.md",
+        "sourceSha256": "CFDB68841D736E5D84C36D70126F73C00098676C68DDA8EDEF3DFCC528B15CEB",
+        "embeddedSha256": "CFDB68841D736E5D84C36D70126F73C00098676C68DDA8EDEF3DFCC528B15CEB",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g4-managed-only-plugin-loading.md",
+        "sourceSha256": "FA450D003E4E241D1CB072450CBE44FEF9D0EEC838D8ADAFFCC5E2ACE1B0F2B0",
+        "embeddedSha256": "FA450D003E4E241D1CB072450CBE44FEF9D0EEC838D8ADAFFCC5E2ACE1B0F2B0",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g5-explicit-contributions-and-plugin-registry.md",
+        "sourceSha256": "7BFCE321293A11D567BF1405157AB9A333E0DDDC5AD63F6903468D672025DDDB",
+        "embeddedSha256": "7BFCE321293A11D567BF1405157AB9A333E0DDDC5AD63F6903468D672025DDDB",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g6-host-di-protection.md",
+        "sourceSha256": "B4A6BF59454B71B8F613531C9745B6BB8C1F73BC397179E123923E2D616B88B9",
+        "embeddedSha256": "B4A6BF59454B71B8F613531C9745B6BB8C1F73BC397179E123923E2D616B88B9",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g7-document-envelope-v1.md",
+        "sourceSha256": "83525D3B5EB94485F5DD93B862FFBF0AF17C1B5EEEB35603681D8A65D2CCC484",
+        "embeddedSha256": "83525D3B5EB94485F5DD93B862FFBF0AF17C1B5EEEB35603681D8A65D2CCC484",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g8-document-content-persistence-contract.md",
+        "sourceSha256": "755EFC869DE57D598472E2B6F05716EF474FCB677A88E55498774C3D04EA05DD",
+        "embeddedSha256": "755EFC869DE57D598472E2B6F05716EF474FCB677A88E55498774C3D04EA05DD",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v1/g9-sdk-event-bus.md",
+        "sourceSha256": "1783AFD8E67FDD88A3AAD87A439331D27B93DBF7E31C3F5D269D57D77E205C54",
+        "embeddedSha256": "1783AFD8E67FDD88A3AAD87A439331D27B93DBF7E31C3F5D269D57D77E205C54",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v10/development-acceptance.md",
+        "sourceSha256": "F8B1CAC0D3523B4C3CC3C58544FA30E077388674F1667053E3A7C585E774980C",
+        "embeddedSha256": "F8B1CAC0D3523B4C3CC3C58544FA30E077388674F1667053E3A7C585E774980C",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v11/development-acceptance.md",
+        "sourceSha256": "CC20E22F0F8E8A774C49796F5D52C59BC1146A689A97E48A12D2C3E9AE57CCC9",
+        "embeddedSha256": "CC20E22F0F8E8A774C49796F5D52C59BC1146A689A97E48A12D2C3E9AE57CCC9",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v11/p1-tool-split-fix.md",
+        "sourceSha256": "8953A8EACACA19836019B1D297D2699F73F61B2C01B7D8C70F724BB509D40239",
+        "embeddedSha256": "8953A8EACACA19836019B1D297D2699F73F61B2C01B7D8C70F724BB509D40239",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v11/p2-tool-window-close-fix.md",
+        "sourceSha256": "529259147B24AF12214190027656950D2680E1CE345A616419DDFAF70BEC419E",
+        "embeddedSha256": "529259147B24AF12214190027656950D2680E1CE345A616419DDFAF70BEC419E",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v12/development-acceptance.md",
+        "sourceSha256": "199C0EFEDC6B1168BA6670A50C66B215ADC0F7718D0210F20FD10DC5658E1B69",
+        "embeddedSha256": "199C0EFEDC6B1168BA6670A50C66B215ADC0F7718D0210F20FD10DC5658E1B69",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v12/local-deployment-guide.md",
+        "sourceSha256": "E4CA09B5CF554D33846BA36E31FB3CAC154A33D2392C661286AA20BB1874D3AF",
+        "embeddedSha256": "E4CA09B5CF554D33846BA36E31FB3CAC154A33D2392C661286AA20BB1874D3AF",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v13/development-acceptance.md",
+        "sourceSha256": "B3ACA0C34EE628FD5FE8AA777F77DE90477038CAAF0CB2510F96B113CFF12F67",
+        "embeddedSha256": "B3ACA0C34EE628FD5FE8AA777F77DE90477038CAAF0CB2510F96B113CFF12F67",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v13/local-deployment-guide.md",
+        "sourceSha256": "4A47D93DC1F09FE779C05FF9F104881E1633061C084498A30C7A8AA6E75F1037",
+        "embeddedSha256": "4A47D93DC1F09FE779C05FF9F104881E1633061C084498A30C7A8AA6E75F1037",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v14/development-acceptance.md",
+        "sourceSha256": "57F4D0655362CD4F9E871CAA4735E2375806909688A6CF8C7DC58221C80CFF38",
+        "embeddedSha256": "57F4D0655362CD4F9E871CAA4735E2375806909688A6CF8C7DC58221C80CFF38",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v14/local-deployment-guide.md",
+        "sourceSha256": "B6B2C44671CB9788CB655292F7225E69656FDDF0ECE32E8D3C01B0EEF65F26E2",
+        "embeddedSha256": "B6B2C44671CB9788CB655292F7225E69656FDDF0ECE32E8D3C01B0EEF65F26E2",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v15/development-acceptance.md",
+        "sourceSha256": "30B53EA8CC7052ED4E616F1FF074D9B94B6814CEC06CCE74060E6C236486FCD1",
+        "embeddedSha256": "30B53EA8CC7052ED4E616F1FF074D9B94B6814CEC06CCE74060E6C236486FCD1",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v15/local-deployment-guide.md",
+        "sourceSha256": "A6BF34FEB1784E36D3591F468F868CC78A027B67925E032FE81B35B11A447112",
+        "embeddedSha256": "A6BF34FEB1784E36D3591F468F868CC78A027B67925E032FE81B35B11A447112",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v16/development-acceptance.md",
+        "sourceSha256": "AEC684143C674CCD2A7FEA7DD5BE435E6A2572E7B5AEB71530C602817AF094B3",
+        "embeddedSha256": "AEC684143C674CCD2A7FEA7DD5BE435E6A2572E7B5AEB71530C602817AF094B3",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v17/development-acceptance.md",
+        "sourceSha256": "3D747B51DC4488CCC9B2EFE3A778C470475227F778C37F40C514A9C3893DC73B",
+        "embeddedSha256": "3D747B51DC4488CCC9B2EFE3A778C470475227F778C37F40C514A9C3893DC73B",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v18/development-acceptance.md",
+        "sourceSha256": "16A1128B0E0E86998ECA7D9638F7F3458D3BC3E219380220C2F17555555B2BAE",
+        "embeddedSha256": "16A1128B0E0E86998ECA7D9638F7F3458D3BC3E219380220C2F17555555B2BAE",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v19/development-acceptance.md",
+        "sourceSha256": "A1E25710E0220969DFB03AA2423029E8E2A0A6E7B4D3ACB2E2E5651A502A3ACF",
+        "embeddedSha256": "A1E25710E0220969DFB03AA2423029E8E2A0A6E7B4D3ACB2E2E5651A502A3ACF",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v19/local-deployment-guide.md",
+        "sourceSha256": "E1CE9C7028AF6BB02A12009F308FFAF9411B2C30ACC4EC5B6163AAEE126F9898",
+        "embeddedSha256": "E1CE9C7028AF6BB02A12009F308FFAF9411B2C30ACC4EC5B6163AAEE126F9898",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v19/test-matrix.md",
+        "sourceSha256": "90407AAD601264A6854071F921868015968BB79949578C9A395E55ADCA9A48D6",
+        "embeddedSha256": "90407AAD601264A6854071F921868015968BB79949578C9A395E55ADCA9A48D6",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v2/g0-green-baseline.md",
+        "sourceSha256": "744F8F590CD98C8EBBB1797F03826C88DE930B36617D72E07982A0C99B1619B7",
+        "embeddedSha256": "744F8F590CD98C8EBBB1797F03826C88DE930B36617D72E07982A0C99B1619B7",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v2/g1-version-and-data-boundaries.md",
+        "sourceSha256": "446F3D6EB6CA901649AB6CE8AD861830FB14824B7FBD977570C6F424F0B56A86",
+        "embeddedSha256": "446F3D6EB6CA901649AB6CE8AD861830FB14824B7FBD977570C6F424F0B56A86",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v2/g13-remove-v1-production-surface.md",
+        "sourceSha256": "F2C9B82CFE4BD440FA24EC1EDC7E6D3110C687ED5DA8A6272275C8F010698B19",
+        "embeddedSha256": "F2C9B82CFE4BD440FA24EC1EDC7E6D3110C687ED5DA8A6272275C8F010698B19",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v2/g14-v2-sealing.md",
+        "sourceSha256": "FBACF82CBB8828668F02229163342BEC824524A02471E33FFA59DBAA65E1BF95",
+        "embeddedSha256": "FBACF82CBB8828668F02229163342BEC824524A02471E33FFA59DBAA65E1BF95",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v2/g2-plugin-sdk-rebuild.md",
+        "sourceSha256": "5E13F66719ECF4ED2687E171602D7FAC1C24616DAD85C7E150776E05F8816A09",
+        "embeddedSha256": "5E13F66719ECF4ED2687E171602D7FAC1C24616DAD85C7E150776E05F8816A09",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v2/g3-manifest-v2-and-build-protocol.md",
+        "sourceSha256": "28AC0A460BF4E4CB4AD0C41565BB9822451013561681252A03298DD8F0EAE139",
+        "embeddedSha256": "28AC0A460BF4E4CB4AD0C41565BB9822451013561681252A03298DD8F0EAE139",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v2/g4-per-plugin-containers.md",
+        "sourceSha256": "796AC8924E3D5760027745E78CCBFEB134C65486D87CE0CE4F5CEEF1F882EF1C",
+        "embeddedSha256": "796AC8924E3D5760027745E78CCBFEB134C65486D87CE0CE4F5CEEF1F882EF1C",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v2/g5-declarative-contribution-catalog.md",
+        "sourceSha256": "DF6CD55AC068B05D0F7119D0EEBB1752A75C81A57EE9DCF5B601CCF292E946FF",
+        "embeddedSha256": "DF6CD55AC068B05D0F7119D0EEBB1752A75C81A57EE9DCF5B601CCF292E946FF",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v2/g6-host-dock-adapter.md",
+        "sourceSha256": "5B307C4A52F16574ED43288F0587E4D70BC1FA4BF5CD7EE2143E5855F9FF7E5D",
+        "embeddedSha256": "5B307C4A52F16574ED43288F0587E4D70BC1FA4BF5CD7EE2143E5855F9FF7E5D",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v2/g7-document-v2.md",
+        "sourceSha256": "38DF14A8547B7AB9B4F3730F907CE0CB3B6C077D8EECCE7637507C20720342A0",
+        "embeddedSha256": "38DF14A8547B7AB9B4F3730F907CE0CB3B6C077D8EECCE7637507C20720342A0",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v2/g8-layout-and-lifecycle-v2.md",
+        "sourceSha256": "D5C89EBF3BF13039C9CE6FD5C122FEBF4779EA95F7F86244481C6582AF6390F6",
+        "embeddedSha256": "D5C89EBF3BF13039C9CE6FD5C122FEBF4779EA95F7F86244481C6582AF6390F6",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v2/g9-my-plug-test-v2.md",
+        "sourceSha256": "A47448AEEDABCE595B3FCE7649F9788AF9FD93C25FB39E7452D7B070F5F2ED7B",
+        "embeddedSha256": "A47448AEEDABCE595B3FCE7649F9788AF9FD93C25FB39E7452D7B070F5F2ED7B",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v20/development-acceptance.md",
+        "sourceSha256": "0BE501E47CBA09657AC3248AFEE964E40B1F9405820B129C6563F4ED287461BC",
+        "embeddedSha256": "0BE501E47CBA09657AC3248AFEE964E40B1F9405820B129C6563F4ED287461BC",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v20/local-deployment-guide.md",
+        "sourceSha256": "FCBDE173C8BE6C752F5E0264CA7F0ADE16834E9B6865E06797F11709901BDF33",
+        "embeddedSha256": "FCBDE173C8BE6C752F5E0264CA7F0ADE16834E9B6865E06797F11709901BDF33",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v20/test-matrix.md",
+        "sourceSha256": "E688918DD181ADA84A3BCDED8DD970501975F7364801BC00C76DA57186B50123",
+        "embeddedSha256": "E688918DD181ADA84A3BCDED8DD970501975F7364801BC00C76DA57186B50123",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v3/g0-green-baseline.md",
+        "sourceSha256": "52A30FF5B229F0B97E14B7E970475F35B044938D1FB55D49C45849B9C14E8C6D",
+        "embeddedSha256": "52A30FF5B229F0B97E14B7E970475F35B044938D1FB55D49C45849B9C14E8C6D",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v3/g1-version-and-data-boundaries.md",
+        "sourceSha256": "18F3AFAA84ECEAE85FEE4484695E7A1638672E873E8E412D3C55C43C0C062E41",
+        "embeddedSha256": "18F3AFAA84ECEAE85FEE4484695E7A1638672E873E8E412D3C55C43C0C062E41",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v3/g13-remove-v2-production-surface.md",
+        "sourceSha256": "FFB65AF75B20AC9260E207472A328621445D22785F45972DCF2DC022C4BDE1B5",
+        "embeddedSha256": "FFB65AF75B20AC9260E207472A328621445D22785F45972DCF2DC022C4BDE1B5",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v3/g14-v3-sealing.md",
+        "sourceSha256": "B0B13B8D85546127C2DC7F50F93F02C3E1FEB40AC092D9D833D77E80BC2B3D20",
+        "embeddedSha256": "B0B13B8D85546127C2DC7F50F93F02C3E1FEB40AC092D9D833D77E80BC2B3D20",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v3/g2-revisioned-document-save.md",
+        "sourceSha256": "C02C3F024C18599172A559284317CF4C2CA6284EF3AADD985C5F24ED3726163F",
+        "embeddedSha256": "C02C3F024C18599172A559284317CF4C2CA6284EF3AADD985C5F24ED3726163F",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v3/g3-exclusive-document-activation.md",
+        "sourceSha256": "DAF013E5320F5250BF2186BD8DBEE926784E5CBEDBE63829D099AD0CCB2AB864",
+        "embeddedSha256": "DAF013E5320F5250BF2186BD8DBEE926784E5CBEDBE63829D099AD0CCB2AB864",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v3/g4-plugin-registration-ownership.md",
+        "sourceSha256": "1E54C65FADD2760BCE3F201E9D4A5E19C9E4D29FA290B7F5E8C4DEF84A3867A3",
+        "embeddedSha256": "1E54C65FADD2760BCE3F201E9D4A5E19C9E4D29FA290B7F5E8C4DEF84A3867A3",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v3/g5-plugin-private-messaging.md",
+        "sourceSha256": "04A617996931816D217BD1179BD49DDB6CE249DDB96DA987B158D10D6C08AC9C",
+        "embeddedSha256": "04A617996931816D217BD1179BD49DDB6CE249DDB96DA987B158D10D6C08AC9C",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v3/g6-workspace-session-and-dock-factory.md",
+        "sourceSha256": "E92D0C22BD4ED123B9320EBC52A00AD5A348850CA1E6CB81B1B5FF6B12ABF3DC",
+        "embeddedSha256": "E92D0C22BD4ED123B9320EBC52A00AD5A348850CA1E6CB81B1B5FF6B12ABF3DC",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v3/g7-host-catalog-and-plugin-registry.md",
+        "sourceSha256": "0AAFBB2BB746DB4C0EDE4D1B3A384E6B509CD59E5E3B2184FF8F41696488F1EF",
+        "embeddedSha256": "0AAFBB2BB746DB4C0EDE4D1B3A384E6B509CD59E5E3B2184FF8F41696488F1EF",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v3/g8-fullscreen-lease-and-host-v3-skeleton.md",
+        "sourceSha256": "D680F54462ACD74AA32B6EFC9EDBB0B768BBA9C5BDC8E3328B21CA6C946FF59C",
+        "embeddedSha256": "D680F54462ACD74AA32B6EFC9EDBB0B768BBA9C5BDC8E3328B21CA6C946FF59C",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v3/g9-my-plug-test-v3-acceptance.md",
+        "sourceSha256": "E02CD70C1CD6546E12E947699205A3FF2A34C530E78EBA5F061C12BF375B97D1",
+        "embeddedSha256": "E02CD70C1CD6546E12E947699205A3FF2A34C530E78EBA5F061C12BF375B97D1",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v4/g0-v3-source-baseline.md",
+        "sourceSha256": "6E0D4F144CC5CFF1AE110BF4D3A6992455B1580F62434DDD36CE134DF459569F",
+        "embeddedSha256": "6E0D4F144CC5CFF1AE110BF4D3A6992455B1580F62434DDD36CE134DF459569F",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v4/g1-remove-dead-host-surface.md",
+        "sourceSha256": "214D3657C36C4FD3F4A09B6EE6D19F51B9F2B02F5440F22A0F0DD9C459A556E1",
+        "embeddedSha256": "214D3657C36C4FD3F4A09B6EE6D19F51B9F2B02F5440F22A0F0DD9C459A556E1",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v4/g2-strongly-typed-identity-and-use-case-entry.md",
+        "sourceSha256": "B228E65344B97EDF76B2E2356AD3D06747F7DC0777978F76D1384B96212223D1",
+        "embeddedSha256": "B228E65344B97EDF76B2E2356AD3D06747F7DC0777978F76D1384B96212223D1",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v4/g3-layout-responsibility-alignment.md",
+        "sourceSha256": "C1BC6778C00108CAE88380C8DA797A1A3E8EA4D6E11D65B2F4E7E6D027279479",
+        "embeddedSha256": "C1BC6778C00108CAE88380C8DA797A1A3E8EA4D6E11D65B2F4E7E6D027279479",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v4/g4-document-control-recycling-ownership.md",
+        "sourceSha256": "1A52E4CAE7110157CD34BDD886B53B37FC66A71FD4469884B19321AD8737C717",
+        "embeddedSha256": "1A52E4CAE7110157CD34BDD886B53B37FC66A71FD4469884B19321AD8737C717",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v4/g5-domain-helper-migration.md",
+        "sourceSha256": "911F774208A933F51F900D53333A69652F54CD8E71770C293CF6F5519C3AF45D",
+        "embeddedSha256": "911F774208A933F51F900D53333A69652F54CD8E71770C293CF6F5519C3AF45D",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v4/g6-file-system-path-and-presentation-model.md",
+        "sourceSha256": "B15D52731674C2A01B1BA1CEF2A685A0AC18857C4CC5F787C575ED251FCDE0FE",
+        "embeddedSha256": "B15D52731674C2A01B1BA1CEF2A685A0AC18857C4CC5F787C575ED251FCDE0FE",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v4/g7-four-plugins-harness-documentation-regression.md",
+        "sourceSha256": "9164F387E17327E3654F47270310BA24704C14BD726C11D18C7718797E8137D8",
+        "embeddedSha256": "9164F387E17327E3654F47270310BA24704C14BD726C11D18C7718797E8137D8",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v4/g8-v4-sealing.md",
+        "sourceSha256": "24EC69EB2635C7F7488656C8287D6CAA5F43CE14A487091FF0EC299BBDB097A9",
+        "embeddedSha256": "24EC69EB2635C7F7488656C8287D6CAA5F43CE14A487091FF0EC299BBDB097A9",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v5/lifecycle-ownership-repair-acceptance.md",
+        "sourceSha256": "2ACC900EB61FA9EAF8C51CB43BC05973B6A9F7D46569D8025792E6C5E26C0627",
+        "embeddedSha256": "2ACC900EB61FA9EAF8C51CB43BC05973B6A9F7D46569D8025792E6C5E26C0627",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "sourceSha256": "2B095C684E2F8C5A006E37DB847977160BDCDB2DA1B445490FC6A6E1E8DB7DB8",
+        "embeddedSha256": "2B095C684E2F8C5A006E37DB847977160BDCDB2DA1B445490FC6A6E1E8DB7DB8",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v6.1/icon-contributions-and-resources-acceptance.md",
+        "sourceSha256": "00898B387BDF6F745A216224F97EB35B3871A81FD1A7C92DF835C9C8E7E12224",
+        "embeddedSha256": "00898B387BDF6F745A216224F97EB35B3871A81FD1A7C92DF835C9C8E7E12224",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v6/plugin-navigation-and-function-center-acceptance.md",
+        "sourceSha256": "234991AAD6783FF7F9CE6A04FE40D5268AE15ED8984A7A3E719CBCFBBE784206",
+        "embeddedSha256": "234991AAD6783FF7F9CE6A04FE40D5268AE15ED8984A7A3E719CBCFBBE784206",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v7/tool-center-and-visibility-acceptance.md",
+        "sourceSha256": "5F1109B41102910BCAD36D0D2252212BFECB5B13A7444779E159B3773BC951AE",
+        "embeddedSha256": "5F1109B41102910BCAD36D0D2252212BFECB5B13A7444779E159B3773BC951AE",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v8/cognitive-ux-convergence-acceptance.md",
+        "sourceSha256": "99E17FFE7510DA9336353BFF5CC1A2D59453570C705591AF78F0B396AD743932",
+        "embeddedSha256": "99E17FFE7510DA9336353BFF5CC1A2D59453570C705591AF78F0B396AD743932",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v8/local-deployment-20260912.md",
+        "sourceSha256": "53849C4578E058AE90F8D73942B93555DC589FA6A9B852BF06B5AFCB5E9215CD",
+        "embeddedSha256": "53849C4578E058AE90F8D73942B93555DC589FA6A9B852BF06B5AFCB5E9215CD",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v9/development-acceptance.md",
+        "sourceSha256": "46769F8F430156265EC42CB962057CE7CB7758A51ED432AA4C4FC21F58C9E707",
+        "embeddedSha256": "46769F8F430156265EC42CB962057CE7CB7758A51ED432AA4C4FC21F58C9E707",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v9/generated-artifacts-cleanup.md",
+        "sourceSha256": "DECF9297A8788696A2ECBCB42A54A5849911765415F064DE73EE738B955D4F72",
+        "embeddedSha256": "DECF9297A8788696A2ECBCB42A54A5849911765415F064DE73EE738B955D4F72",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host-v9/nuget-unified-3.4.1-release.md",
+        "sourceSha256": "9F04F6291B84A86541E43902FAF94F089A479E7EB67446D0BC39031388B98EF1",
+        "embeddedSha256": "9F04F6291B84A86541E43902FAF94F089A479E7EB67446D0BC39031388B98EF1",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host/manual-acceptance-20260920.md",
+        "sourceSha256": "417F9C7EE5D44E1EBC7B06E588DCD5725F914A01F6560CD786734A28C1929DFD",
+        "embeddedSha256": "417F9C7EE5D44E1EBC7B06E588DCD5725F914A01F6560CD786734A28C1929DFD",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/host/manual-acceptance-20260921.md",
+        "sourceSha256": "4188DDF9995ED43213E2BF94E164EBF27713AC654FEE8A19C7257F5B5ACC4AE3",
+        "embeddedSha256": "4188DDF9995ED43213E2BF94E164EBF27713AC654FEE8A19C7257F5B5ACC4AE3",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/net10/phase-0-baseline.md",
+        "sourceSha256": "70FA26054D3E4B042682649B43EC00787B6C3859F20702D136D255902890CA5B",
+        "embeddedSha256": "70FA26054D3E4B042682649B43EC00787B6C3859F20702D136D255902890CA5B",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/net10/phase-1-governance.md",
+        "sourceSha256": "AB7114EAC639A84E7D8F5FFB91898E566996EC76022C258923FDCDF0D1F0D356",
+        "embeddedSha256": "AB7114EAC639A84E7D8F5FFB91898E566996EC76022C258923FDCDF0D1F0D356",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/net10/phase-2-net10-foundation.md",
+        "sourceSha256": "97D9C7C6932DF3246A04C79D4C8ADC5E2A4C2A50372C6F1675354F5C5A2EBCA1",
+        "embeddedSha256": "97D9C7C6932DF3246A04C79D4C8ADC5E2A4C2A50372C6F1675354F5C5A2EBCA1",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/net10/phase-3-plugin-dependencies.md",
+        "sourceSha256": "26DAD1EC707FC167BB71234EC15AD81553F638C1C2F28ABC824985B38EA38F55",
+        "embeddedSha256": "26DAD1EC707FC167BB71234EC15AD81553F638C1C2F28ABC824985B38EA38F55",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/net10/phase-4-avalonia12-libvlc-gate.md",
+        "sourceSha256": "F3E27D6FA8F4722055C1384D19513827925F1D557C032696C422CC83883F0D88",
+        "embeddedSha256": "F3E27D6FA8F4722055C1384D19513827925F1D557C032696C422CC83883F0D88",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/plugin-packaging/distribution-baseline-20260828.md",
+        "sourceSha256": "AF4C816B01C0D25F615E70CB75C0D94D98BF49BDB55E31779D7A6138E5209313",
+        "embeddedSha256": "AF4C816B01C0D25F615E70CB75C0D94D98BF49BDB55E31779D7A6138E5209313",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/plugin-status/window-acceptance.md",
+        "sourceSha256": "970AD2A458BBAF0CB284FF124DF05DFE1C04AD98330EC360FBC560AC30CF8F2B",
+        "embeddedSha256": "970AD2A458BBAF0CB284FF124DF05DFE1C04AD98330EC360FBC560AC30CF8F2B",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g0-facts-semantics-public-api.md",
+        "sourceSha256": "481DC787DCD87F84745BCE8C69AF324CF434BBE71662825A47895B6B793197CC",
+        "embeddedSha256": "481DC787DCD87F84745BCE8C69AF324CF434BBE71662825A47895B6B793197CC",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g1-command-contracts-registration-declarations.md",
+        "sourceSha256": "25ADD0E10574AAEFE22DA5AF7A6EB71EB0053F46C4941DE7E372BC70C32F6E8F",
+        "embeddedSha256": "25ADD0E10574AAEFE22DA5AF7A6EB71EB0053F46C4941DE7E372BC70C32F6E8F",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g10-cross-repository-integration-sealing.md",
+        "sourceSha256": "5C052B89F81C6246F450E3445519F36B2E44BCE888E2404622E0CEA1A9BB38D9",
+        "embeddedSha256": "5C052B89F81C6246F450E3445519F36B2E44BCE888E2404622E0CEA1A9BB38D9",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g2-command-catalog-executor.md",
+        "sourceSha256": "D4D97CE9A46C6C1E191914D9A3BCDD2D8CBF61BFC4A2EEF8345EEA1E66BDDC26",
+        "embeddedSha256": "D4D97CE9A46C6C1E191914D9A3BCDD2D8CBF61BFC4A2EEF8345EEA1E66BDDC26",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g3-context-active-document-target-routing.md",
+        "sourceSha256": "3A73EA3C060A44EC261FB705396BB223631ECAEAF7703D33687B0B0D2D371F1C",
+        "embeddedSha256": "3A73EA3C060A44EC261FB705396BB223631ECAEAF7703D33687B0B0D2D371F1C",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g4-host-open-save-presentation-loop.md",
+        "sourceSha256": "2BDEE1E17D281D6569A7354E2E46C390DC8B61225ABAD989354F82832808728A",
+        "embeddedSha256": "2BDEE1E17D281D6569A7354E2E46C390DC8B61225ABAD989354F82832808728A",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g5-declarative-menu-keybinding-projection.md",
+        "sourceSha256": "CF79EB41D7E1566880576536C7450F0BD2C5EDD480A41667F4D81641375CEEFD",
+        "embeddedSha256": "CF79EB41D7E1566880576536C7450F0BD2C5EDD480A41667F4D81641375CEEFD",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g6-sdk-candidate-template-independent-consumption.md",
+        "sourceSha256": "8ECEC3763A5042E9FAA622FDA98C21A56147DB8C365E60740A9DC76C6A41936D",
+        "embeddedSha256": "8ECEC3763A5042E9FAA622FDA98C21A56147DB8C365E60740A9DC76C6A41936D",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g7-workflow-studio-three-real-commands.md",
+        "sourceSha256": "6261D2748ED0CD135A58E0E1F887AFBC5DE014339804F53610E6531B4718843C",
+        "embeddedSha256": "6261D2748ED0CD135A58E0E1F887AFBC5DE014339804F53610E6531B4718843C",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g8-classic-game-multi-instance-commands.md",
+        "sourceSha256": "51CED116E256F0E81902B811D77709B3DD3FFC9DE596B6C01AFEB86FCD9B83F6",
+        "embeddedSha256": "51CED116E256F0E81902B811D77709B3DD3FFC9DE596B6C01AFEB86FCD9B83F6",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workbench-command/g9-minimal-command-palette.md",
+        "sourceSha256": "88CF81A20911B302FCB196C7A779B446EF7229154EA61714AB205B573C9DCDA5",
+        "embeddedSha256": "88CF81A20911B302FCB196C7A779B446EF7229154EA61714AB205B573C9DCDA5",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g0-facts-naming-repositories-sdk-compatibility.md",
+        "sourceSha256": "689A75E5B9225EABCCBE85FC4F894746F6E2AB0EDD072545E2B135B579F51568",
+        "embeddedSha256": "689A75E5B9225EABCCBE85FC4F894746F6E2AB0EDD072545E2B135B579F51568",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g1-host-workflow-action-kernel.md",
+        "sourceSha256": "41B4F25530694B2C02BC3405E2BD84BD168E491C8B03A76AFCAE6EF88D468363",
+        "embeddedSha256": "41B4F25530694B2C02BC3405E2BD84BD168E491C8B03A76AFCAE6EF88D468363",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g2-sdk-build-external-template-propagation.md",
+        "sourceSha256": "DAD03CF256AFF84FDC115612BCB6401C5FBB37F450D017922FF29CB66140A388",
+        "embeddedSha256": "DAD03CF256AFF84FDC115612BCB6401C5FBB37F450D017922FF29CB66140A388",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g3-workflow-studio-fake-action-loop.md",
+        "sourceSha256": "DD36E429210E9E95FBF024A59281C625F4DCDF4F1CC76FFFDB9E1C1D45AD17A1",
+        "embeddedSha256": "DD36E429210E9E95FBF024A59281C625F4DCDF4F1CC76FFFDB9E1C1D45AD17A1",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g3.1-template-1.2-publication.md",
+        "sourceSha256": "0CEFAEE19EC4E04CF6B03082700657ED77140EF0B0CF7373197694022C7E4964",
+        "embeddedSha256": "0CEFAEE19EC4E04CF6B03082700657ED77140EF0B0CF7373197694022C7E4964",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g3.1-workflow-protocol-consistency.md",
+        "sourceSha256": "455D41E78F79BD1EA0264E173C8C4E60ABB535954E53C26824BA7F0722825C1B",
+        "embeddedSha256": "455D41E78F79BD1EA0264E173C8C4E60ABB535954E53C26824BA7F0722825C1B",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/records/workflow-action/g5-dual-role-governance.md",
+        "sourceSha256": "DD2E642FB03F3536581A4299954CD9973F3187D650E281C9B1B394DA44D75985",
+        "embeddedSha256": "DD2E642FB03F3536581A4299954CD9973F3187D650E281C9B1B394DA44D75985",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/specifications/dock-layout-snapshot-v1.md",
+        "sourceSha256": "46F0B8A76470078D6B9B28974C91561CD858171412CF385F00FC97904C0A749D",
+        "embeddedSha256": "46F0B8A76470078D6B9B28974C91561CD858171412CF385F00FC97904C0A749D",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/specifications/dock-layout-snapshot-v2.md",
+        "sourceSha256": "9F94F585D0413BE1A1E2A5A4DF6E8DADEBCB1A84CC353721AA76FD24BDE8D947",
+        "embeddedSha256": "9F94F585D0413BE1A1E2A5A4DF6E8DADEBCB1A84CC353721AA76FD24BDE8D947",
+        "matched": true
+      },
+      {
+        "path": "docs/archive/specifications/document-persistence-v1-design.md",
+        "sourceSha256": "695707FC6485218E303A3C305706C318AEC547D34B8097A5CC63729B69C654AF",
+        "embeddedSha256": "695707FC6485218E303A3C305706C318AEC547D34B8097A5CC63729B69C654AF",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/dock-area-fill-verification.md",
+        "sourceSha256": "D2D74B19878510E7BF25548F56D2C9C73676B64BE0798718EBF4F5D69C034A2B",
+        "embeddedSha256": "D2D74B19878510E7BF25548F56D2C9C73676B64BE0798718EBF4F5D69C034A2B",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/dock-cross-window-layout-verification.md",
+        "sourceSha256": "7D3B7781D65A630840D95AC24B5E2912E79F3825E39EF2BA625F4EDF10BF262D",
+        "embeddedSha256": "7D3B7781D65A630840D95AC24B5E2912E79F3825E39EF2BA625F4EDF10BF262D",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/documentation.md",
+        "sourceSha256": "7E7412BB10A9C36B430B4D35F380037EE69E832959D7424F46E8B2DA14C9BA49",
+        "embeddedSha256": "7E7412BB10A9C36B430B4D35F380037EE69E832959D7424F46E8B2DA14C9BA49",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/floating-layout-verification.md",
+        "sourceSha256": "D659EBCA65DEFFE84DE8838EB1AEF9903D9ABC694A63C2BF242E62128937B424",
+        "embeddedSha256": "D659EBCA65DEFFE84DE8838EB1AEF9903D9ABC694A63C2BF242E62128937B424",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/host-v12-refactor-verification.md",
+        "sourceSha256": "22EB47D5CA7DC5DF81A1AB9B1D5F4A61F5FC2618A92F6A836DEF8404BB942054",
+        "embeddedSha256": "22EB47D5CA7DC5DF81A1AB9B1D5F4A61F5FC2618A92F6A836DEF8404BB942054",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/host-v13-plugin-enablement-verification.md",
+        "sourceSha256": "9C1EEB1BC581E7538AEF6C4276DBBAEE79FEA66A715A2D124789B47D969AD246",
+        "embeddedSha256": "9C1EEB1BC581E7538AEF6C4276DBBAEE79FEA66A715A2D124789B47D969AD246",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/host-v14-automatic-restart-verification.md",
+        "sourceSha256": "C6D840930A34506FF41804E81D2642A3BAB5A5D183D8E9FA2FC48AA303C69714",
+        "embeddedSha256": "C6D840930A34506FF41804E81D2642A3BAB5A5D183D8E9FA2FC48AA303C69714",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/host-v15-startup-verification.md",
+        "sourceSha256": "2483A3F8F91EFF36E28F5DCC6EA0310840ED2B5721DCFEFDF29A56AFF2957D82",
+        "embeddedSha256": "2483A3F8F91EFF36E28F5DCC6EA0310840ED2B5721DCFEFDF29A56AFF2957D82",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/host-v16-document-window-verification.md",
+        "sourceSha256": "BA1084258E626650F01766910E837AF5D951AE29BC42F8947198D1840E016D86",
+        "embeddedSha256": "BA1084258E626650F01766910E837AF5D951AE29BC42F8947198D1840E016D86",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/host-v17-readability-verification.md",
+        "sourceSha256": "A4EF4A80069FDEE79CC57D51B78197F7B099466B76F1FC1DFB86AAA0FED4B909",
+        "embeddedSha256": "A4EF4A80069FDEE79CC57D51B78197F7B099466B76F1FC1DFB86AAA0FED4B909",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/host-v18-command-palette-verification.md",
+        "sourceSha256": "D514C2537141B25A3A252352EEC710A79A890211C1F5C4DE0D7FE393D7B180F8",
+        "embeddedSha256": "D514C2537141B25A3A252352EEC710A79A890211C1F5C4DE0D7FE393D7B180F8",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/host-v19-complexity-verification.md",
+        "sourceSha256": "95C8A0D7A854E5933DA670510931616D789309B76B1C6AA97B9608D5D2574010",
+        "embeddedSha256": "95C8A0D7A854E5933DA670510931616D789309B76B1C6AA97B9608D5D2574010",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/host-v20-layout-retirement-verification.md",
+        "sourceSha256": "8E7E1576D65C5710980ED7F050F0B282AB87DDD7CDB9B2683CBCE4BC3AE12895",
+        "embeddedSha256": "8E7E1576D65C5710980ED7F050F0B282AB87DDD7CDB9B2683CBCE4BC3AE12895",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/local-deployment.md",
+        "sourceSha256": "7771E2C9540090D1EEEE7CC2549191CC6F34767BB9BE101BB9DD1A95FA4BBC48",
+        "embeddedSha256": "7771E2C9540090D1EEEE7CC2549191CC6F34767BB9BE101BB9DD1A95FA4BBC48",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/nuget-release.md",
+        "sourceSha256": "60357B46D1252FB507494241447BFC311BC887765D3E9E81FA05866991FDCAE2",
+        "embeddedSha256": "60357B46D1252FB507494241447BFC311BC887765D3E9E81FA05866991FDCAE2",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/plugin-compatibility-verification.md",
+        "sourceSha256": "F835D6DEA879D89EE73F6420B38FFA43F27C030815E1EBDBDEB73154105F1E38",
+        "embeddedSha256": "F835D6DEA879D89EE73F6420B38FFA43F27C030815E1EBDBDEB73154105F1E38",
+        "matched": true
+      },
+      {
+        "path": "docs/maintenance/verification.md",
+        "sourceSha256": "00E03B99CA7E18B9B705DF990D2EB8FEF7D17C8A29EB96113ACCB6EC4B95265B",
+        "embeddedSha256": "00E03B99CA7E18B9B705DF990D2EB8FEF7D17C8A29EB96113ACCB6EC4B95265B",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/add-document-and-tool.md",
+        "sourceSha256": "4DC4809C5937472F3F5250F377A2C0F844363CC9B1D3808AB94614C9993BEFC4",
+        "embeddedSha256": "4DC4809C5937472F3F5250F377A2C0F844363CC9B1D3808AB94614C9993BEFC4",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/create-managed-plugin.md",
+        "sourceSha256": "EF100E0B868BB6AD05A24F87A9CD0EB837326BD60688AD2D6EC5270A405E015E",
+        "embeddedSha256": "EF100E0B868BB6AD05A24F87A9CD0EB837326BD60688AD2D6EC5270A405E015E",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/floating-windows-and-layout.md",
+        "sourceSha256": "5026229B2B9A84EDA0CB5BBD0405C3E48DA000E24E70FBE833CC130A2F2DFAE2",
+        "embeddedSha256": "5026229B2B9A84EDA0CB5BBD0405C3E48DA000E24E70FBE833CC130A2F2DFAE2",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/host-v9-upgrade.md",
+        "sourceSha256": "0A541142DF6260E210057C8B7A97EF7DF59C6FBB0C5B9984E00DF7E4FBD19BC4",
+        "embeddedSha256": "0A541142DF6260E210057C8B7A97EF7DF59C6FBB0C5B9984E00DF7E4FBD19BC4",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/macos-experiment.md",
+        "sourceSha256": "1BB8C6DAB9884FC4D18C8BC3F5A0F51E70165A23D701487B41244ED73D6834AD",
+        "embeddedSha256": "1BB8C6DAB9884FC4D18C8BC3F5A0F51E70165A23D701487B41244ED73D6834AD",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/plugin-icons.md",
+        "sourceSha256": "363E092E182FD2F726D14215F68FEDC71F0D29167BF5121BFC442E9081AD7CB5",
+        "embeddedSha256": "363E092E182FD2F726D14215F68FEDC71F0D29167BF5121BFC442E9081AD7CB5",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/plugin-navigation-and-function-center.md",
+        "sourceSha256": "0FEBD8FBBE941B04754F35B65E694BF67DD17E75B796ECC5DFEB8FC82C273DCA",
+        "embeddedSha256": "0FEBD8FBBE941B04754F35B65E694BF67DD17E75B796ECC5DFEB8FC82C273DCA",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/plugin-status.md",
+        "sourceSha256": "7E6B9FD94834A099D9383F97F03B91B884B23EDC5262DDD4A066A29DE988AE23",
+        "embeddedSha256": "7E6B9FD94834A099D9383F97F03B91B884B23EDC5262DDD4A066A29DE988AE23",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/README.md",
+        "sourceSha256": "38F10CC1E4A163033603C1F1C4927DD7FEEBFB29182A4987ABC1AE667AD46C2E",
+        "embeddedSha256": "38F10CC1E4A163033603C1F1C4927DD7FEEBFB29182A4987ABC1AE667AD46C2E",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/restart-host.md",
+        "sourceSha256": "867E756114320F7F1D75C98CC34CFF0FA1809AAB22D690974EAAE041948C8D72",
+        "embeddedSha256": "867E756114320F7F1D75C98CC34CFF0FA1809AAB22D690974EAAE041948C8D72",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/startup.md",
+        "sourceSha256": "73C357837AED118B5FEF69508398BF435AA53B05C53DF8061909498BB8A56E67",
+        "embeddedSha256": "73C357837AED118B5FEF69508398BF435AA53B05C53DF8061909498BB8A56E67",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/tool-center.md",
+        "sourceSha256": "D12ADA4DC26E0496AEBF7036A5A4B557F888D71060C52AA5E3B1A07E14FB5E97",
+        "embeddedSha256": "D12ADA4DC26E0496AEBF7036A5A4B557F888D71060C52AA5E3B1A07E14FB5E97",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/verification-and-troubleshooting.md",
+        "sourceSha256": "31BCD3BBE493A190ABEFC8B364C8394EC94022678FE73DC4305B5C729D3095E2",
+        "embeddedSha256": "31BCD3BBE493A190ABEFC8B364C8394EC94022678FE73DC4305B5C729D3095E2",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/workbench-search.md",
+        "sourceSha256": "5AD54575EFBB09890DB1F3198CB228234EA3CAFF255ADA2D71A34F445127A62D",
+        "embeddedSha256": "5AD54575EFBB09890DB1F3198CB228234EA3CAFF255ADA2D71A34F445127A62D",
+        "matched": true
+      },
+      {
+        "path": "docs/quick-start/workflow-action-development.md",
+        "sourceSha256": "59EA633C09DA3EF352E52DF5A1D69898884EB58855D59FF864F4E7E4E8DC4505",
+        "embeddedSha256": "59EA633C09DA3EF352E52DF5A1D69898884EB58855D59FF864F4E7E4E8DC4505",
+        "matched": true
+      },
+      {
+        "path": "docs/README.md",
+        "sourceSha256": "B89B3AFCE2E51E5EE2EE4D316A87AFCEF222C9B19C14CA7661B85D327C9FD173",
+        "embeddedSha256": "B89B3AFCE2E51E5EE2EE4D316A87AFCEF222C9B19C14CA7661B85D327C9FD173",
+        "matched": true
+      },
+      {
+        "path": "docs/reference/dock-layout-snapshot-v3.md",
+        "sourceSha256": "CF7415CD30C1B025FEE0FD4CD0E5070C80D2F243C14C62454EF57A4CAC5E5865",
+        "embeddedSha256": "CF7415CD30C1B025FEE0FD4CD0E5070C80D2F243C14C62454EF57A4CAC5E5865",
+        "matched": true
+      },
+      {
+        "path": "docs/reference/document-persistence.md",
+        "sourceSha256": "714DDD4367BB5439C34CEDBED6F489F38C501DBF30B462415180069B980F369A",
+        "embeddedSha256": "714DDD4367BB5439C34CEDBED6F489F38C501DBF30B462415180069B980F369A",
+        "matched": true
+      },
+      {
+        "path": "docs/reference/host-restart.md",
+        "sourceSha256": "E10D3C6FBBA0816E0F6078D1313BA4B3431990FC1BBF6BCC64E360FDDC9567CC",
+        "embeddedSha256": "E10D3C6FBBA0816E0F6078D1313BA4B3431990FC1BBF6BCC64E360FDDC9567CC",
+        "matched": true
+      },
+      {
+        "path": "docs/reference/host-startup.md",
+        "sourceSha256": "0D012672E0CE47E211F09378B20509AB496744D747FD1D18B21578B4427A826A",
+        "embeddedSha256": "0D012672E0CE47E211F09378B20509AB496744D747FD1D18B21578B4427A826A",
+        "matched": true
+      },
+      {
+        "path": "docs/reference/platform-baseline.md",
+        "sourceSha256": "A05798074335098C7AA0C13DC0B20BFFF5EF8464D64D82996DB9F6A041A15EED",
+        "embeddedSha256": "A05798074335098C7AA0C13DC0B20BFFF5EF8464D64D82996DB9F6A041A15EED",
+        "matched": true
+      },
+      {
+        "path": "docs/reference/plugin-compatibility.md",
+        "sourceSha256": "53B0E7C471640BCD44F230FC08F683BB8F83383FFC0800582E25418A7892CE31",
+        "embeddedSha256": "53B0E7C471640BCD44F230FC08F683BB8F83383FFC0800582E25418A7892CE31",
+        "matched": true
+      },
+      {
+        "path": "docs/reference/plugin-enablement.md",
+        "sourceSha256": "122AD2DBF2A81AC35B61C27E862D17B86C3A9F8477131711EC488570A1E2EAD6",
+        "embeddedSha256": "122AD2DBF2A81AC35B61C27E862D17B86C3A9F8477131711EC488570A1E2EAD6",
+        "matched": true
+      },
+      {
+        "path": "docs/reference/plugin-sdk-api-compatibility.md",
+        "sourceSha256": "DAA384D7D689954FC27420AFF9293A293EAC7C29E7AC7836441C4C1FF1EDDAF7",
+        "embeddedSha256": "DAA384D7D689954FC27420AFF9293A293EAC7C29E7AC7836441C4C1FF1EDDAF7",
+        "matched": true
+      },
+      {
+        "path": "docs/reference/workbench-commands.md",
+        "sourceSha256": "B7EECAC5EE727167FB4FB7F739A97278B979F0E0E0F2C626A68D94952212AEE8",
+        "embeddedSha256": "B7EECAC5EE727167FB4FB7F739A97278B979F0E0E0F2C626A68D94952212AEE8",
+        "matched": true
+      },
+      {
+        "path": "docs/reference/workflow-actions.md",
+        "sourceSha256": "94E99E9CFD54153D50E548874803E42647E425C06378C662B5F55E6243A60BDE",
+        "embeddedSha256": "94E99E9CFD54153D50E548874803E42647E425C06378C662B5F55E6243A60BDE",
+        "matched": true
+      },
+      {
+        "path": "docs/roadmap/README.md",
+        "sourceSha256": "082A95B18CCC278C81A4B8FB499D5DD17CB3ACCEE06D44674AEF1491EDAF8E6A",
+        "embeddedSha256": "082A95B18CCC278C81A4B8FB499D5DD17CB3ACCEE06D44674AEF1491EDAF8E6A",
+        "matched": true
+      },
+      {
+        "path": "docs/theory/约束驱动的软件工业化.md",
+        "sourceSha256": "3BAB0B435278C29D1972806686D991BBB52E02BD82C2D4A09BA04F57CA785CDC",
+        "embeddedSha256": "3BAB0B435278C29D1972806686D991BBB52E02BD82C2D4A09BA04F57CA785CDC",
+        "matched": true
+      },
+      {
+        "path": "docs/theory/activity-theory-requirements-decomposition.md",
+        "sourceSha256": "E899F81524893E208EC8ED10EB669181B7C3FDF085FEBED9A9A3D7664D3C4E92",
+        "embeddedSha256": "E899F81524893E208EC8ED10EB669181B7C3FDF085FEBED9A9A3D7664D3C4E92",
+        "matched": true
+      },
+      {
+        "path": "docs/theory/ai-enabled-forkable-software-bases.md",
+        "sourceSha256": "89E3CA900ECD41BD1FB95CD7461B2244F890926F82AF222AA86BE9E6125B8199",
+        "embeddedSha256": "89E3CA900ECD41BD1FB95CD7461B2244F890926F82AF222AA86BE9E6125B8199",
+        "matched": true
+      },
+      {
+        "path": "docs/theory/attention-centered-dock-workspace-design.md",
+        "sourceSha256": "9BBD0F1D94CB34818B092C8C8B49CC92E5DC8434F42982EBFAA63B6028A73829",
+        "embeddedSha256": "9BBD0F1D94CB34818B092C8C8B49CC92E5DC8434F42982EBFAA63B6028A73829",
+        "matched": true
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/design/architecture.md",
+        "sourceSha256": "7CD28394971CA31587261A356E9683EB478EF4D3EE1936CDCBB3E31CE51FF17D",
+        "embeddedSha256": "7CD28394971CA31587261A356E9683EB478EF4D3EE1936CDCBB3E31CE51FF17D",
+        "matched": true
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/design/design-methodology-and-tradeoffs.md",
+        "sourceSha256": "DE79AEABD21A9931E90CDF96BE94F090112E088DF87FE52D38412BD0CD78C43E",
+        "embeddedSha256": "DE79AEABD21A9931E90CDF96BE94F090112E088DF87FE52D38412BD0CD78C43E",
+        "matched": true
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/README.md",
+        "sourceSha256": "1BC1D78611BE968813E381D467BB305F76A396DBA9DCB091B2ADF29C38BB737F",
+        "embeddedSha256": "1BC1D78611BE968813E381D467BB305F76A396DBA9DCB091B2ADF29C38BB737F",
+        "matched": true
+      },
+      {
+        "path": "Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md",
+        "sourceSha256": "BB3E5CCDBAD0B1278490D528250651FA09C1F18E4C908738BA9BFC802B2ACFD4",
+        "embeddedSha256": "BB3E5CCDBAD0B1278490D528250651FA09C1F18E4C908738BA9BFC802B2ACFD4",
+        "matched": true
+      },
+      {
+        "path": "README.md",
+        "sourceSha256": "7E0FBDFD287EEA45C50BDCAADE70669EB29B4759AA23614FCCD596EE42112205",
+        "embeddedSha256": "7E0FBDFD287EEA45C50BDCAADE70669EB29B4759AA23614FCCD596EE42112205",
+        "matched": true
+      }
+    ]
+  },
+  "documentationLinks": {
+    "markdownFiles": 228,
+    "checkedLocalLinks": 1877,
+    "errors": [],
+    "externalWorkspaceLinks": [
+      {
+        "source": "docs/README.md",
+        "target": "../../avalonia_dock_plug_test/myavalonia-workflow-studio/README.md",
+        "exists": true
+      },
+      {
+        "source": "docs/README.md",
+        "target": "../../avalonia_dock_plug_test/myavalonia-bili-downloader/README.md",
+        "exists": true
+      },
+      {
+        "source": "docs/README.md",
+        "target": "../../avalonia_dock_plug_test/myavalonia-video-security-player/README.md",
+        "exists": true
+      },
+      {
+        "source": "docs/README.md",
+        "target": "../../avalonia_dock_plug_test/myavalonia-datang-work/README.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/ai-workflow-plugin-exploration.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/workflow-action/g4-my-small-tools-nondestructive-encryption-action.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-plugin-architecture-review.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/src/BiliDownloaderPlugin.Plugin/Messaging/IBiliDownloaderEventBus.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-plugin-architecture-review.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-plugin-architecture-review.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-plugin-architecture-review.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/src/BiliDownloaderPlugin.Plugin/Plugin/BiliDownloaderPluginModule.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-workflow-studio/src/WorkflowStudio.Plugin/Plugin/WorkflowStudioModule.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-classic-game/src/ClassicGamePlugin.Plugin/Plugin/ClassicGamePluginModule.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-novel-generate/src/NovelGeneratePlugin.Plugin/Plugin/NovelCommands.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-novel-generate/src/NovelGeneratePlugin.Plugin/Features/Main/MainDocument.Workbench.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v18-command-palette-interaction-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-layer-unpack/src/LayerUnpackPlugin.Plugin/Workflow/ArchiveWorkflowActions.cs",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v2/g10-datang-accounting-help-v2.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v2/g11-my-small-tools-v2.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v2/g10-datang-accounting-help-v2.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v2/g11-my-small-tools-v2.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v2-breaking-refactor-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v2/g12-bili-downloader-v2.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/host-v3/g10-datang-accounting-help-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/host-v3/g11-my-small-tools-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/plans/host-v3-breaking-refactor-plan.md",
+        "target": "../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v3/g13-remove-v2-production-surface.md",
+        "target": "../../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/host-v3/g12-bili-downloader-v3-acceptance.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "target": "../../../../../avalonia_dock_plug_test/myavalonia-baidu-netdisk/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "target": "../../../../../avalonia_dock_plug_test/myavalonia-bili-downloader/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "target": "../../../../../avalonia_dock_plug_test/myavalonia-classic-game/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "target": "../../../../../avalonia_dock_plug_test/myavalonia-datang-work/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "target": "../../../../../avalonia_dock_plug_test/myavalonia-fractal-art/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "target": "../../../../../avalonia_dock_plug_test/myavalonia-image-lab/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "target": "../../../../../avalonia_dock_plug_test/myavalonia-layer-unpack/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "target": "../../../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "target": "../../../../../avalonia_dock_plug_test/myavalonia-workflow-studio/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/archive/records/host-v6.1/external-plugin-icons-upgrade.md",
+        "target": "../../../../../avalonia_dock_plug_test/myavalonia-xiancai-business-worker/docs/plan-history/v6.1-plugin-icons.md",
+        "exists": true
+      },
+      {
+        "source": "docs/theory/attention-centered-dock-workspace-design.md",
+        "target": "../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/secret-video-player/design/architecture-design.md",
+        "exists": true
+      },
+      {
+        "source": "docs/theory/attention-centered-dock-workspace-design.md",
+        "target": "../../../avalonia_dock_plug_test/myavalonia-video-security-player/docs/secret-video-player/plan-history/G7.1-UI-RESPONSIBILITY-REFACTOR.md",
+        "exists": true
+      }
+    ],
+    "templateLinks": []
+  },
+  "startupVerification": {
+    "passed": true,
+    "exitCode": 0,
+    "pid": 43204,
+    "startedAtUtc": "2026-09-21T09:36:43.2453399+00:00",
+    "finishedAtUtc": "2026-09-21T09:36:45.2528502+00:00",
+    "exeSha256": "B8F8653192E6B8CF979F1FC4C5F6285F99B9190B7F9E487210DF31B001774879",
+    "isolatedData": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\startup-data",
+    "isolatedBundleCache": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\bundle-cache",
+    "dotnetRootOverride": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\nonexistent-dotnet",
+    "externalPluginsLoaded": false,
+    "originalUserDataTouched": false,
+    "layout": {
+      "schemaVersion": 3,
+      "mainWindow": {
+        "id": "main",
+        "bounds": {
+          "x": 320,
+          "y": 204,
+          "width": 1904,
+          "height": 1104,
+          "maximized": false,
+          "screen": {
+            "x": 0,
+            "y": 0,
+            "width": 2560,
+            "height": 1552,
+            "scaling": 1
+          }
+        },
+        "root": {
+          "kind": "split",
+          "id": "node-d08eb61bdee847cf924e3857a1efe05c",
+          "proportion": 1,
+          "orientation": "horizontal",
+          "children": [
+            {
+              "kind": "tools",
+              "id": "node-aa8bd6514d664ae181477cc7686e55f2",
+              "proportion": 0.09375,
+              "orientation": null,
+              "children": [],
+              "toolIds": [
+                "myavalonia.host.tool.file-system-tree"
+              ],
+              "activeToolId": null
+            },
+            {
+              "kind": "documents",
+              "id": "Documents",
+              "proportion": 0.7880434782608696,
+              "orientation": null,
+              "children": [],
+              "toolIds": [],
+              "activeToolId": null
+            },
+            {
+              "kind": "tools",
+              "id": "node-29c4326fd1684b049e3722c7d117250a",
+              "proportion": 0.11820652173913043,
+              "orientation": null,
+              "children": [],
+              "toolIds": [
+                "myavalonia.host.tool.plugin-menu"
+              ],
+              "activeToolId": null
+            }
+          ],
+          "toolIds": [],
+          "activeToolId": null
+        }
+      },
+      "floatingWindows": [],
+      "tools": [
+        {
+          "id": "myavalonia.host.tool.file-system-tree",
+          "state": "hidden",
+          "returnDockId": "LeftTools",
+          "returnOrder": 0
+        },
+        {
+          "id": "myavalonia.host.tool.plugin-menu",
+          "state": "hidden",
+          "returnDockId": "RightTools",
+          "returnOrder": 0
+        }
+      ]
+    },
+    "stderrEmpty": true,
+    "method": "Actual self-contained bundled EXE, empty Controls, isolated data/cache, nonexistent DOTNET_ROOT, existing auto-close hook; not the formal Windows Smoke gate."
+  },
+  "deployment": {
+    "passed": true,
+    "deploymentCompleted": true,
+    "target": "D:\\data\\avalonia",
+    "sourceRevision": "c9a1891960cb5f3a42d7ed91d3a1cc32b85636d2",
+    "backupCreated": true,
+    "backupRoot": "D:\\data\\avalonia-backups\\deployment-20260921-173325",
+    "backupFiles": [
+      {
+        "path": "MyAvaloniaManagement.exe",
+        "sha256": "A49B0925F0E3154AB73307CA4562899C521C7E03959B0AB16F2BBB604C68B9CF"
+      }
+    ],
+    "backupPolicy": "Verified backup of changed existing files before replacement",
+    "replacedFiles": [
+      "MyAvaloniaManagement.exe"
+    ],
+    "filesBefore": 664,
+    "filesAfter": 664,
+    "deliveryFilesVerified": 139,
+    "retainedFilesUnchanged": 525,
+    "controlsFilesUnchanged": 525,
+    "controlsDirectories": 12,
+    "exeSha256": "B8F8653192E6B8CF979F1FC4C5F6285F99B9190B7F9E487210DF31B001774879",
+    "exeBytes": 53747825,
+    "rootDllCount": 0,
+    "completedAtUtc": "2026-09-21T09:37:34.6432925+00:00"
+  },
+  "cleanup": {
+    "passed": true,
+    "removed": [
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\source",
+        "directory": true,
+        "files": 1601,
+        "bytes": 306393703
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\publish",
+        "directory": true,
+        "files": 145,
+        "bytes": 181833032
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\startup-data",
+        "directory": true,
+        "files": 3,
+        "bytes": 1829
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\bundle-cache",
+        "directory": true,
+        "files": 3,
+        "bytes": 18839080
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\source.zip",
+        "directory": false,
+        "files": 1,
+        "bytes": 9680462
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\extracted-Avalonia.Base.dll",
+        "directory": false,
+        "files": 1,
+        "bytes": 2355200
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\extracted-Dock.Avalonia.dll",
+        "directory": false,
+        "files": 1,
+        "bytes": 322560
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\extracted-MyAvaloniaManagement.runtimeconfig.json",
+        "directory": false,
+        "files": 1,
+        "bytes": 518
+      },
+      {
+        "path": "D:\\code\\local\\avalonia_dock_simple_test\\artifacts\\host-v20\\deployment-20260921-173325\\extracted-MyAvaloniaManagement.dll",
+        "directory": false,
+        "files": 1,
+        "bytes": 4819456
+      }
+    ],
+    "filesRemoved": 1757,
+    "bytesRemoved": 524245840,
+    "completedAtUtc": "2026-09-21T09:38:08.7334134+00:00",
+    "retained": "Build logs, scripts, JSON manifests and verification receipts",
+    "scope": "Only this deployment task; installed EXE, Controls, user data and earlier task artifacts untouched"
+  },
+  "sourceVerification": {
+    "developmentGateRun": "20260921-090510-cbce3ea96ab0",
+    "testedRevision": "cbce3ea96ab04551177bcfca62c614329ca03f40",
+    "passed": 1325,
+    "failed": 0,
+    "skipped": 0,
+    "productionCodeTestsDependenciesAndLockFilesMatchDevelopmentInput": true,
+    "postGateSourceDiff": [
+      "README.md",
+      "docs/README.md",
+      "docs/archive/README.md",
+      "docs/archive/records/host-v20/development-evidence.json",
+      "docs/archive/records/host-v20/local-deployment-20260921.json",
+      "docs/archive/records/host-v20/local-deployment-guide.md",
+      "docs/maintenance/local-deployment.md"
+    ],
+    "documentationDelta": "Deployment documentation and navigation only; local links checked and final bundle resources compared against archived build input."
+  },
+  "manualAcceptance": {
+    "singleFileFormatAndNormalStartupShutdown": "passed",
+    "externalBusinessPlugins": "Preserved byte-for-byte; not loaded during isolated startup verification",
+    "nativeInteractionAndFocusDpi": "not-run",
+    "singleFileRestartRoundtrip": "not-run"
+  },
+  "windowsCi": "not-run",
+  "formalReleaseGates": "not-run",
+  "aiflow": "not-used",
+  "publicPublication": "not-run",
+  "gitPush": "not-run",
+  "retainedArtifacts": [
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/build-result.json",
+      "sha256": "B32775DB706D10E034D1ABE54B6B7D6A3AA0B7CFFEEC3001FD7DBDEFBD7F2508"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/build.ps1",
+      "sha256": "0360302F05B3C715AE2060ED2E30860249F16F7AB138A040633B4A4104CE7875"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/bundle-verification.json",
+      "sha256": "274E5F00555DB51FA3AED42ADADCBD2B3482A225145E309E49FC7619954458F2"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/check-document-links.py",
+      "sha256": "9CF4432AB94D20B026351EA8B9FB094A91139DA8117138DCCCECB164639C2208"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/check-embedded-help.ps1",
+      "sha256": "09DBD6FDEA69C1455466BD98D5D2DCF5871F8E62AF028C035070DA75911AB33D"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/check-startup.ps1",
+      "sha256": "8531CFB57A04246349EE4111FA2FC74B56FBF2DB2E3AD608C2BE91D3AB205AEE"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/cleanup-plan.json",
+      "sha256": "2303CF9D5DAC6A2BC53958AB0073346F6384D433889C12093656FE1BDC0F5013"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/cleanup-result.json",
+      "sha256": "98C830E1DFE3375BEA5E098F41EDA7AA0CB61D57C88EAE34C74D2ED2745E74F5"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/cleanup.ps1",
+      "sha256": "8F575CA9DAEEFCD359EF0C0FA80EF76B456ECAC407549D7F44BA0A837D2863F2"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/delivery-files.json",
+      "sha256": "0DF58A03C1921DB78C68E4B5311FF1557B1E3B378E2932DE1C92302BF30D663B"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/deploy.ps1",
+      "sha256": "B60ADB841AA5FE73526439A6A87578D8CB930D35573702151B7F8D00008E26E8"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/deployment-result.json",
+      "sha256": "5F6DB4FF28B5D3F13A63BBB027B25FD1133C5CA7E9D183E62E97F6DC519C6970"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/document-links.json",
+      "sha256": "B6F49414826756CC100319BCFE156CC646B03418D188328FB5CCAE04F4FEAD9E"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/embedded-documents-verification.json",
+      "sha256": "946406F4DC82E41A98DE73EE94FE3BA3730D17721CE43F2186036E93BE91AA16"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/excluded-development-files.json",
+      "sha256": "8ABDA0F31E64C55DACC5386D6B4278211AFBA12D28A057102553263624D391BC"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/installed-after.json",
+      "sha256": "28F91B74ED63C50974108C25B1953FBB1B8B0E7E8633AC1EE3B2D984C4C92580"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/installed-before.json",
+      "sha256": "F3038FF6EFB571A394EAED9B3D8CBBB9237AB313D8DF295F3631695300895B39"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/installed-bundle-verification.json",
+      "sha256": "CD95DE0A2CC84EF26F9D84DD0897CDC7DFC593FDA8AED1225BD4889D45BFD5B9"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/publish.log",
+      "sha256": "9CAA34178449BE02DD9C3E9B019C72D1653E953088FA3C0BB16D0ED23F073267"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/restore.log",
+      "sha256": "B1E24075ABC9462D09ECB609D1D2C5A171DD8696148F444A2E3DCF229617C814"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/source-worktree-overlay.json",
+      "sha256": "A5338D955B09046EC0B16F3A9625B7955C763AAE07DC722E474E6078745F932F"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/startup-result.json",
+      "sha256": "E2973162332341D8FD661E14D94C031C082E04BF5CD5945A52A8F7DF0D286E38"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/startup.stderr.log",
+      "sha256": "E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/startup.stdout.log",
+      "sha256": "818AFE7FE7E7AB1B63EE9FA04E8296D969F9A1EA396C5C70AA86562B66975B3E"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/task.json",
+      "sha256": "B9ED503CF3CF29D04E9E904E764144DBC277EB12C66E3CFAC07296EDD5110D2F"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/verify-single-exe.ps1",
+      "sha256": "02780D94621709A507670C0400F1F135EDB1835808AA276EB40A91A7E0590288"
+    },
+    {
+      "path": "artifacts/host-v20/deployment-20260921-173325/write-record.py",
+      "sha256": "5CA42EE749D112E578ACFC353881CF632B71DA6DDA41BFFFA07F269F701891B9"
+    }
+  ],
+  "evidenceNote": "Only this non-embedded JSON is updated after publish. Source copy including bin/obj, publish staging, source ZIP, extracted assemblies, startup data and extraction cache were removed. Original artifact paths in receipts are historical. Small logs, scripts, manifests and receipts remain; installed files, rollback backup and earlier task outputs are retained.",
+  "finalizedAtUtc": "2026-09-21T09:38:09.072735+00:00"
 }
