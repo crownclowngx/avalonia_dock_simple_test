@@ -578,6 +578,46 @@ public sealed class DocumentPersistenceTests
         Assert.False(context.PersistenceStates.TryGet(published, out _));
     }
 
+    [Fact]
+    public async Task V19发布与撤回观察者均失败仍释放候选并保留首次异常()
+    {
+        using var context = DocumentTestContext.Create();
+        _ = context.CreateMainWindowViewModel();
+        var original = new InvalidOperationException("发布通知失败");
+        var probe = context.Provider.GetRequiredService<DocumentTestProbe>();
+        ManagedDocumentDockable? candidate = null;
+        var withdrawnBeforeRelease = false;
+        EventHandler<MyAvaloniaManagement.Business.Workspace.ActiveDocumentChangedEventArgs> observer = (_, args) =>
+        {
+            if (args.Document?.PersistableModel is TestSavableDocument)
+            {
+                candidate = args.Document;
+                throw original;
+            }
+            if (candidate is not null) throw new InvalidOperationException("撤回通知失败");
+        };
+        context.Workspace.ActiveDocumentChanged += observer;
+        context.Workspace.ActiveDocumentChanged += (_, args) =>
+        {
+            if (candidate is not null && !ReferenceEquals(args.Document, candidate))
+                withdrawnBeforeRelease = probe.DisposeCount == 0;
+        };
+        try
+        {
+            var failure = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+                await context.Workspace.CreateAndPublishDocumentAsync(TestDocumentIds.TypeId, new NewDocumentActivation("候选")));
+            Assert.Same(original, failure);
+            Assert.NotNull(candidate);
+            Assert.Equal(1, context.Provider.GetRequiredService<DocumentTestProbe>().DisposeCount);
+            Assert.True(withdrawnBeforeRelease);
+            Assert.DoesNotContain(candidate, context.Workspace.GetDocuments());
+            Assert.DoesNotContain(candidate, GetDocuments(context));
+            Assert.False(context.PersistenceStates.TryGet(candidate, out _));
+            Assert.NotSame(candidate, context.Workspace.GetActiveDocument());
+        }
+        finally { context.Workspace.ActiveDocumentChanged -= observer; }
+    }
+
     private sealed class PluginBoundaryException(string message) : Exception(message);
 
     /// <summary>

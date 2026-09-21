@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using Dock.Model.Controls;
 using Dock.Model.Core;
@@ -371,7 +372,7 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
             var next = GetDocuments().FirstOrDefault(candidate => !ReferenceEquals(candidate, document));
             // 先撤回活动 Target 再释放 Scope，分割区最后一个标签也遵守这一顺序。
             _publishedActiveDocument = null;
-            ActiveDocumentChanged?.Invoke(this, new ActiveDocumentChangedEventArgs(null));
+            NotifyActiveDocumentChanged(null);
             if (next is not null) PublishActiveDocumentIfChanged(next);
         }
         _documentCloseCoordinator.CompleteDockClose(document as ManagedDocumentDockable);
@@ -794,7 +795,23 @@ internal sealed partial class WorkspaceSession : IWorkspaceDockCallbacks, IDispo
         }
 
         _publishedActiveDocument = current;
-        ActiveDocumentChanged?.Invoke(this, new ActiveDocumentChangedEventArgs(current));
+        NotifyActiveDocumentChanged(current);
+    }
+
+    /// <summary>
+    /// 发布及撤回都必须通知全部活动目标观察者。某个观察者失败不能让后续 Context/状态查询
+    /// 留在即将释放的候选上；通知结束后仍抛出首次异常，让原用例执行既有失败回滚。
+    /// </summary>
+    private void NotifyActiveDocumentChanged(ManagedDocumentDockable? document)
+    {
+        var args = new ActiveDocumentChangedEventArgs(document);
+        Exception? firstFailure = null;
+        foreach (EventHandler<ActiveDocumentChangedEventArgs> observer in ActiveDocumentChanged?.GetInvocationList() ?? [])
+        {
+            try { observer(this, args); }
+            catch (Exception exception) { firstFailure ??= exception; }
+        }
+        if (firstFailure is not null) ExceptionDispatchInfo.Capture(firstFailure).Throw();
     }
 
     private void EnsureAcceptingCreations()

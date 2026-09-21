@@ -61,3 +61,7 @@ Unit 181/181、相关 Headless UI 37/37 通过，无跳过；`artifacts/host-v19
 删除 Session.ShowTool、TrySetToolVisibility 和 ToolDockCoordinator.ShowTool；相关 Unit/UI 测试迁移到 OpenTool/SetToolVisibility 的结构化结果。Session 共用就绪、身份、可用性及原实例查找；恢复统一走浮窗位置恢复和 Dock 回退。OpenTool 保留可见时定位、自动收起预览、最小化恢复；SetToolVisibility 保留 CanClose、已满足与原生取消判断。底层恢复布尔值只描述 Dock 协议步骤，不再充当业务结果。
 
 `V19重复打开仍定位并记录一次访问_重复显隐不通知不记访问`（T05/T06）精确断言布局、访问和焦点通知计数；`V19批量隐藏保留逐项失败和成功且仅通知一次`（T02/T06）断言部分成功、逐项结果、原实例与一次通知。Unit 65/65、Tool/布局/Document 浮窗 Headless UI 124/124 通过，无跳过；`artifacts/host-v19/p5-tools/tools-final.trx`、`tools-ui.trx`。现有 UI 继续验证 T01/T03/T04 的自动收起、浮窗取消和原位置恢复，隐藏不释放 Tool 的生命周期政策保持。工具使用指南的可观察行为未改变，不加入内部实现细节。
+
+## P6：最终审查中的补充修复
+
+`V19发布与撤回观察者均失败仍释放候选并保留首次异常` 复现了 R04/R06/C09 的另一个边界：Scope 已释放，但多播事件中第一个观察者的异常阻断了后续观察者收到撤回，可能保留旧 Target 引用。最初夹具在 Provider Dispose 时又解析服务的错误已修正；真正行为红灯为 `publication-observer-reproduced.trx`，失败在“释放前收到撤回”断言。现改为通知全部观察者后重抛首次异常，原发布失败、回滚和异常身份不变。相关 Unit 68/68 通过，证据 `artifacts/host-v19/p6-review/publication-observer-green.trx`。
