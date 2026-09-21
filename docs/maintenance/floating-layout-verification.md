@@ -16,13 +16,13 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 
 这是开发验证，包含 locked restore、Release 零警告构建、SDK/Host Unit/Plugin/Headless UI/MyPlugTest Unit、API 比较、实际 MyPlugTest ZIP 打包验收。不要用阶段过滤器替代最终完整入口。
 
-本轮不运行 Windows CI、seal、Windows Smoke、发布覆盖率或发布动作。现有发布 Smoke 仍断言 V2 文件，必须在实际发布前适配 V3 并自测，不能为通过它而写回 V2 或放宽阈值。
+开发阶段不运行 Windows CI、seal、Windows Smoke、发布覆盖率或发布动作。发布 Smoke 的产物检查已适配 V3，并由 Gate 文件产物单测直接验证；真实发布进程链仍须在实际发布时执行，不能将开发工具自测当作发布资格。
 
 ## 自动化覆盖
 
 | 行为 | 主要测试 |
 | --- | --- |
-| 严格格式、数量/深度/尺寸边界、V2 原件与未来版本 | DockLayoutV3Tests、DockLayoutV3BoundaryTests、DockLayoutV3StoreTests |
+| 严格格式、数量/深度/尺寸边界、旧文件忽略与未来版本 | DockLayoutV3Tests、DockLayoutV3BoundaryTests、DockLayoutV3StoreTests |
 | 隐藏/缺插件分组、稳定身份、跨窗口查询 | DockLayoutTreeTests、DockLayoutWorkspaceStateTests、DockLayoutAvailabilityTests、DockWorkspaceNavigationTests |
 | 命令排空、取消、范围变化和迟到许可 | DocumentCloseTests、DockWindowCloseTests、DockLayoutV3UiTests |
 | 四个浮动入口、Scope/View 保持、重启与重置回滚 | DockLayoutV3UiTests、MyPlugTestV3UiTests、HostDockAdapterTests |
@@ -40,7 +40,7 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 pwsh -NoProfile -File tools/Verify-LayoutV3WriterLease.ps1
 ```
 
-脚本自建临时数据根，只终止自己创建的持锁子进程，验证崩溃释放、第二实例只读、不同数据根独立、只读实例不接管、后续实例迁移及 V2 原字节保持；返回 JSON 结果和 DLL SHA-256。它是本地专项工具，不是 CI 或发布门禁；PowerShell 不满足要求时记录未执行原因，不能记作通过。
+脚本自建临时数据根，只终止自己创建的持锁子进程。子进程提交 V3 后发送就绪信号；随后验证第二实例可以读取但不能保存、不同数据根可以独立提交、进程退出释放写锁、原只读实例不接管、新实例可以更新 V3 且保留上一有效备份。返回 JSON 检查清单和 DLL SHA-256。它是本地专项工具，不是 CI 或发布门禁；PowerShell 不满足要求时记录未执行原因，不能记作通过。
 
 ## 本地真实桌面
 

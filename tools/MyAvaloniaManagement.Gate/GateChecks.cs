@@ -122,12 +122,33 @@ internal static class GateChecks
             throw new GateFailureException($"Windows Smoke 退出码为 {process.ExitCode}。");
         }
 
-        var layoutPath = Path.Combine(dataRoot, "layout-v2.json");
-        using var layout = JsonDocument.Parse(File.ReadAllText(layoutPath));
-        if (layout.RootElement.GetProperty("schemaVersion").GetInt32() != 2 ||
-            File.Exists(Path.Combine(dataRoot, "layout-v1.json")))
+        AssertWindowsSmokeLayoutArtifact(dataRoot);
+    }
+
+    /// <summary>
+    /// 检查 Smoke 专属空数据根中的输出身份；完整布局结构由 Host 的 V3 reader 与专项验证负责。
+    /// 发布入口与单元测试共用此方法，避免维护两份文件名/schema 判断；调用本方法不会启动 Host。
+    /// 旧文件只在这个新建产物目录中表示错误输出，不把该约束用于用户已有的数据根。
+    /// </summary>
+    internal static void AssertWindowsSmokeLayoutArtifact(string dataRoot)
+    {
+        var layoutPath = Path.Combine(dataRoot, "layout-v3.json");
+        if (!File.Exists(layoutPath))
+            throw new GateFailureException("Windows Smoke 未生成 layout-v3.json。");
+        try
         {
-            throw new GateFailureException("Windows Smoke 没有生成唯一的 layout-v2.json。");
+            using var layout = JsonDocument.Parse(File.ReadAllText(layoutPath));
+            if (layout.RootElement.ValueKind != JsonValueKind.Object ||
+                !layout.RootElement.TryGetProperty("schemaVersion", out var schema) ||
+                schema.ValueKind != JsonValueKind.Number || !schema.TryGetInt32(out var version) || version != 3 ||
+                File.Exists(Path.Combine(dataRoot, "layout-v1.json")) ||
+                File.Exists(Path.Combine(dataRoot, "layout-v2.json")))
+                throw new GateFailureException("Windows Smoke 必须仅生成 layout-v3.json，且 schemaVersion 为 3。");
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or JsonException)
+        {
+            // 只报告产物失败，不把 JSON 原文或内部解析异常拼进开发/发布日志。
+            throw new GateFailureException("Windows Smoke 的 layout-v3.json 无法读取或解析。");
         }
     }
 
