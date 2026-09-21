@@ -39,3 +39,11 @@ P1–P6 正在执行。各项真实测试方法、红绿结果、设计取舍和
 新增 `V19恢复确认等待期间退出仍由会话持有候选_发布拒绝后清除全部状态`（R01/R03/R05/R07）、`V19候选发布成功后重复释放义务不释放已发布Scope`（R01/R04）及确认异常测试的清理异常参数（R06）。原 `N07N08初始化失败或等待期间退出均不发布并仅释放一次`、`N08目标插入后失败撤销部分写入且重复发布不移动原页面` 继续覆盖失败阶段和目标语义（R02/R04/R08）。
 
 Unit 61/61、Plugin 所有权 56/56、Document/Restart Headless UI 73/73 通过，无跳过。证据目录 `artifacts/host-v19/p2-rollback`，结果分别为 `rollback-final.trx`、`ownership-plugin.trx`、`rollback-ui.trx`。编译阶段发现的测试属性名与命名空间错误已修正，未将编译失败登记为行为红灯。
+
+## P3：命令目录与执行绑定
+
+Host 与合并 Catalog 只含纯描述，显式 Handler 映射放在组合根和 `HostWorkbenchCommandBindings`。背景启动提前校验目录，UI AttachWorkbench 校验绑定后才交给 Shell。绑定拒绝缺失、重复与多余 ID；State Query 捕获同一个 Handler 到 Route，Executor 不再从目录读取执行对象。原容器生命周期、参与者登记、V18 目标代次和共享 Command Store 均保持。
+
+`V19纯命令目录可在后台解析且不创建工作区执行绑定或视图` 使用会抛错的 DI 边界证明无连带构造（M01）；`V19缺失重复和多余绑定在组合时携带准确身份失败` 三组参数验证诊断（M02）；`V19状态查询与执行使用同一个冻结Handler且查询不会执行命令` 验证身份、冻结和调用计数（M03）。原命令、Context、目标、关闭门、Palette 及投影测试覆盖 M06–M08；启动 UI 边界与参与者登记按生产代码审查，正常/失败启动及所有权在最终完整 verify 再回归。
+
+Unit 125/125、Command/Palette/Startup Headless UI 31/31 通过，无跳过。证据：`artifacts/host-v19/p3-catalog/commands-final.trx`、`commands-ui.trx`。同步启动契约、命令契约及架构说明。

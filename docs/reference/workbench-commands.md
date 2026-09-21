@@ -12,6 +12,11 @@ Command 使用稳定 `CommandId` 表达操作；Avalonia ICommand 只是展示�
 
 Host/Plugin 贡献合并成唯一 Catalog。Context 只表达 Host 确认的活动 Document 事实；State Query 组合目录、插件可用性、Context 和活动实例状态，区分 Visible 与 Enabled。
 
+Host 目录只保存 `CommandDescriptor`，合并目录不携带 Handler。纯元数据冲突校验在启动后台完成；
+`HostWorkbenchCommandBindings` 在 UI 组合边界显式绑定稳定 ID 与原 Handler 实例，并在工作台展示前
+拒绝缺失、重复或多余绑定。State Query 将该实例捕获到单次路由，状态检查和 Executor 使用同一实例；
+映射不拥有 Handler，不保存 Provider 或服务解析委托。
+
 Document 模型可实现 `IWorkbenchDocumentCommandTarget`。执行路由到当前实例，不能为命令另开任意服务解析口；两个同类型页面可以具有不同状态，操作不能串到另一个实例。Host 打开/保存同样进入统一 Executor。
 
 菜单、有效快捷键和命令面板复用状态与执行路径。执行时重新校验上下文和可用性，不能按显示名称选目标；取消、失败和关闭遵循统一门控，未排空时不能释放在用资源。

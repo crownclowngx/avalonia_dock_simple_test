@@ -17,7 +17,7 @@
 
 `Program` 首先识别 V14 重启助手。助手正常等待时不初始化本启动窗口；新 Host 按普通启动路径显示羽毛。普通启动的唯一路径为：轻量 App → Splash 首帧调度 → StartupCoordinator → StartupWorker / HostRuntime.CreateAsync → UI 线程 AttachWorkbench → 正式主窗口交接。
 
-App 在启动时只加载 Fluent 基础主题和最小错误展示颜色。Runtime 完成后台组合后，原 App 实例安装 App.axaml、ViewLocator 和容器唯一回收器；随后解析工作台命令目录、Workspace 和桌面 Shell。命令目录会经 Host Handler 间接解析 Workspace，因此最终合并校验也在 UI 线程完成，早于主窗口显示。该处失败仍走启动失败和同一 Runtime 回滚。
+App 在启动时只加载 Fluent 基础主题和最小错误展示颜色。V19 将工作台命令目录改为纯描述，Runtime 在后台组合时完成最终身份合并校验。回到 UI 线程后，原 App 实例安装 App.axaml、ViewLocator 和容器唯一回收器；随后创建并校验显式 Host Handler 绑定、Workspace 和桌面 Shell。执行绑定仍早于主窗口显示，失败仍走启动失败和同一 Runtime 回滚；读取元数据不再连带创建工作区。
 
 只建立一次 Avalonia Application 与桌面消息循环。启动阶段使用显式关闭，成功显示正式窗口后关闭 Splash 并恢复既有关闭模式。窗口显示后启动时序写出 `firstFrameMs` 和 `readyMs` 诊断值，起点为进程启动时间；它们仅用于观测，不构成启动成功证明或最低等待时长。
 

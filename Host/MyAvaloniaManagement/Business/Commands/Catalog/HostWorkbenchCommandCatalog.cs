@@ -1,9 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MyAvaloniaManagement.Business.Commands.Execution;
-using MyAvaloniaManagement.Business.Help;
-using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.PluginSdk;
 using MyAvaloniaManagement.PluginSdk.UI;
 
@@ -31,103 +28,45 @@ internal static class HostWorkbenchCommandIds
         new("myavalonia.host.command.help.open");
 }
 
-/// <summary>记录一条宿主命令的不可变描述和窄执行实现。</summary>
+/// <summary>宿主内建工作台命令的纯描述目录，不持有 Handler、Workspace 或 Provider。</summary>
 /// <remarks>
-/// Host Handler 由组合根显式创建；记录不保存根 Provider，也不允许按字符串解析服务。
-/// 插件命令使用独立的 Registry 事实，不会进入本记录。
-/// </remarks>
-internal sealed record HostWorkbenchCommandRegistration(
-    CommandDescriptor Descriptor,
-    IHostWorkbenchCommandHandler Handler);
-
-/// <summary>宿主内建工作台命令的不可变目录。</summary>
-/// <remarks>
-/// 本类型只负责冻结和查询 Host 事实。执行、可用性和关闭状态属于 Executor，插件声明属于
-/// <c>PluginRegistry</c>，从而避免目录演变为服务定位器或第二个运行时。
+/// 描述决定稳定身份与展示文字，可在后台冻结和校验。运行期绑定在组合根的 UI 边界单独建立；
+/// 查询目录不会为了读取标题而创建工作区。目录不按可用性过滤，动态状态仍由状态查询判断。
 /// </remarks>
 internal sealed class HostWorkbenchCommandCatalog
 {
-    private readonly IReadOnlyDictionary<CommandId, HostWorkbenchCommandRegistration>
-        _registrations;
+    private readonly IReadOnlyDictionary<CommandId, CommandDescriptor> _descriptors;
 
-    internal HostWorkbenchCommandCatalog(
-        HostOpenDocumentCommandHandler openDocument,
-        HostSaveDocumentCommandHandler saveDocument,
-        HostOpenHelpCommandHandler openHelp,
-        HostNewDocumentCommandHandler newDocument,
-        HostOpenToolCenterCommandHandler? openToolCenter = null,
-        HostOpenPluginStatusCommandHandler? openPluginStatus = null,
-        HostRestartCommandHandler? restart = null)
-        : this(
-        [
-            .. (restart is null ? Array.Empty<HostWorkbenchCommandRegistration>() :
-                new[] { new HostWorkbenchCommandRegistration(new CommandDescriptor(
-                    HostWorkbenchCommandIds.Restart, "重新启动 Host…", "重启将关闭所有文档，未保存内容会先询问。"), restart) }),
-            new HostWorkbenchCommandRegistration(
-                new CommandDescriptor(HostWorkbenchCommandIds.NewDocument,
-                    "功能中心…", "查找功能，在新标签中开始使用。"),
-                newDocument ?? throw new ArgumentNullException(nameof(newDocument))),
-            new HostWorkbenchCommandRegistration(
-                new CommandDescriptor(
-                    HostWorkbenchCommandIds.OpenDocument,
-                    "打开…",
-                    "从文件中打开一个或多个页面。"),
-                openDocument ?? throw new ArgumentNullException(nameof(openDocument))),
-            new HostWorkbenchCommandRegistration(
-                new CommandDescriptor(
-                    HostWorkbenchCommandIds.SaveDocument,
-                    "保存",
-                    "保存当前活动的可持久化页面。"),
-                saveDocument ?? throw new ArgumentNullException(nameof(saveDocument))),
-            new HostWorkbenchCommandRegistration(
-                new CommandDescriptor(HostWorkbenchCommandIds.OpenHelp,
-                    "帮助中心", "阅读产品介绍、架构与理论，探索公式和交互演示。"),
-                openHelp ?? throw new ArgumentNullException(nameof(openHelp))),
-            .. (openToolCenter is null ? Array.Empty<HostWorkbenchCommandRegistration>() :
-                new[] { new HostWorkbenchCommandRegistration(new CommandDescriptor(
-                    HostWorkbenchCommandIds.OpenToolCenter, "工具中心…", "搜索、分类和收藏工具，管理工作区工具的显示与隐藏。"), openToolCenter) }),
-            .. (openPluginStatus is null ? Array.Empty<HostWorkbenchCommandRegistration>() :
-                new[] { new HostWorkbenchCommandRegistration(new CommandDescriptor(
-                    HostWorkbenchCommandIds.OpenPluginStatus, "插件看板…", "查看插件状态、版本、兼容矩阵、贡献与诊断信息。"), openPluginStatus) }),
-        ])
+    internal HostWorkbenchCommandCatalog() : this(
+    [
+        new(HostWorkbenchCommandIds.Restart, "重新启动 Host…", "重启将关闭所有文档，未保存内容会先询问。"),
+        new(HostWorkbenchCommandIds.NewDocument, "功能中心…", "查找功能，在新标签中开始使用。"),
+        new(HostWorkbenchCommandIds.OpenDocument, "打开…", "从文件中打开一个或多个页面。"),
+        new(HostWorkbenchCommandIds.SaveDocument, "保存", "保存当前活动的可持久化页面。"),
+        new(HostWorkbenchCommandIds.OpenHelp, "帮助中心", "阅读产品介绍、架构与理论，探索公式和交互演示。"),
+        new(HostWorkbenchCommandIds.OpenToolCenter, "工具中心…", "搜索、分类和收藏工具，管理工作区工具的显示与隐藏。"),
+        new(HostWorkbenchCommandIds.OpenPluginStatus, "插件看板…", "查看插件状态、版本、兼容矩阵、贡献与诊断信息。"),
+    ]) { }
+
+    /// <summary>冻结显式元数据并拒绝重复身份；不接受执行实现或服务解析委托。</summary>
+    internal HostWorkbenchCommandCatalog(IEnumerable<CommandDescriptor> descriptors)
     {
-    }
-
-    /// <summary>供单元测试和未来显式 Host 组合使用的冻结入口。</summary>
-    internal HostWorkbenchCommandCatalog(
-        IEnumerable<HostWorkbenchCommandRegistration> registrations)
-    {
-        ArgumentNullException.ThrowIfNull(registrations);
-        var snapshot = registrations.ToArray();
-        if (snapshot.Any(item => item is null || item.Descriptor is null || item.Handler is null))
-        {
-            throw new ArgumentException("Host Command 注册不得包含 null。", nameof(registrations));
-        }
-
-        var duplicate = snapshot
-            .GroupBy(item => item.Descriptor.CommandId)
-            .FirstOrDefault(group => group.Count() > 1);
+        ArgumentNullException.ThrowIfNull(descriptors);
+        var snapshot = descriptors.ToArray();
+        if (snapshot.Any(item => item is null))
+            throw new ArgumentException("Host Command 描述不得包含 null。", nameof(descriptors));
+        var duplicate = snapshot.GroupBy(item => item.CommandId).FirstOrDefault(group => group.Count() > 1);
         if (duplicate is not null)
-        {
-            throw new ArgumentException(
-                $"Host CommandId 重复：{duplicate.Key.Value}。",
-                nameof(registrations));
-        }
-
-        _registrations = snapshot.ToDictionary(item => item.Descriptor.CommandId);
+            throw new ArgumentException($"Host CommandId 重复：{duplicate.Key.Value}。", nameof(descriptors));
+        _descriptors = snapshot.ToDictionary(item => item.CommandId);
     }
 
-    /// <summary>获取按稳定 CommandId 排序的防御性快照。</summary>
-    internal IReadOnlyList<HostWorkbenchCommandRegistration> Registrations =>
-        _registrations.Values
-            .OrderBy(item => item.Descriptor.CommandId.Value, StringComparer.Ordinal)
-            .ToArray();
+    internal IReadOnlyList<CommandDescriptor> Descriptors =>
+        _descriptors.Values.OrderBy(item => item.CommandId.Value, StringComparer.Ordinal).ToArray();
 
-    internal bool TryGet(
-        CommandId commandId,
-        out HostWorkbenchCommandRegistration registration)
+    internal bool TryGet(CommandId commandId, out CommandDescriptor descriptor)
     {
         ArgumentNullException.ThrowIfNull(commandId);
-        return _registrations.TryGetValue(commandId, out registration!);
+        return _descriptors.TryGetValue(commandId, out descriptor!);
     }
 }

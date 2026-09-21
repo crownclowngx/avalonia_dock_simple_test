@@ -13,6 +13,64 @@ namespace MyAvaloniaManagement.Tests;
 /// <summary>验证 G2 Catalog/Executor 的无 UI 查询、执行、取消和所有权边界。</summary>
 public sealed class WorkbenchCommandCatalogExecutorTests
 {
+    [Fact]
+    public async Task V19纯命令目录可在后台解析且不创建工作区执行绑定或视图()
+    {
+        var services = new ServiceCollection();
+        services.AddApplicationServices().AddViewModels();
+        services.AddSingleton(PluginModuleCatalog.Discover(PluginDiscoverySnapshot.Empty));
+        // 用会失败的真实 DI 边界阻止偷渡依赖；仅检查类型名字无法证明解析目录没有构造 UI。
+        services.AddSingleton<HostWorkbenchCommandBindings>(_ => throw new InvalidOperationException("不得创建绑定"));
+        services.AddSingleton<MyAvaloniaManagement.Business.Workspace.WorkspaceSession>(_ => throw new InvalidOperationException("不得创建工作区"));
+        services.AddSingleton<MyAvaloniaManagement.ViewModels.MainWindowViewModel>(_ => throw new InvalidOperationException("不得创建窗口"));
+        services.AddSingleton<MyAvaloniaManagement.Business.Docking.IHostDockableFactory>(_ => throw new InvalidOperationException("不得创建视图"));
+        using var provider = services.BuildServiceProvider(new ServiceProviderOptions { ValidateOnBuild = true, ValidateScopes = true });
+        var catalog = await Task.Run(() => provider.GetRequiredService<WorkbenchCommandCatalog>());
+        Assert.Equal(7, catalog.Entries.Count);
+        Assert.All(catalog.Entries, entry => Assert.IsType<HostWorkbenchCommandCatalogEntry>(entry));
+    }
+
+    [Theory]
+    [InlineData("missing", HostDiagnosticCodes.HostCommandBindingMissing)]
+    [InlineData("duplicate", HostDiagnosticCodes.HostCommandBindingDuplicate)]
+    [InlineData("unknown", HostDiagnosticCodes.HostCommandBindingUnknown)]
+    public void V19缺失重复和多余绑定在组合时携带准确身份失败(string kind, string code)
+    {
+        var catalog = new HostWorkbenchCommandCatalog([new CommandDescriptor(FirstHostId, "第一条", "测试")]);
+        var first = new HostWorkbenchCommandBinding(FirstHostId, DelegateHostCommandHandler.Completed());
+        HostWorkbenchCommandBinding[] bindings = kind switch
+        {
+            "missing" => [],
+            "duplicate" => [first, first],
+            _ => [first, new(SecondHostId, DelegateHostCommandHandler.Completed())],
+        };
+        var failure = Assert.Throws<HostCompositionException>(() => new HostWorkbenchCommandBindings(catalog, bindings));
+        var diagnostic = Assert.Single(failure.Diagnostics);
+        Assert.Equal(code, diagnostic.Code);
+        Assert.Equal(kind == "unknown" ? SecondHostId.Value : FirstHostId.Value, diagnostic.StableId);
+    }
+
+    [Fact]
+    public async Task V19状态查询与执行使用同一个冻结Handler且查询不会执行命令()
+    {
+        var executions = 0;
+        var handler = new DelegateHostCommandHandler(_ => { executions++; return ValueTask.CompletedTask; });
+        var host = new HostWorkbenchCommandCatalog([new CommandDescriptor(FirstHostId, "测试", "测试")]);
+        var input = new List<HostWorkbenchCommandBinding> { new(FirstHostId, handler) };
+        var bindings = new HostWorkbenchCommandBindings(host, input);
+        input.Clear();
+        var plugins = new PluginRegistry([], []);
+        using var states = new WorkbenchCommandStateQuery(new WorkbenchCommandCatalog(host, plugins), bindings,
+            new PluginAvailabilityReadModel(new PluginLifecycleStateStore(plugins)), new WorkbenchContextStore());
+        Assert.Same(handler, states.Resolve(FirstHostId).HostHandler);
+        Assert.Equal(WorkbenchCommandStateStatus.Enabled, states.Query(FirstHostId).Status);
+        Assert.Equal(0, executions);
+        using var executor = new WorkbenchCommandExecutor(states, new WorkbenchDocumentCommandLeaseStore());
+        Assert.Equal(WorkbenchCommandExecutionStatus.Succeeded, (await executor.ExecuteAsync(FirstHostId)).Status);
+        Assert.Equal(1, executions);
+        Assert.Equal(2, handler.CanExecuteCount);
+    }
+
     private static readonly CommandId FirstHostId = new("myavalonia.host.command.test.first");
     private static readonly CommandId SecondHostId = new("myavalonia.host.command.test.second");
     private static readonly PluginId PluginOwner = new("myavalonia.plugin.command-tests");
@@ -24,11 +82,9 @@ public sealed class WorkbenchCommandCatalogExecutorTests
     [Fact]
     public void 合并目录按稳定身份排序并区分Host与插件事实()
     {
-        var firstHandler = DelegateHostCommandHandler.Completed();
-        var secondHandler = DelegateHostCommandHandler.Completed();
         var host = new HostWorkbenchCommandCatalog([
-            HostRegistration(SecondHostId, secondHandler),
-            HostRegistration(FirstHostId, firstHandler),
+            new CommandDescriptor(SecondHostId, "第二条", "测试"),
+            new CommandDescriptor(FirstHostId, "第一条", "测试"),
         ]);
         var plugins = PluginRegistryWithCommand();
 
@@ -38,7 +94,7 @@ public sealed class WorkbenchCommandCatalogExecutorTests
             [FirstHostId.Value, SecondHostId.Value, PluginCommand.Value],
             catalog.Entries.Select(item => item.Descriptor.CommandId.Value));
         Assert.True(catalog.TryGet(FirstHostId, out var hostEntry));
-        Assert.Same(firstHandler, Assert.IsType<HostWorkbenchCommandCatalogEntry>(hostEntry).Handler);
+        Assert.Equal("第一条", Assert.IsType<HostWorkbenchCommandCatalogEntry>(hostEntry).Descriptor.DisplayName);
         Assert.True(catalog.TryGet(PluginCommand, out var pluginEntry));
         var plugin = Assert.IsType<PluginWorkbenchCommandCatalogEntry>(pluginEntry);
         Assert.Equal(PluginOwner, plugin.OwnerId);
@@ -49,17 +105,17 @@ public sealed class WorkbenchCommandCatalogExecutorTests
     [Fact]
     public void Host目录冻结输入且拒绝重复身份()
     {
-        var registrations = new List<HostWorkbenchCommandRegistration>
+        var registrations = new List<CommandDescriptor>
         {
-            HostRegistration(FirstHostId, DelegateHostCommandHandler.Completed()),
+            new(FirstHostId, "第一条", "测试"),
         };
         var catalog = new HostWorkbenchCommandCatalog(registrations);
         registrations.Clear();
 
-        Assert.Single(catalog.Registrations);
+        Assert.Single(catalog.Descriptors);
         Assert.Throws<ArgumentException>(() => new HostWorkbenchCommandCatalog([
-            HostRegistration(FirstHostId, DelegateHostCommandHandler.Completed()),
-            HostRegistration(FirstHostId, DelegateHostCommandHandler.Completed()),
+            new CommandDescriptor(FirstHostId, "第一条", "测试"),
+            new CommandDescriptor(FirstHostId, "重复", "测试"),
         ]));
     }
 
@@ -67,7 +123,7 @@ public sealed class WorkbenchCommandCatalogExecutorTests
     public void Host与插件身份碰撞在最终合并时稳定失败()
     {
         var host = new HostWorkbenchCommandCatalog([
-            HostRegistration(PluginCommand, DelegateHostCommandHandler.Completed()),
+            new CommandDescriptor(PluginCommand, "冲突", "测试"),
         ]);
 
         var exception = Assert.Throws<HostCompositionException>(() =>
@@ -230,7 +286,9 @@ public sealed class WorkbenchCommandCatalogExecutorTests
             executor.WaitForDrainAsync(TimeSpan.Zero));
     }
 
-    private static HostWorkbenchCommandRegistration HostRegistration(
+    private sealed record HostCommandFixture(CommandDescriptor Descriptor, IHostWorkbenchCommandHandler Handler);
+
+    private static HostCommandFixture HostRegistration(
         CommandId id,
         IHostWorkbenchCommandHandler handler) => new(
         new CommandDescriptor(id, id.Value, "测试命令"),
@@ -253,7 +311,7 @@ public sealed class WorkbenchCommandCatalogExecutorTests
             ]);
 
     private static WorkbenchCommandExecutor CreateExecutor(
-        IReadOnlyList<HostWorkbenchCommandRegistration> hostRegistrations,
+        IReadOnlyList<HostCommandFixture> hostRegistrations,
         PluginRegistry? plugins = null,
         IHostDiagnosticSink? diagnostics = null)
     {
@@ -261,10 +319,13 @@ public sealed class WorkbenchCommandCatalogExecutorTests
         var states = new PluginLifecycleStateStore(plugins);
         var availability = new PluginAvailabilityReadModel(states);
         var context = new WorkbenchContextStore();
+        var hostCatalog = new HostWorkbenchCommandCatalog(hostRegistrations.Select(item => item.Descriptor));
         var stateQuery = new WorkbenchCommandStateQuery(
             new WorkbenchCommandCatalog(
-                new HostWorkbenchCommandCatalog(hostRegistrations),
+                hostCatalog,
                 plugins),
+            new HostWorkbenchCommandBindings(hostCatalog, hostRegistrations.Select(item =>
+                new HostWorkbenchCommandBinding(item.Descriptor.CommandId, item.Handler))),
             availability,
             context,
             diagnostics);
@@ -277,7 +338,8 @@ public sealed class WorkbenchCommandCatalogExecutorTests
     private sealed class DelegateHostCommandHandler(
         Func<CancellationToken, ValueTask> execute) : IHostWorkbenchCommandHandler
     {
-        public bool CanExecute(WorkbenchContextSnapshot context) => true;
+        internal int CanExecuteCount { get; private set; }
+        public bool CanExecute(WorkbenchContextSnapshot context) { CanExecuteCount++; return true; }
 
         public ValueTask ExecuteAsync(CancellationToken cancellationToken) =>
             execute(cancellationToken);

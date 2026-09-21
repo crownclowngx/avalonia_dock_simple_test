@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Composition;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Plugins.Registration;
@@ -15,8 +14,7 @@ internal abstract record WorkbenchCommandCatalogEntry(CommandDescriptor Descript
 
 /// <summary>表示由 Host 拥有并通过显式 Handler 执行的目录事实。</summary>
 internal sealed record HostWorkbenchCommandCatalogEntry(
-    CommandDescriptor Descriptor,
-    IHostWorkbenchCommandHandler Handler)
+    CommandDescriptor Descriptor)
     : WorkbenchCommandCatalogEntry(Descriptor);
 
 /// <summary>表示由插件声明、将在 G3 路由到活动 Document 实例的目录事实。</summary>
@@ -42,8 +40,7 @@ internal sealed class WorkbenchCommandCatalog
         ArgumentNullException.ThrowIfNull(host);
         ArgumentNullException.ThrowIfNull(plugins);
 
-        var hostEntries = host.Registrations.Select(item =>
-            new HostWorkbenchCommandCatalogEntry(item.Descriptor, item.Handler));
+        var hostEntries = host.Descriptors.Select(item => new HostWorkbenchCommandCatalogEntry(item));
         var pluginEntries = plugins.WorkbenchCommands.Select(item =>
             new PluginWorkbenchCommandCatalogEntry(
                 item.OwnerId,

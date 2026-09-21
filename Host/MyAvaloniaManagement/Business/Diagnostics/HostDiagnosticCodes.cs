@@ -43,6 +43,9 @@ internal static class HostDiagnosticCodes
         "WORKBENCH_MENU_LOCATION_UNSUPPORTED";
     internal const string WorkbenchCommandIdDuplicate =
         "WORKBENCH_COMMAND_ID_DUPLICATE";
+    internal const string HostCommandBindingMissing = "HOST_COMMAND_BINDING_MISSING";
+    internal const string HostCommandBindingDuplicate = "HOST_COMMAND_BINDING_DUPLICATE";
+    internal const string HostCommandBindingUnknown = "HOST_COMMAND_BINDING_UNKNOWN";
     internal const string WorkbenchCommandPlacementIdDuplicate =
         "WORKBENCH_COMMAND_PLACEMENT_ID_DUPLICATE";
     internal const string WorkbenchKeyGestureDuplicate =

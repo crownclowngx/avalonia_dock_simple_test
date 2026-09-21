@@ -134,8 +134,8 @@ V15 先由 Program 初始化唯一轻量 App 和 Splash，再从首帧调度启�
 6. 按 manifest `pluginId` 顺序为每个插件创建空服务集合，执行一次 `Configure` 并构建私有 Provider；
 7. 单插件成功后才合并其声明；失败则释放自身并继续后续插件；
 8. 只读取已冻结声明完成跨所有者冲突过滤，释放冲突 Provider，再发布不可变 `PluginRegistry`；
-9. 一次提交 `WorkflowActionCatalogStore`，由 internal `PluginLifecycleCoordinator` 按 PluginId 初始化可用插件；
-10. 回到 UI 线程，在同一 App 安装完整资源；解析会间接创建 Workspace 的 `WorkbenchCommandCatalog`，随后通过桌面 Shell 创建正式主窗口，成功交接后关闭 Splash。
+9. 校验纯描述 `WorkbenchCommandCatalog` 并一次提交 `WorkflowActionCatalogStore`，由 internal `PluginLifecycleCoordinator` 按 PluginId 初始化可用插件；
+10. 回到 UI 线程，在同一 App 安装完整资源；创建并校验 `HostWorkbenchCommandBindings` 的显式执行绑定及其 Workspace 依赖，随后通过桌面 Shell 创建正式主窗口，成功交接后关闭 Splash。
 
 关闭时先由 Workflow Action 与 Workbench Command 门控拒绝新调用并传播取消，再撤回插件可用性并让
 Session 停止新建。Command 可能仍在使用 Workspace、活动 Document 或 Scope，因此必须先排空 Command，
@@ -302,9 +302,13 @@ JSONL 和镜像之前执行唯一一次白名单转换：
 
 ### 4.6 Workbench Command 内核、活动实例路由与 Host Presentation
 
-`HostWorkbenchCommandCatalog` 只冻结 `myavalonia.host.command.document.open/save` 及其显式 Handler；
+`HostWorkbenchCommandCatalog` 只冻结七个内建命令的身份、文字等描述，不保存 Handler；
 `WorkbenchCommandCatalog` 把该目录与 `PluginRegistry.WorkbenchCommands` 合并，并在启动期拒绝最终身份
 碰撞。Catalog 不按生命周期过滤，也不保存 Provider、Scope、Document 模型或 Avalonia `ICommand`。
+
+`HostWorkbenchCommandBindings` 在 UI 组合边界冻结一对一执行绑定，缺失、重复或多余 ID 立即产生
+带稳定身份的组合诊断。映射不拥有 Handler；状态查询为每次调用捕获原实例到 Route，执行器共用
+同一实例，避免目录查询拖入工作区，也避免状态与执行各自维护分发规则。
 
 G3 后 `WorkspaceSession` 从 Dock 活动变化发布独立、按 Adapter 引用去重的
 `ActiveDocumentChanged`。`WorkbenchContextStore` 把它投影为只含活动类型、owner、持久化能力和 revision

@@ -133,8 +133,9 @@ internal sealed class HostRuntime : IDisposable
                 cancellationToken.ThrowIfCancellationRequested();
                 progress.ReportSafely(new(StartupStage.Validating));
                 var registry = provider.GetRequiredService<PluginRegistry>();
-                // Workflow 的目录是纯声明。工作台命令目录会通过 Host Handler 间接解析 Workspace，
-                // 因此它的最终校验放到 AttachWorkbench 的 UI 边界，仍早于任何主窗口展示或用户执行。
+                // 两类目录均为纯声明，后台即可发现冲突，不会通过 Handler 连带创建工作区。
+                // Handler 的一对一绑定校验仍由 AttachWorkbench 在 UI 线程完成。
+                provider.GetRequiredService<WorkbenchCommandCatalog>();
                 provider.GetRequiredService<WorkflowActionCatalogStore>().Commit(
                     registry,
                     provider.GetRequiredService<PluginAvailabilityReadModel>());
@@ -199,7 +200,7 @@ internal sealed class HostRuntime : IDisposable
         ObjectDisposedException.ThrowIf(_disposed, this);
         application.InstallWorkbenchResources(_provider.GetRequiredService<ViewLocator>(),
             _provider.GetRequiredService<DocumentControlRecycling>());
-        _provider.GetRequiredService<WorkbenchCommandCatalog>();
+        _provider.GetRequiredService<HostWorkbenchCommandBindings>();
         _provider.GetRequiredService<IHostDesktopShell>().Attach(application, desktop);
     }
 

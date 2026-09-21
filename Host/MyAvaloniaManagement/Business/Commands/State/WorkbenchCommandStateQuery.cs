@@ -1,5 +1,6 @@
 using System;
 using MyAvaloniaManagement.Business.Commands.Catalog;
+using MyAvaloniaManagement.Business.Commands.Execution;
 using MyAvaloniaManagement.Business.Commands.Context;
 using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Lifecycle;
@@ -38,7 +39,8 @@ internal sealed class WorkbenchCommandStateInvalidatedEventArgs(
 internal sealed record WorkbenchCommandRoute(
     WorkbenchCommandCatalogEntry? Entry,
     WorkbenchContextCapture Capture,
-    WorkbenchCommandStateStatus StructuralStatus);
+    WorkbenchCommandStateStatus StructuralStatus,
+    IHostWorkbenchCommandHandler? HostHandler = null);
 
 /// <summary>统一解析 Host/插件命令状态，并只监听当前活动 Document Target。</summary>
 /// <remarks>
@@ -49,6 +51,7 @@ internal sealed class WorkbenchCommandStateQuery : IDisposable
 {
     private readonly object _gate = new();
     private readonly WorkbenchCommandCatalog _catalog;
+    private readonly HostWorkbenchCommandBindings _hostBindings;
     private readonly PluginAvailabilityReadModel _availability;
     private readonly WorkbenchContextStore _context;
     private readonly IHostDiagnosticSink? _diagnostics;
@@ -60,11 +63,13 @@ internal sealed class WorkbenchCommandStateQuery : IDisposable
 
     internal WorkbenchCommandStateQuery(
         WorkbenchCommandCatalog catalog,
+        HostWorkbenchCommandBindings hostBindings,
         PluginAvailabilityReadModel availability,
         WorkbenchContextStore context,
         IHostDiagnosticSink? diagnostics = null, IHostRestartActions? restart = null)
     {
         _catalog = catalog ?? throw new ArgumentNullException(nameof(catalog));
+        _hostBindings = hostBindings ?? throw new ArgumentNullException(nameof(hostBindings));
         _availability = availability ?? throw new ArgumentNullException(nameof(availability));
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _diagnostics = diagnostics;
@@ -95,7 +100,8 @@ internal sealed class WorkbenchCommandStateQuery : IDisposable
         }
         if (entry is HostWorkbenchCommandCatalogEntry)
         {
-            return new WorkbenchCommandRoute(entry, capture, WorkbenchCommandStateStatus.Enabled);
+            return new WorkbenchCommandRoute(entry, capture, WorkbenchCommandStateStatus.Enabled,
+                _hostBindings.GetRequired(commandId));
         }
 
         var plugin = (PluginWorkbenchCommandCatalogEntry)entry;
@@ -132,8 +138,8 @@ internal sealed class WorkbenchCommandStateQuery : IDisposable
         {
             var enabled = route.Entry switch
             {
-                HostWorkbenchCommandCatalogEntry host =>
-                    host.Handler.CanExecute(route.Capture.Snapshot),
+                HostWorkbenchCommandCatalogEntry =>
+                    route.HostHandler!.CanExecute(route.Capture.Snapshot),
                 PluginWorkbenchCommandCatalogEntry =>
                     IsSubscriptionHealthy(route) &&
                     route.Capture.Target!.CanExecute(route.Entry.Descriptor.CommandId),

@@ -243,14 +243,6 @@ internal static class ServiceCollectionExtensions
         services.AddSingleton<DocumentPersistenceCoordinator>();
         services.AddSingleton<HostOpenDocumentCommandHandler>();
         services.AddSingleton<HostSaveDocumentCommandHandler>();
-        services.AddSingleton(provider => new HostWorkbenchCommandCatalog(
-            provider.GetRequiredService<HostOpenDocumentCommandHandler>(),
-            provider.GetRequiredService<HostSaveDocumentCommandHandler>(),
-            provider.GetRequiredService<HostOpenHelpCommandHandler>(),
-            provider.GetRequiredService<HostNewDocumentCommandHandler>(),
-            provider.GetRequiredService<HostOpenToolCenterCommandHandler>(),
-            provider.GetRequiredService<HostOpenPluginStatusCommandHandler>(),
-            provider.GetRequiredService<HostRestartCommandHandler>()));
         services.AddSingleton<IHostDocumentOpenService>(provider =>
             provider.GetRequiredService<DocumentPersistenceCoordinator>());
         services.AddSingleton<IDocumentInteractionService, AvaloniaDocumentInteractionService>();
@@ -301,6 +293,20 @@ internal static class ServiceCollectionExtensions
         IServiceCollection services,
         HostShutdownParticipants shutdownParticipants)
     {
+        // 元数据可在后台校验；实际 Handler 仅在 UI 组合边界解析。固定身份与实例显式绑定，
+        // 不把 Provider 闭包保存在目录里，也不提供按字符串查服务的后门。
+        services.AddSingleton(_ => new HostWorkbenchCommandCatalog());
+        services.AddSingleton(provider => new HostWorkbenchCommandBindings(
+            provider.GetRequiredService<HostWorkbenchCommandCatalog>(),
+            [
+                new(HostWorkbenchCommandIds.OpenDocument, provider.GetRequiredService<HostOpenDocumentCommandHandler>()),
+                new(HostWorkbenchCommandIds.SaveDocument, provider.GetRequiredService<HostSaveDocumentCommandHandler>()),
+                new(HostWorkbenchCommandIds.OpenHelp, provider.GetRequiredService<HostOpenHelpCommandHandler>()),
+                new(HostWorkbenchCommandIds.NewDocument, provider.GetRequiredService<HostNewDocumentCommandHandler>()),
+                new(HostWorkbenchCommandIds.OpenToolCenter, provider.GetRequiredService<HostOpenToolCenterCommandHandler>()),
+                new(HostWorkbenchCommandIds.OpenPluginStatus, provider.GetRequiredService<HostOpenPluginStatusCommandHandler>()),
+                new(HostWorkbenchCommandIds.Restart, provider.GetRequiredService<HostRestartCommandHandler>()),
+            ]));
         services.AddSingleton(provider => new WorkbenchCommandCatalog(
             provider.GetRequiredService<HostWorkbenchCommandCatalog>(),
             provider.GetRequiredService<PluginRegistry>()));
@@ -309,6 +315,7 @@ internal static class ServiceCollectionExtensions
             provider.GetRequiredService<WorkspaceSession>()));
         services.AddSingleton(provider => new WorkbenchCommandStateQuery(
             provider.GetRequiredService<WorkbenchCommandCatalog>(),
+            provider.GetRequiredService<HostWorkbenchCommandBindings>(),
             provider.GetRequiredService<PluginAvailabilityReadModel>(),
             provider.GetRequiredService<WorkbenchContextStore>(),
             provider.GetService<IHostDiagnosticSink>(),

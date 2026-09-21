@@ -120,9 +120,9 @@ internal sealed class WorkbenchCommandExecutor :
                         _shutdown.Token);
                 try
                 {
-                    if (route.Entry is HostWorkbenchCommandCatalogEntry host)
+                    if (route.Entry is HostWorkbenchCommandCatalogEntry)
                     {
-                        await host.Handler.ExecuteAsync(linked.Token);
+                        await route.HostHandler!.ExecuteAsync(linked.Token);
                     }
                     else
                     {
