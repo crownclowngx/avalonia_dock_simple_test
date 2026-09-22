@@ -8,7 +8,7 @@
 
 | 事项 | 状态 / 范围 | 依据与完成条件 |
 | --- | --- | --- |
-| V22 Host 内置插件源与安装升级 | 待实施；本次仅方案与专用验证计划。默认源可修改并持久化，多源目录、标准 ZIP、暂存、重启应用及回滚；目录和包人工维护 | [V22 方案](host-v22-plugin-distribution-plan.md)、[专用开发验证](host-v22-plugin-distribution-verification.md)：SOLID 优先，完整本机测试与 verify；不使用 AIFLOW、Windows CI 或发布门禁；真实默认 URL 待提供 |
+| V22 Host 内置插件源与安装升级 | 已暂停（尚未实施）；项目所有者于 2026-09-22 要求停止推进，保留方案与专用验证计划 | [V22 方案](host-v22-plugin-distribution-plan.md)、[专用开发验证](host-v22-plugin-distribution-verification.md)：保留 Gitee Raw 默认地址及空内容视为零插件的约定；明确恢复后重新确认自动下载、ZIP 托管方式及实施范围；暂停期间不推进实现、托管选型或专项验证 |
 | V19 后续实机体验 | 代码实施及本机交付已完成；人工体验与交付分别留证 | [开发记录](../archive/records/host-v19/development-acceptance.md)、[部署证据](../archive/records/host-v19/local-deployment-20260921.json)、[回归矩阵](../maintenance/host-v19-complexity-verification.md)：后续按实际改动需要核对主窗/浮窗、保存和恢复、自动收起及多屏体验，不用部署结果扩展既有人工验收范围 |
 
 V19 方案已[归档](../archive/plans/host-v19-complexity-reduction-plan.md)，本机单文件交付已完成，实际源码与产物身份以部署 JSON 为准。V20 实现与专项已完成，方案已[归档](../archive/plans/host-v20-layout-retirement-plan.md)，最终开发结果见[记录](../archive/records/host-v20/development-acceptance.md)。Layout V2 已退役，后续实机体验仍按实际需要留证；本轮未部署或发布。

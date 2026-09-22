@@ -45,7 +45,7 @@
 
 ## 当前结论、待办与历史
 
-- [V22 Host 内置插件源与安装升级](roadmap/host-v22-plugin-distribution-plan.md)：待实施，包含可持久化默认源、多源目录格式、现有标准 ZIP、安装事务及重启回滚；配套[专用开发验证计划](roadmap/host-v22-plugin-distribution-verification.md)。目录和包人工维护，本轮不制作发布工具。
+- [V22 Host 内置插件源与安装升级](roadmap/host-v22-plugin-distribution-plan.md)：已于 2026-09-22 暂停，尚未实施；方案及[专用开发验证计划](roadmap/host-v22-plugin-distribution-verification.md)保留供恢复后核对，自动下载、ZIP 托管方式及实施范围届时重新确认。
 - [V21 开发门禁与测试效能收敛](archive/plans/host-v21-gate-and-test-efficiency-plan.md)：已实施，实际测量与验收见[开发记录](archive/records/host-v21/development-acceptance.md)；配套[专用开发验证计划](maintenance/host-v21-gate-and-test-efficiency-verification.md)，明确 SOLID、中文注释、夹具隔离、测试去向及本地开发门禁要求。
 - [V20 历史布局退役与现行入口收敛](archive/plans/host-v20-layout-retirement-plan.md)：已实施并归档；[专用开发验证](maintenance/host-v20-layout-retirement-verification.md)、[测试去向](archive/records/host-v20/test-matrix.md)与[开发记录](archive/records/host-v20/development-acceptance.md)。Layout V2 运行能力及旧查询退出，现行行为由 V3 路径验证。
 - [V19 Host 复杂度收敛方案](archive/plans/host-v19-complexity-reduction-plan.md)：已实施并归档；[专用回归验证](maintenance/host-v19-complexity-verification.md)、[逐项测试映射](archive/records/host-v19/test-matrix.md)与[开发记录](archive/records/host-v19/development-acceptance.md)记录关闭、回滚、命令目录、实时查询和工具入口的收敛。
