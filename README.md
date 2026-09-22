@@ -14,6 +14,8 @@ V19 复杂度收敛的实际开发验证见[V19 开发记录](docs/archive/recor
 
 [V21 开发门禁与测试效能收敛](docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md)及[专用开发验证计划](docs/maintenance/host-v21-gate-and-test-efficiency-verification.md)已实施；夹具复制、UI 等待、测试职责和 Gate 证据的实际结果见[开发记录](docs/archive/records/host-v21/development-acceptance.md)。开发阶段仅使用本机验证。
 
+[V22 Host 内置插件源与安装升级方案](docs/roadmap/host-v22-plugin-distribution-plan.md)及[专用开发验证计划](docs/roadmap/host-v22-plugin-distribution-verification.md)已编写、待实施：默认源可修改并持久化，约定远程目录和标准 ZIP，设计安装、升级及重启回滚。目录与包暂由人工维护，不新增发布工具。
+
 ## 最短启动步骤
 
 安装 [global.json](global.json) 指定的 .NET SDK `10.0.302`（允许 latestPatch），在仓库根目录执行：
