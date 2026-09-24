@@ -59,7 +59,7 @@
                             <Button Content="选择配套清单…" Click="SelectPackageManifestClick" IsEnabled="{Binding CanChoosePackageManifest}" Margin="0,0,6,6" />
                             <Button Content="仅 ZIP 重新检查" Command="{Binding RecheckZipOnlyCommand}" Margin="0,0,6,6" />
                             <Button x:Name="CommitPackageButton" Content="{Binding PackageActionText}" Command="{Binding CommitPackageCommand}" Margin="0,0,6,6" />
-                            <Button Content="取消检查" Command="{Binding CancelPackageInspectionCommand}" IsVisible="{Binding IsInstallationBusy}" Margin="0,0,6,6" />
+                            <Button Content="取消检查" Command="{Binding CancelPackageInspectionCommand}" IsVisible="{Binding IsInspectingPackage}" Margin="0,0,6,6" />
                             <Button Content="取消待应用安装" Command="{Binding CancelPendingInstallCommand}" Margin="0,0,6,6" />
                             <Button Content="恢复所选插件上一版本…" Command="{Binding RestoreSelectedPackageCommand}" Margin="0,0,6,6" />
                             <Button Content="刷新安装状态" Command="{Binding RefreshInstallationCommand}" Margin="0,0,6,6" />

@@ -158,7 +158,9 @@ internal sealed class PluginInstallationService(PluginInstallPaths paths, Plugin
     {
         paths.Ensure();
         using var write = await PluginInstallationLease.OperationsAsync(paths, _lifetime.Token).ConfigureAwait(false);
-        Publish(store.ReadOperation());
+        var actual = store.ReadOperation();
+        // 同一待办的启动阻断提示不能被看板初次刷新抹掉；换操作或阶段后再使用新的事实文案。
+        Publish(actual, actual?.OperationId == Status.Operation?.OperationId && actual?.Phase == PluginInstallPhase.Staged ? Status.Message : null);
     });
 
     internal void Publish(PluginInstallOperation? operation, string? message = null) => Volatile.Write(ref _status,

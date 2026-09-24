@@ -35,18 +35,20 @@ sealed class Program
         using var diagnostics = HostDiagnosticSession.Start();
         PluginInstallationSession? installation = null;
         using var startup = new StartupCoordinator((progress, cancellation) =>
-            StartupWorker.RunAsync(async () =>
+            StartupWorker.RunAsync(() =>
             {
                 // macOS 仍沿用实验启动，不消费 Windows ZIP 安装指令。
                 if (OperatingSystem.IsWindows())
                 {
                     installation = new PluginInstallationSession(PluginRootDirectoryPolicy.Resolve(
                         AppContext.BaseDirectory, PluginDeploymentConstants.PluginsSubdirectory, false));
-                    await installation.PrepareAsync(cancellation).ConfigureAwait(false);
+                    // 只在专属后台启动线程桥接安装 IO。直接 await 会把后续模块构造/Configure
+                    // 移到线程池 MTA，破坏既有首次 STA 契约；UI 线程仍独立显示进度并响应取消。
+                    installation.PrepareAsync(cancellation).GetAwaiter().GetResult();
                     installation.RetainRuntimeUntilProcessExit();
                 }
-                return await HostRuntime.CreateAsync(diagnostics, restart, progress, cancellation,
-                    OperatingSystem.IsWindows() ? installation : null).ConfigureAwait(false);
+                return HostRuntime.CreateAsync(diagnostics, restart, progress, cancellation,
+                    OperatingSystem.IsWindows() ? installation : null);
             }));
         var exitCode = 1;
         try { exitCode = runDesktop(HostAvaloniaBuilder.Build(startup, diagnostics), args); }

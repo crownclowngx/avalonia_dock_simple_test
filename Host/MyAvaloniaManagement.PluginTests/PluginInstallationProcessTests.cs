@@ -26,7 +26,12 @@ public sealed class PluginInstallationProcessTests
         Assert.Equal(PluginInstallPhase.Committed, run.Files.Store.ReadOperation()!.Phase);
         Assert.Equal(disabled ? "installedDisabled" : "startupConfirmed", Assert.Single(run.Files.Store.ReadIndex().Plugins).Validation);
         if (disabled) Assert.False(File.Exists(Path.Combine(run.Data, "installation-constructed.txt")));
-        else Assert.Equal("2.0.0", File.ReadAllText(Path.Combine(run.Data, "installation-ready.txt")));
+        else
+        {
+            Assert.Equal("2.0.0", File.ReadAllText(Path.Combine(run.Data, "installation-ready.txt")));
+            Assert.Equal("STA", File.ReadAllText(Path.Combine(run.Data, "installation-constructed-apartment.txt")));
+            Assert.Equal("STA", File.ReadAllText(Path.Combine(run.Data, "installation-configured-apartment.txt")));
+        }
     }
 
     [Theory]
@@ -101,6 +106,30 @@ public sealed class PluginInstallationProcessTests
         Assert.Single(Directory.GetFiles(run.Files.Root, "helper-*.start.json"));
         Assert.Equal(PluginInstallPhase.Committed, run.Files.Store.ReadOperation()!.Phase);
         Assert.Equal("2.0.0", File.ReadAllText(Path.Combine(run.Data, "installation-ready.txt")));
+    }
+
+    [Fact]
+    public async Task 试启动期间另一实例不能加载候选且终止所有者后可恢复()
+    {
+        using var run = new Run(); run.Files.Deploy(1); await run.Files.StageAsync(2);
+        Directory.CreateDirectory(run.Data); File.WriteAllText(Path.Combine(run.Data, "hold-version-2"), "hold");
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(40));
+        var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var watcher = new FileSystemWatcher(run.Data, "installation-initializing.txt");
+        watcher.Created += (_, _) => entered.TrySetResult(); watcher.EnableRaisingEvents = true;
+        var owner = run.Start("installation-run"); await entered.Task.WaitAsync(timeout.Token);
+        var pending = run.Files.Store.ReadOperation()!;
+        Assert.Equal(PluginInstallPhase.AwaitingStartup, pending.Phase);
+        Assert.True(PluginInstallApplier.OwnerAlive(pending)); Assert.Equal(owner.Id, pending.OwnerPid);
+        var otherData = Path.Combine(run.Files.Root, "other-data");
+        await run.ExitAsync(run.Start("startup-failure", data: otherData), 1);
+        Assert.False(File.Exists(Path.Combine(otherData, "installation-constructed.txt")));
+        Assert.Equal(pending, run.Files.Store.ReadOperation());
+        owner.Kill(); await owner.WaitForExitAsync(timeout.Token);
+        Assert.False(PluginInstallApplier.OwnerAlive(pending));
+        await run.ExitAsync(run.Start("installation-run"));
+        Assert.Equal(PluginInstallPhase.RolledBack, run.Files.Store.ReadOperation()!.Phase);
+        Assert.Equal("1.0.0", File.ReadAllText(Path.Combine(run.Data, "installation-ready.txt")));
     }
 
     private sealed class Run : IDisposable

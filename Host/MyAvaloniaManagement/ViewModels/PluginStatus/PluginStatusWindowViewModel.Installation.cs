@@ -12,6 +12,7 @@ internal sealed partial class PluginStatusWindowViewModel
     private readonly IPluginInstallationActions? _installation;
     private string? _selectedZip;
     [ObservableProperty] private bool _isInstallationBusy;
+    [ObservableProperty] private bool _isInspectingPackage;
     [ObservableProperty] private bool _installationExpanded;
     [ObservableProperty] private bool _allowPackageReplacement;
     [ObservableProperty] private string _installationFeedback = string.Empty;
@@ -37,11 +38,13 @@ internal sealed partial class PluginStatusWindowViewModel
     partial void OnIsInstallationBusyChanged(bool value) => NotifyInstallationChanged();
     partial void OnAllowPackageReplacementChanged(bool value) => NotifyInstallationChanged();
 
-    internal Task InspectPackageAsync(string zip, string? sidecar = null)
+    internal async Task InspectPackageAsync(string zip, string? sidecar = null)
     {
-        if (!CanInspectPackage) return Task.CompletedTask;
+        if (!CanInspectPackage) return;
         _selectedZip = zip; AllowPackageReplacement = false; InstallationExpanded = true;
-        return RunInstallationAsync(() => _installation!.InspectAsync(zip, sidecar), "检查完成，请审阅候选信息。");
+        IsInspectingPackage = true;
+        try { await RunInstallationAsync(() => _installation!.InspectAsync(zip, sidecar), "检查完成，请审阅候选信息。"); }
+        finally { if (!_disposed) IsInspectingPackage = false; }
     }
 
     internal Task SelectPackageManifestAsync(string manifest) => _selectedZip is null

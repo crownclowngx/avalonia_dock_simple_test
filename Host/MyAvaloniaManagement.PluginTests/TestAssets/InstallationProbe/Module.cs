@@ -19,12 +19,14 @@ public sealed class Module : IPluginModule
         if (Root is not { } root) return;
         Directory.CreateDirectory(root);
         File.WriteAllText(Path.Combine(root, "installation-" + stage + ".txt"), Version);
+        if (stage is "constructed" or "configured")
+            File.WriteAllText(Path.Combine(root, "installation-" + stage + "-apartment.txt"), Thread.CurrentThread.GetApartmentState().ToString());
     }
 }
 
 public sealed class Lifecycle : IPluginLifecycle
 {
-    public Task InitializeAsync(CancellationToken cancellationToken)
+    public async Task InitializeAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         // 仅测试夹具读取此开关：模拟载荷已加载、尚未确认时的进程中断；没有 Shutdown 或最终日志。
@@ -32,8 +34,16 @@ public sealed class Lifecycle : IPluginLifecycle
             Environment.Exit(71);
         if (Module.Version == "2.0.0" && Module.Root is { } root && File.Exists(Path.Combine(root, "fail-version-2")))
             throw new InvalidOperationException("安装夹具指定新版本初始化失败。");
+        if (Module.Version == "2.0.0" && Module.Root is { } holdRoot && File.Exists(Path.Combine(holdRoot, "hold-version-2")))
+        {
+            var release = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var watcher = new FileSystemWatcher(holdRoot, "release-version-2");
+            watcher.Created += (_, _) => release.TrySetResult(); watcher.EnableRaisingEvents = true;
+            Module.Evidence("initializing");
+            if (File.Exists(Path.Combine(holdRoot, "release-version-2"))) release.TrySetResult();
+            await release.Task.WaitAsync(TimeSpan.FromSeconds(30), cancellationToken);
+        }
         Module.Evidence("ready");
-        return Task.CompletedTask;
     }
     public Task ShutdownAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 }
