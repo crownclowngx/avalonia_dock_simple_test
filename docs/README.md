@@ -11,7 +11,7 @@
 - [功能中心与插件目录](quick-start/plugin-navigation-and-function-center.md)：分类、创建意图、目录偏好。
 - [浮动窗口与布局恢复](quick-start/floating-windows-and-layout.md)：浮动、回停、关闭、找回和重置。
 - [工具中心](quick-start/tool-center.md)：显示、隐藏、收藏和分类。
-- [插件看板](quick-start/plugin-status.md)：兼容矩阵、可用性、诊断及下次启动开关。
+- [插件看板](quick-start/plugin-status.md)：ZIP 安装更新、兼容矩阵、可用性、诊断及下次启动开关。
 - [重新启动 Host](quick-start/restart-host.md)：保存与取消、自动重启、应用插件设置。
 - [macOS 实验](quick-start/macos-experiment.md)：交叉打包与独立真机验证。
 
@@ -34,7 +34,7 @@
 | 理解实现、职责和资源所有权 | [Host 内部文档](../Host/MyAvaloniaManagement/docs/README.md) |
 | 修改外部可观察行为 | [兼容约束](../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md) |
 | 启动与插件进度 | [启动契约](reference/host-startup.md) |
-| 插件开关与重启 | [开关契约](reference/plugin-enablement.md)、[重启契约](reference/host-restart.md) |
+| 插件安装、开关与重启 | [安装契约](reference/plugin-installation.md)、[开关契约](reference/plugin-enablement.md)、[重启契约](reference/host-restart.md) |
 | Document 保存与恢复 | [Document 持久化](reference/document-persistence.md) |
 | 工具布局及浮窗 | [Layout V3](reference/dock-layout-snapshot-v3.md)、[浮窗指南](quick-start/floating-windows-and-layout.md) |
 | 命令及跨插件调用 | [Workbench Command](reference/workbench-commands.md)、[Workflow Action](reference/workflow-actions.md) |
@@ -45,7 +45,7 @@
 
 ## 当前结论、待办与历史
 
-- [V23 本地 ZIP 插件安装与更新](roadmap/host-v23-local-zip-installation-plan.md)：设计与实施计划已编写，功能尚未实施；复用现有 ZIP/可选摘要清单，覆盖安装检查、版本决策、重启应用和恢复，配套[专用开发验证计划](roadmap/host-v23-local-zip-installation-verification.md)。本地文件入口独立于暂停的 V22，仅使用本机开发验证。
+- [V23 本地 ZIP 安装](reference/plugin-installation.md)：已实现检查、安装更新、重启应用和恢复；[归档方案](archive/plans/host-v23-local-zip-installation-plan.md)、[专用开发验证](maintenance/host-v23-local-zip-installation-verification.md)及[开发记录](archive/records/host-v23/development-acceptance.md)。部署、人工实机验收和发布单独留证。
 - [V22 Host 内置插件源与安装升级](roadmap/host-v22-plugin-distribution-plan.md)：已于 2026-09-22 暂停，尚未实施；方案及[专用开发验证计划](roadmap/host-v22-plugin-distribution-verification.md)保留供恢复后核对，自动下载、ZIP 托管方式及实施范围届时重新确认。
 - [V21 开发门禁与测试效能收敛](archive/plans/host-v21-gate-and-test-efficiency-plan.md)：已实施，实际测量与验收见[开发记录](archive/records/host-v21/development-acceptance.md)；配套[专用开发验证计划](maintenance/host-v21-gate-and-test-efficiency-verification.md)，明确 SOLID、中文注释、夹具隔离、测试去向及本地开发门禁要求。
 - [V20 历史布局退役与现行入口收敛](archive/plans/host-v20-layout-retirement-plan.md)：已实施并归档；[专用开发验证](maintenance/host-v20-layout-retirement-verification.md)、[测试去向](archive/records/host-v20/test-matrix.md)与[开发记录](archive/records/host-v20/development-acceptance.md)。Layout V2 运行能力及旧查询退出，现行行为由 V3 路径验证。

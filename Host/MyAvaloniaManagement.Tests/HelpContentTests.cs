@@ -8,6 +8,21 @@ public sealed class HelpContentTests
     private readonly HelpContentCatalog _catalog = new();
 
     [Theory]
+    [InlineData("docs/reference/plugin-installation.md")]
+    [InlineData("docs/archive/plans/host-v23-local-zip-installation-plan.md")]
+    [InlineData("docs/maintenance/host-v23-local-zip-installation-verification.md")]
+    [InlineData("docs/archive/records/host-v23/development-acceptance.md")]
+    [InlineData("docs/archive/records/host-v23/test-matrix.md")]
+    public void V23当前契约和归档材料实际嵌入并可渲染(string path)
+    {
+        var source = _catalog.ReadRepository(path);
+        Assert.StartsWith("# ", source);
+        Assert.True(source.Length > 200);
+        Assert.Contains("<h1", new HelpMarkdownRenderer(_catalog).RenderMarkdown(source));
+        Assert.NotNull(_catalog.ResolveLink("docs/quick-start/plugin-status.md", "../reference/plugin-installation.md"));
+    }
+
+    [Theory]
     [InlineData("docs/archive/plans/host-v19-complexity-reduction-plan.md")]
     [InlineData("docs/maintenance/host-v19-complexity-verification.md")]
     [InlineData("docs/archive/records/host-v19/development-acceptance.md")]

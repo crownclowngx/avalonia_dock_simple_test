@@ -59,3 +59,9 @@ dotnet build
 dotnet msbuild -t:BuildManagedPluginPackage -p:Configuration=Release
 dotnet msbuild -t:DeployManagedPlugin -p:ManagedPluginDeployRoot=C:\Path\To\Controls
 ```
+
+## 在支持 V23 的 Host 中安装 ZIP
+
+现有 `Controls/<PluginFolder>/` ZIP 与外置同名 `.manifest.json` 无需改格式。将两者放在同一目录，在 Host 的“工具 → 插件看板 → 从 ZIP 安装/更新…”选择 ZIP，审阅检查结果并确认，再重启生效。也可只提供 ZIP，此时只做基础检查；清单不匹配会阻断，不自动降级。
+
+同版同内容无需安装，同版差异、降级及恢复上一版本需要明确确认。旧插件目录整份备份，禁用选择保留；插件目录内的业务数据不会自动迁移，文件恢复不替代数据库迁移。Host 已管理的载荷避免再手工合并覆盖，开发目录部署继续用于隔离联调。该消费能力取决于 Host 是否包含 V23，不要求所有插件为此升级 Build 包，也不改变正式发布前原有验收要求。

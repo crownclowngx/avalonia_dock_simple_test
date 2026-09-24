@@ -6,6 +6,8 @@
 
 ## 方案与评审
 
+- [V23：本地 ZIP 插件安装与更新](plans/host-v23-local-zip-installation-plan.md)，见[当前契约](../reference/plugin-installation.md)、[专用验证](../maintenance/host-v23-local-zip-installation-verification.md)、[开发记录](records/host-v23/development-acceptance.md)和[测试映射](records/host-v23/test-matrix.md)。
+
 - [V21：开发门禁与测试效能收敛](plans/host-v21-gate-and-test-efficiency-plan.md)，见[开发记录](records/host-v21/development-acceptance.md)、[测试去向](records/host-v21/test-matrix.md)与[专用开发验证](../maintenance/host-v21-gate-and-test-efficiency-verification.md)。
 
 - [V20：历史布局退役与现行入口收敛](plans/host-v20-layout-retirement-plan.md)，见[开发记录](records/host-v20/development-acceptance.md)、[测试去向](records/host-v20/test-matrix.md)及[专用开发验证](../maintenance/host-v20-layout-retirement-verification.md)。

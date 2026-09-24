@@ -47,7 +47,7 @@ apphost 使用当前 `Environment.ProcessPath`；`dotnet Host.dll` 保留 dotnet
 
 保留工作目录、逐项复制的原始用户参数、有效数据根，以 `ProcessStartInfo.ArgumentList` 启动，`UseShellExecute=false`；中文、空格、引号和 shell 元字符不参与命令拼接。显式设置 `MYAVALONIA_DATA_DIRECTORY`，其余环境继承，清除以 `MYAVALONIA_` 开头且含 `TEST` 或 `PROBE` 的一次性测试变量。助手参数只进入助手，不传给普通后继 Host。启动信息验证先检查可执行文件、入口 DLL 和目录存在性；操作系统执行权限或随后文件变化仍由真实创建失败路径处理。
 
-不支持任意目标程序、在线更新、安装文件替换、进程内重新创建 App/Runtime 或崩溃守护。插件/设置被其他实例更改时，新 Host 读取实际启动时的有效磁盘状态，本协议不是跨进程配置事务。
+助手不支持任意目标程序、在线更新或安装文件命令，也不在进程内重新创建 App/Runtime 或提供崩溃守护。V23 的[安装会话](plugin-installation.md)由下一次正常启动的 Program 在发现前应用/恢复本地 ZIP；运行保护持续到进程退出。重启准备冻结设置和安装准入，取消时一起恢复；助手仍只承担进程交接。插件/设置被其他实例更改时，新 Host 读取实际启动时的有效磁盘状态，本协议不是跨进程配置事务。
 
 ## 失败与诊断
 

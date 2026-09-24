@@ -183,6 +183,8 @@ reader 不读取 manifest v1，也不存在 v1/v2 双 reader；清单只解决�
 `<AssemblyName>-<PluginVersion>-win-x64.zip`；ZIP 内只有 `Controls/<PluginFolder>/`，外置同名
 `.manifest.json` 记录 ZIP 与全部文件摘要。目录部署是开发产物，ZIP 是正式分发物，两者使用同一资产集合。
 
+V23 Windows Host 可从插件看板消费现有 ZIP，并在下次发现前检查、整目录应用或恢复。安装管理与租约、禁用确认、只读目录及数据边界见[本地安装契约](../../../../docs/reference/plugin-installation.md)。运行清单、SDK 与 Build 输出格式保持；ALC 仍不支持热卸载。
+
 ### 2.2 Managed 插件
 
 - Host 只按 `entryPoint.type` 的大小写敏感完整名称取得一个入口类型，不调用 `GetTypes()` 扫描模块；

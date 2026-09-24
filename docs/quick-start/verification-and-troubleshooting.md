@@ -112,7 +112,7 @@ dotnet msbuild src/ExamplePlugin.Plugin/ExamplePlugin.Plugin.csproj `
   -p:ManagedPluginDeployRoot=C:\Path\To\Host\Controls
 ```
 
-部署前先完整退出 Host。该命令只重建 `Controls/ExamplePlugin`，不会清理其他插件。也可以解压 Release ZIP，将其中完整插件目录放入 Host 的 Controls；当前 Host 没有自动 ZIP 导入入口。
+部署前先完整退出 Host。该命令只重建 `Controls/ExamplePlugin`，不会清理其他插件。使用包含 V23 的 Host 时，优先从“工具 → 插件看板 → 从 ZIP 安装/更新…”导入 Release ZIP，审阅后确认并重启；同名配套清单会自动核对，详见[看板指南](plugin-status.md)。人工目录部署适用于独立联调目录；Host 已管理的载荷不要再混合覆盖，否则登记与磁盘不一致会阻断安装。
 
 替换完成后重新启动 Host。当前插件发现和加载上下文以进程为边界，不支持热替换。
 

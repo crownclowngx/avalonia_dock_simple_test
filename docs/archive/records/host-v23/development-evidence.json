@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-09-24",
+  "status": "pending-final-local-verify",
+  "planCommit": "8ebed27",
+  "implementationCommit": "8f91312",
+  "releaseGatesExecuted": false,
+  "windowsCiExecuted": false,
+  "aiflowUsed": false,
+  "deployed": false,
+  "published": false,
+  "manualDesktopAcceptance": "not-executed",
+  "externalReleaseZipAcceptance": "not-executed-no-input"
+}

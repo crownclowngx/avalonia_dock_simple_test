@@ -1,11 +1,11 @@
 # V23：Host 本地 ZIP 插件安装与更新方案
 
 > 用途：直接消费现有插件项目的 ZIP 发布物，在 Host 中完成本地包检查、安装、更新、重启应用与上一版本恢复。
-> 状态：设计与实施计划，功能尚未实施；本次仅编写方案、专用验证文档及同步导航。核对日期：2026-09-24。
+> 后续说明（2026-09-24）：方案已实施并归档；本文保留设计阶段的措辞，最终路径、保留策略和行为以[当前安装契约](../../reference/plugin-installation.md)为准，实际验证见[开发记录](../records/host-v23/development-acceptance.md)。原方案状态为“仅文档、尚未实施”，不代表当前源码。
 > 调研基线：`764ff1fcd7b04546f32029fd9253bde1c82b7a73`，编写前工作树干净；实施前重新核对源码、插件产物和未提交差异。
-> 配套：[V23 专用开发验证计划](host-v23-local-zip-installation-verification.md)。当前运行能力以[兼容约束](../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)、[插件开关](../reference/plugin-enablement.md)、[重启契约](../reference/host-restart.md)为准。
+> 配套：[V23 专用开发验证计划](../../maintenance/host-v23-local-zip-installation-verification.md)。当前运行能力以[兼容约束](../../../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md)、[插件开关](../../reference/plugin-enablement.md)、[重启契约](../../reference/host-restart.md)为准。
 
-V23 是改造编号，不修改产品版本、SDK/NuGet 版本或 manifest schema。此前 [V22 在线插件源方案](host-v22-plugin-distribution-plan.md)继续保持暂停；V23 独立实现本地文件入口，不恢复源管理、联网检查、自动下载或 ZIP 托管工作。
+V23 是改造编号，不修改产品版本、SDK/NuGet 版本或 manifest schema。此前 [V22 在线插件源方案](../../roadmap/host-v22-plugin-distribution-plan.md)继续保持暂停；V23 独立实现本地文件入口，不恢复源管理、联网检查、自动下载或 ZIP 托管工作。
 
 ## 1. 目标与首要规定
 
@@ -36,7 +36,7 @@ V23 是改造编号，不修改产品版本、SDK/NuGet 版本或 manifest schem
 
 两个已安装 Build 包的脚本均采用下述 ZIP 和外置清单结构。此结论来自项目配置、实际 NuGet 缓存脚本与主仓打包实现；外部仓库没有找到现成正式发布 ZIP，不等于已经逐包验收 12 个发布物。上一轮已只读打开主仓 MyPlugTest 的真实验收 ZIP，确认其载荷布局；不把验收包命名当成正式命名协议。
 
-事实入口：[Build 包说明](../../Packaging/MyAvaloniaManagement.Plugin.Build/README.md)、[打包目标](../../Packaging/MyAvaloniaManagement.Plugin.Build/build/MyAvaloniaManagement.Plugin.Build.targets)、[打包脚本](../../Packaging/MyAvaloniaManagement.Plugin.Build/tools/Build-ManagedPluginPackage.ps1)、[统一部署目标](../../build/MyAvaloniaManagement.ManagedPlugin.targets)、[模板交付说明](../../Packaging/MyAvaloniaManagement.Plugin.Templates/content/myavalonia-plugin/docs/deployment-and-release.md)。外部仓库只是可选消费方，不成为主仓开发门禁前提。
+事实入口：[Build 包说明](../../../Packaging/MyAvaloniaManagement.Plugin.Build/README.md)、[打包目标](../../../Packaging/MyAvaloniaManagement.Plugin.Build/build/MyAvaloniaManagement.Plugin.Build.targets)、[打包脚本](../../../Packaging/MyAvaloniaManagement.Plugin.Build/tools/Build-ManagedPluginPackage.ps1)、[统一部署目标](../../../build/MyAvaloniaManagement.ManagedPlugin.targets)、[模板交付说明](../../../Packaging/MyAvaloniaManagement.Plugin.Templates/content/myavalonia-plugin/docs/deployment-and-release.md)。外部仓库只是可选消费方，不成为主仓开发门禁前提。
 
 ### 2.2 正式输出
 
@@ -89,7 +89,7 @@ Controls/
 }
 ```
 
-主仓 [Gate PackageBuilder](../../tools/MyAvaloniaManagement.Gate/PackageBuilder.cs)还会生成不带版本号的 `MyPlugTest-win-x64.zip`，其证据由 Gate 保存，不必具有同名外置清单。安装器识别内容，不依赖文件名推断身份、版本或平台。正式输出工具和测试打包工具保持各自职责。
+主仓 [Gate PackageBuilder](../../../tools/MyAvaloniaManagement.Gate/PackageBuilder.cs)还会生成不带版本号的 `MyPlugTest-win-x64.zip`，其证据由 Gate 保存，不必具有同名外置清单。安装器识别内容，不依赖文件名推断身份、版本或平台。正式输出工具和测试打包工具保持各自职责。
 
 ## 3. 单个 ZIP 与配套清单的接入策略
 
@@ -110,7 +110,7 @@ SHA256 对照只说明文件与所给清单一致，不是作者签名。仅 ZIP
 
 ## 4. 安装预览与版本决策
 
-在现有[插件看板](../../Host/MyAvaloniaManagement/Views/PluginStatus/PluginStatusWindow.axaml)增加“从 ZIP 安装/更新…”入口。预览包含插件 ID、入口名、磁盘版本、候选版本、SDK 要求、检查级别、目标目录和重启生效说明。现有 ZIP 没有静态展示名时，使用 ID/程序集名，不执行插件代码获取名称。
+在现有[插件看板](../../../Host/MyAvaloniaManagement/Views/PluginStatus/PluginStatusWindow.axaml)增加“从 ZIP 安装/更新…”入口。预览包含插件 ID、入口名、磁盘版本、候选版本、SDK 要求、检查级别、目标目录和重启生效说明。现有 ZIP 没有静态展示名时，使用 ID/程序集名，不执行插件代码获取名称。
 
 | 磁盘结果 | 默认决策 |
 | --- | --- |
@@ -139,7 +139,7 @@ SHA256 对照只说明文件与所给清单一致，不是作者签名。仅 ZIP
 5. 禁带共享程序集规则来自现有 RuntimeProfile，不复制正则；现有精确私有资产例外仍生效。`plugin.build.json` 可选。不得创建 PluginLoadContext、构造入口、调用 Configure 或生命周期来做安装预检。
 6. 路径、格式、摘要、SDK、权限、空间或取消失败均不改活动目录。临时资源由安装服务负责释放；只清理其已验证拥有的操作目录。
 
-复用位置：[目录预检](../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/PluginDirectoryLayout.cs)、[清单及版本检查](../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/PluginManifest.cs)、[完整载荷指纹](../../Host/MyAvaloniaManagement/Business/Compatibility/ArtifactFingerprint.cs)、[共享资产规则](../../build/MyAvaloniaManagement.RuntimeProfile.props)。需要抽取时只抽取实际共用的校验，保留既有错误码和失败语义。
+复用位置：[目录预检](../../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/PluginDirectoryLayout.cs)、[清单及版本检查](../../../Host/MyAvaloniaManagement/Business/Plugins/Discovery/PluginManifest.cs)、[完整载荷指纹](../../../Host/MyAvaloniaManagement/Business/Compatibility/ArtifactFingerprint.cs)、[共享资产规则](../../../build/MyAvaloniaManagement.RuntimeProfile.props)。需要抽取时只抽取实际共用的校验，保留既有错误码和失败语义。
 
 ## 6. SOLID 职责与接入位置
 
@@ -157,7 +157,7 @@ SHA256 对照只说明文件与所给清单一致，不是作者签名。仅 ZIP
 
 SRP 由表中职责落实；OCP 允许未来网络下载复用已检查本地包入口，但本版不预建来源策略体系；LSP 要求真实/测试文件提交端口保持相同失败、取消和幂等语义；ISP 将 UI 查询、安装操作与启动应用端口分开；DIP 让业务决策不依赖 Avalonia、静态文件系统或进程启动实现。普通纯函数/记录不为形式统一再加接口。
 
-安装器只能在 [`HostRuntime.CreateAsync`](../../Host/MyAvaloniaManagement/Business/Composition/HostRuntime.cs)调用 `AssemblyLoaderHelper.Discover` 之前完成恢复/应用。当前发现按根缓存且 ALC 不支持卸载；一旦开始加载插件，本进程不再进行文件替换。启动进度沿用既有协调器，不在 UI 线程计算大文件摘要。`Program` 拥有跨 Runtime 的租约，不能在关闭看板或释放 DI 时提前允许其他进程替换文件。
+安装器只能在 [`HostRuntime.CreateAsync`](../../../Host/MyAvaloniaManagement/Business/Composition/HostRuntime.cs)调用 `AssemblyLoaderHelper.Discover` 之前完成恢复/应用。当前发现按根缓存且 ALC 不支持卸载；一旦开始加载插件，本进程不再进行文件替换。启动进度沿用既有协调器，不在 UI 线程计算大文件摘要。`Program` 拥有跨 Runtime 的租约，不能在关闭看板或释放 DI 时提前允许其他进程替换文件。
 
 ## 7. 安装根存储与跨进程租约
 
