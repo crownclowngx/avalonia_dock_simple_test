@@ -14,7 +14,7 @@ V19 复杂度收敛的实际开发验证见[V19 开发记录](docs/archive/recor
 
 [V21 开发门禁与测试效能收敛](docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md)及[专用开发验证计划](docs/maintenance/host-v21-gate-and-test-efficiency-verification.md)已实施；夹具复制、UI 等待、测试职责和 Gate 证据的实际结果见[开发记录](docs/archive/records/host-v21/development-acceptance.md)。开发阶段仅使用本机验证。
 
-V23 本地 ZIP 插件安装与更新已接入当前源码：从“工具 → 插件看板”检查并确认，重启前完整替换，支持失败恢复和上一版本恢复。见[操作指南](docs/quick-start/plugin-status.md)、[安装契约](docs/reference/plugin-installation.md)、[开发记录](docs/archive/records/host-v23/development-acceptance.md)和[专用验证](docs/maintenance/host-v23-local-zip-installation-verification.md)。尚未部署或公开发布。
+V23 本地 ZIP 插件安装与更新已接入当前源码：从“工具 → 插件看板”检查并确认，重启前完整替换，支持失败恢复和上一版本恢复。见[操作指南](docs/quick-start/plugin-status.md)、[安装契约](docs/reference/plugin-installation.md)、[开发记录](docs/archive/records/host-v23/development-acceptance.md)和[专用验证](docs/maintenance/host-v23-local-zip-installation-verification.md)。本机交付状态见[V23 专用部署说明](docs/archive/records/host-v23/local-deployment-guide.md)及其中的部署 JSON；尚未公开发布。
 
 [V22 Host 内置插件源与安装升级方案](docs/roadmap/host-v22-plugin-distribution-plan.md)及[专用开发验证计划](docs/roadmap/host-v22-plugin-distribution-verification.md)已于 2026-09-22 暂停，尚未实施。保留已有方案及 Gitee 默认源约定；明确恢复后重新确认自动下载、ZIP 托管方式及实施范围。V23 本地文件入口独立推进，不恢复 V22 在线分发工作。
 

@@ -1,14 +1,14 @@
 # Host 本机部署
 
-> 用途：当前本机交付形式、证据入口及后续部署流程。状态：当前；核对日期：2026-09-21。事实源：[Host 项目](../../Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj)、[版本属性](../../Directory.Version.props)及下列部署记录。
+> 用途：当前本机交付形式、证据入口及后续部署流程。状态：当前；核对日期：2026-09-24。事实源：[Host 项目](../../Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj)、[版本属性](../../Directory.Version.props)及下列部署记录。
 
 ## 已记录的最新交付
 
-V20 历史布局退役与入口收敛版本的本机交付目标为 `D:\data\avalonia\MyAvaloniaManagement.exe`，见[专用交付说明](../archive/records/host-v20/local-deployment-guide.md)和[部署证据](../archive/records/host-v20/local-deployment-20260921.json)。最终状态、源码 revision、构建参数、EXE 和补丁摘要、安装文件核对及清理结果以该 JSON 为准，`status=completed` 才表示交付完成。此前的 V19 交付保留在[历史记录](../archive/records/host-v19/local-deployment-20260921.json)。记录不能代替对安装目录实时状态的检查。
+V23 本地 ZIP 插件安装与更新版本的本机交付目标为 `D:\data\avalonia\MyAvaloniaManagement.exe`，见[专用交付说明](../archive/records/host-v23/local-deployment-guide.md)和[部署证据](../archive/records/host-v23/local-deployment-20260924.json)。最终状态、源码 revision、构建参数、EXE 和补丁摘要、安装文件核对及清理结果以该 JSON 为准，`status=completed` 才表示交付完成。此前的 V20 交付保留在[历史记录](../archive/records/host-v20/local-deployment-20260921.json)。记录不能代替对安装目录实时状态的检查。
 
 当前交付形式为 Release、win-x64、自包含压缩单 EXE，打入 .NET 运行时与原生绘制库，关闭裁剪；`Controls` 插件和 `HelpWeb` 帮助资源外置。安装版不要求另装 .NET。每次单文件形式核对和隔离启动/关闭均按本次产物记录；既有[项目所有者人工验收](../archive/records/host/manual-acceptance-20260921.md)只代表原始验收范围。
 
-V20 完整退役 Layout V2，仅由 V3 恢复布局；旧布局文件不读取、不转换，也不删除。文档信封 V2 与默认用户数据目录保持现行契约。方案名称 V11–V20 表示改造阶段，产品和包版本仍以[集中基线](../reference/platform-baseline.md)为准；文档随包嵌入不表示对应方案已经实施。
+V20 完整退役 Layout V2，仅由 V3 恢复布局；旧布局文件不读取、不转换，也不删除。文档信封 V2 与默认用户数据目录保持现行契约。方案名称 V11–V23 表示改造阶段，产品和包版本仍以[集中基线](../reference/platform-baseline.md)为准；文档随包嵌入不表示对应方案已经实施。
 
 ## 后续部署流程
 
@@ -19,12 +19,13 @@ V20 完整退役 Layout V2，仅由 V3 恢复布局；旧布局文件不读取�
 5. 安装前检查实例是否退出，记录目标目录文件摘要并落实本次备份/回退安排；逐项交付已核对的文件，保留现有插件及用户数据，核对保留文件字节不变。
 6. 记录已交付文件、源码、产物摘要、检查结果与清理范围。清理仅限本次隔离目录，先核对绝对路径和重解析点，再删除本次中间产物；保留小型日志与收据。
 
-V15–V17 及 V18 首次部署的不备份操作来自对应任务的用户要求；2026-09-21 随 V19 方案文档再次部署时已备份被替换 EXE，详见各自 JSON。各次选择不构成后续部署的默认政策。回退必须检查备份当前仍存在且身份匹配，不能假定旧备份覆盖最新版本。正式发布条件见[主仓验证与封板](verification.md)。
+V15–V17 及 V18 首次部署的不备份操作来自对应任务的用户要求；2026-09-21 随 V19 方案文档再次部署时已备份被替换 EXE，详见各自 JSON。2026-09-24 的 V23 本机交付按用户要求不创建备份。各次选择不构成后续部署的默认政策。回退必须检查备份当前仍存在且身份匹配，不能假定旧备份覆盖最新版本。正式发布条件见[主仓验证与封板](verification.md)。
 
 ## 历次交付
 
 | 阶段 | 原说明或证据 |
 | --- | --- |
+| V23 本地 ZIP 插件安装与更新 | [专用交付说明](../archive/records/host-v23/local-deployment-guide.md)、[2026-09-24 JSON](../archive/records/host-v23/local-deployment-20260924.json) |
 | V20 历史布局退役与入口收敛 | [专用交付说明](../archive/records/host-v20/local-deployment-guide.md)、[2026-09-21 JSON](../archive/records/host-v20/local-deployment-20260921.json) |
 | V19 复杂度收敛 | [专用交付说明](../archive/records/host-v19/local-deployment-guide.md)、[2026-09-21 JSON](../archive/records/host-v19/local-deployment-20260921.json) |
 | V18 实现 + V19 方案文档 | [2026-09-21 后续部署 JSON](../archive/records/host-v18/local-deployment-with-v19-plan-20260921.json)；原存于 host-v19，按实际代码阶段归位，原始字节保留 |

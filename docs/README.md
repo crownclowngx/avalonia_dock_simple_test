@@ -2,7 +2,7 @@
 
 > 用途：主项目唯一总导航。状态：当前；核对日期：2026-09-22。版本事实见[集中基线](reference/platform-baseline.md)，分类与维护规则见[文档维护](maintenance/documentation.md)。
 
-当前源码已实施 V20 历史布局退役与入口收敛，见[开发记录](archive/records/host-v20/development-acceptance.md)。V20 单文件自包含交付见[本机部署](maintenance/local-deployment.md)及其部署证据；自动验证、既有[人工验收](archive/records/host/manual-acceptance-20260921.md)、本机交付和公开发布分别留证。
+当前源码已实施 V20 历史布局退役与入口收敛，见[开发记录](archive/records/host-v20/development-acceptance.md)。最新单文件自包含交付见[本机部署](maintenance/local-deployment.md)及其部署证据；自动验证、既有[人工验收](archive/records/host/manual-acceptance-20260921.md)、本机交付和公开发布分别留证。
 
 ## 使用工作台
 
@@ -45,7 +45,7 @@
 
 ## 当前结论、待办与历史
 
-- [V23 本地 ZIP 安装](reference/plugin-installation.md)：已实现检查、安装更新、重启应用和恢复；[归档方案](archive/plans/host-v23-local-zip-installation-plan.md)、[专用开发验证](maintenance/host-v23-local-zip-installation-verification.md)及[开发记录](archive/records/host-v23/development-acceptance.md)。部署、人工实机验收和发布单独留证。
+- [V23 本地 ZIP 安装](reference/plugin-installation.md)：已实现检查、安装更新、重启应用和恢复；[归档方案](archive/plans/host-v23-local-zip-installation-plan.md)、[专用开发验证](maintenance/host-v23-local-zip-installation-verification.md)及[开发记录](archive/records/host-v23/development-acceptance.md)。[本机部署说明](archive/records/host-v23/local-deployment-guide.md)及其中的部署 JSON 记录本次交付；人工实机验收和发布单独留证。
 - [V22 Host 内置插件源与安装升级](roadmap/host-v22-plugin-distribution-plan.md)：已于 2026-09-22 暂停，尚未实施；方案及[专用开发验证计划](roadmap/host-v22-plugin-distribution-verification.md)保留供恢复后核对，自动下载、ZIP 托管方式及实施范围届时重新确认。
 - [V21 开发门禁与测试效能收敛](archive/plans/host-v21-gate-and-test-efficiency-plan.md)：已实施，实际测量与验收见[开发记录](archive/records/host-v21/development-acceptance.md)；配套[专用开发验证计划](maintenance/host-v21-gate-and-test-efficiency-verification.md)，明确 SOLID、中文注释、夹具隔离、测试去向及本地开发门禁要求。
 - [V20 历史布局退役与现行入口收敛](archive/plans/host-v20-layout-retirement-plan.md)：已实施并归档；[专用开发验证](maintenance/host-v20-layout-retirement-verification.md)、[测试去向](archive/records/host-v20/test-matrix.md)与[开发记录](archive/records/host-v20/development-acceptance.md)。Layout V2 运行能力及旧查询退出，现行行为由 V3 路径验证。

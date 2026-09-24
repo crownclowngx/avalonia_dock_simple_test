@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "recordType": "host-v23-local-single-exe-deployment",
+  "status": "preparing",
+  "date": "2026-09-24",
+  "target": "D:\\data\\avalonia",
+  "backupPolicy": "No backup, explicitly requested by user",
+  "format": "Release win-x64; compressed self-contained single executable; native libraries bundled; trimming disabled; Controls and HelpWeb external"
+}

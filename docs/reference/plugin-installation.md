@@ -1,6 +1,6 @@
 # Host 本地 ZIP 插件安装契约
 
-> 状态：V23 已实现于当前源码，核对日期：2026-09-24。适用 Windows x64；开发验证结果见[开发记录](../archive/records/host-v23/development-acceptance.md)及其中的非嵌入证据。没有修改产品、SDK、NuGet 或运行清单版本，也未部署或公开发布。
+> 状态：V23 已实现于当前源码，核对日期：2026-09-24。适用 Windows x64；开发验证结果见[开发记录](../archive/records/host-v23/development-acceptance.md)及其中的非嵌入证据。没有修改产品、SDK、NuGet 或运行清单版本，尚未公开发布；本机交付状态见[专用部署说明](../archive/records/host-v23/local-deployment-guide.md)及其中的部署 JSON。
 > 用户步骤见[插件看板](../quick-start/plugin-status.md)，回归矩阵见[专用开发验证](../maintenance/host-v23-local-zip-installation-verification.md)。V22 在线插件源继续暂停。
 
 ## 包协议与检查级别
