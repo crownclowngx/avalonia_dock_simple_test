@@ -45,6 +45,7 @@
 
 ## 当前结论、待办与历史
 
+- [V23 本地 ZIP 插件安装与更新](roadmap/host-v23-local-zip-installation-plan.md)：设计与实施计划已编写，功能尚未实施；复用现有 ZIP/可选摘要清单，覆盖安装检查、版本决策、重启应用和恢复，配套[专用开发验证计划](roadmap/host-v23-local-zip-installation-verification.md)。本地文件入口独立于暂停的 V22，仅使用本机开发验证。
 - [V22 Host 内置插件源与安装升级](roadmap/host-v22-plugin-distribution-plan.md)：已于 2026-09-22 暂停，尚未实施；方案及[专用开发验证计划](roadmap/host-v22-plugin-distribution-verification.md)保留供恢复后核对，自动下载、ZIP 托管方式及实施范围届时重新确认。
 - [V21 开发门禁与测试效能收敛](archive/plans/host-v21-gate-and-test-efficiency-plan.md)：已实施，实际测量与验收见[开发记录](archive/records/host-v21/development-acceptance.md)；配套[专用开发验证计划](maintenance/host-v21-gate-and-test-efficiency-verification.md)，明确 SOLID、中文注释、夹具隔离、测试去向及本地开发门禁要求。
 - [V20 历史布局退役与现行入口收敛](archive/plans/host-v20-layout-retirement-plan.md)：已实施并归档；[专用开发验证](maintenance/host-v20-layout-retirement-verification.md)、[测试去向](archive/records/host-v20/test-matrix.md)与[开发记录](archive/records/host-v20/development-acceptance.md)。Layout V2 运行能力及旧查询退出，现行行为由 V3 路径验证。

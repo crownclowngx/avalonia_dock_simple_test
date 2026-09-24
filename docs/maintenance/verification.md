@@ -57,6 +57,8 @@ V20 已实施：[归档方案](../archive/plans/host-v20-layout-retirement-plan.
 
 已实施的 [V21 开发门禁与测试效能收敛方案](../archive/plans/host-v21-gate-and-test-efficiency-plan.md)配有[专用开发验证计划](host-v21-gate-and-test-efficiency-verification.md)，覆盖夹具、UI 等待、测试去向和 Gate 证据。V21 将开发契约前置到构建和必需 DLL 身份核对之后、测试之前；兼容 scope 和发布政策保持。实际结果见[开发记录](../archive/records/host-v21/development-acceptance.md)，其开发验收不执行下述发布门禁。
 
+[V23 本地 ZIP 插件安装与更新方案](../roadmap/host-v23-local-zip-installation-plan.md)及[专用开发验证计划](../roadmap/host-v23-local-zip-installation-verification.md)已编写，功能尚未实施。文档阶段只做链接、JSON、差异及嵌入帮助检查；实际实施后执行包协议、版本决策、事务中断、跨进程占用、重启恢复、看板专项和完整本机 verify。现有 PackageAcceptance 恰好一项的规则保持，不依赖外部插件仓库，不运行 AIFLOW、Windows CI 或发布门禁。
+
 [V22 插件源与安装升级方案](../roadmap/host-v22-plugin-distribution-plan.md)已于 2026-09-22 暂停，尚未实施；配套[专用开发验证计划](../roadmap/host-v22-plugin-distribution-verification.md)保留，不作为当前执行任务。明确恢复并重新确认范围后，再核对默认源持久化、多源决策、ZIP 校验、安装事务、跨进程占用、重启及回滚矩阵；届时使用本机专项与 verify，不使用 AIFLOW、Windows CI 或下述发布门禁。
 
 ## 正式 Host 封板

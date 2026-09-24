@@ -14,7 +14,9 @@ V19 复杂度收敛的实际开发验证见[V19 开发记录](docs/archive/recor
 
 [V21 开发门禁与测试效能收敛](docs/archive/plans/host-v21-gate-and-test-efficiency-plan.md)及[专用开发验证计划](docs/maintenance/host-v21-gate-and-test-efficiency-verification.md)已实施；夹具复制、UI 等待、测试职责和 Gate 证据的实际结果见[开发记录](docs/archive/records/host-v21/development-acceptance.md)。开发阶段仅使用本机验证。
 
-[V22 Host 内置插件源与安装升级方案](docs/roadmap/host-v22-plugin-distribution-plan.md)及[专用开发验证计划](docs/roadmap/host-v22-plugin-distribution-verification.md)已于 2026-09-22 暂停，尚未实施。保留已有方案及 Gitee 默认源约定；明确恢复后重新确认自动下载、ZIP 托管方式及实施范围。
+[V23 本地 ZIP 插件安装与更新方案](docs/roadmap/host-v23-local-zip-installation-plan.md)及[专用开发验证计划](docs/roadmap/host-v23-local-zip-installation-verification.md)已编写，功能尚未实施。直接沿用现有插件 ZIP 和可选配套摘要清单，规划检查、安装更新、重启应用与上一版本恢复；坚持 SOLID、详细中文注释和完整本地开发验证。
+
+[V22 Host 内置插件源与安装升级方案](docs/roadmap/host-v22-plugin-distribution-plan.md)及[专用开发验证计划](docs/roadmap/host-v22-plugin-distribution-verification.md)已于 2026-09-22 暂停，尚未实施。保留已有方案及 Gitee 默认源约定；明确恢复后重新确认自动下载、ZIP 托管方式及实施范围。V23 本地文件入口独立推进，不恢复 V22 在线分发工作。
 
 ## 最短启动步骤
 

@@ -1,6 +1,6 @@
 # 待办与候选
 
-> 用途：集中保留尚未完成的工作。状态：按下表分别跟踪；核对日期：2026-09-22。事实源：当前实现、历史开发/部署记录及项目所有者确认。
+> 用途：集中保留尚未完成的工作。状态：按下表分别跟踪；核对日期：2026-09-24。事实源：当前实现、历史开发/部署记录及项目所有者确认。
 
 项目所有者于 2026-09-21 [确认当前主程序已完成手工验收](../archive/records/host/manual-acceptance-20260921.md)。当前 V18 与此前 Host 桌面体验的验收待办已收口，专项矩阵保留供后续回归；确认记录没有逐项环境日志，不补写输入法或多屏配置。历次本机部署见[部署索引](../maintenance/local-deployment.md)。
 
@@ -8,6 +8,7 @@
 
 | 事项 | 状态 / 范围 | 依据与完成条件 |
 | --- | --- | --- |
+| V23 本地 ZIP 插件安装与更新 | 方案及专用验证计划已编写，功能尚未实施；本次只完成文档 | [V23 方案](host-v23-local-zip-installation-plan.md)、[专用开发验证](host-v23-local-zip-installation-verification.md)：复用现有 Build 1.1.3/3.4.1 ZIP，明确有/无配套清单的检查级别；实施安装事务、重启应用及恢复并完成本机矩阵与 verify 后才能标记功能完成；不恢复 V22 在线分发 |
 | V22 Host 内置插件源与安装升级 | 已暂停（尚未实施）；项目所有者于 2026-09-22 要求停止推进，保留方案与专用验证计划 | [V22 方案](host-v22-plugin-distribution-plan.md)、[专用开发验证](host-v22-plugin-distribution-verification.md)：保留 Gitee Raw 默认地址及空内容视为零插件的约定；明确恢复后重新确认自动下载、ZIP 托管方式及实施范围；暂停期间不推进实现、托管选型或专项验证 |
 | V19 后续实机体验 | 代码实施及本机交付已完成；人工体验与交付分别留证 | [开发记录](../archive/records/host-v19/development-acceptance.md)、[部署证据](../archive/records/host-v19/local-deployment-20260921.json)、[回归矩阵](../maintenance/host-v19-complexity-verification.md)：后续按实际改动需要核对主窗/浮窗、保存和恢复、自动收起及多屏体验，不用部署结果扩展既有人工验收范围 |
 
