@@ -74,6 +74,7 @@ internal sealed class StartupDesktopShell(StartupCoordinator startup, HostDiagno
                 main.Show();
                 // Show 会同步执行 Opened 与布局恢复；取消若在该提交点前被接受，则不交接成功。
                 if (!main.IsVisible || !startup.TryComplete()) { await CancelAndExitAsync(); return; }
+                await startup.Runtime.ConfirmInstallationStartupAsync();
                 desktop.ShutdownRequested -= OnShutdownRequested;
                 var failures = diagnostics.Snapshot.Count(item => item.Severity >= HostDiagnosticSeverity.Warning &&
                     item.Phase is HostDiagnosticPhase.PluginRootDiscovery or HostDiagnosticPhase.PluginManifestPreflight or

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>InstallationProbe.Plugin</AssemblyName>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <GenerateDependencyFile>true</GenerateDependencyFile>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Module.cs" Link="Module.cs" />
+    <ProjectReference Include="../../../../MyAvaloniaManagement.PluginSdk.UI/MyAvaloniaManagement.PluginSdk.UI.csproj" Private="false" />
+  </ItemGroup>
+</Project>

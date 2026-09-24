@@ -8,6 +8,7 @@ using MyAvaloniaManagement.ViewModels.PluginStatus;
 using MyAvaloniaManagement.Views.PluginStatus;
 using MyAvaloniaManagement.Business.Plugins.Enablement;
 using MyAvaloniaManagement.Business.Restart;
+using MyAvaloniaManagement.Business.Plugins.Installation;
 
 namespace MyAvaloniaManagement.Business.Presentation;
 
@@ -19,7 +20,7 @@ namespace MyAvaloniaManagement.Business.Presentation;
 /// </remarks>
 internal sealed class PluginStatusWindowService(IPluginStatusQuery query, WorkspaceSession workspace, TimeProvider time,
     IPluginDashboardEvidence? evidence = null, IPluginEnablementActions? enablement = null,
-    IHostRestartActions? restart = null) : IDisposable
+    IHostRestartActions? restart = null, IPluginInstallationActions? installation = null) : IDisposable
 {
     private Window? _owner;
     private PluginStatusWindow? _window;
@@ -48,7 +49,7 @@ internal sealed class PluginStatusWindowService(IPluginStatusQuery query, Worksp
             existing.Activate();
             return;
         }
-        var model = new PluginStatusWindowViewModel(query, time, evidence, enablement, () => workspace.CanOperateTools, restart);
+        var model = new PluginStatusWindowViewModel(query, time, evidence, enablement, () => workspace.CanOperateTools, restart, installation);
         model.Refresh();
         var window = new PluginStatusWindow { DataContext = model };
         _window = window;
@@ -70,6 +71,7 @@ internal sealed class PluginStatusWindowService(IPluginStatusQuery query, Worksp
             workspace.PagesChanged += WorkspaceChanged;
             window.Show(_owner);
             _ = model.LoadEvidenceAsync();
+            _ = model.RefreshInstallationAsync();
         }
         catch
         {

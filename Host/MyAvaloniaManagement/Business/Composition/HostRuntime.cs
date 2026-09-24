@@ -22,6 +22,8 @@ using MyAvaloniaManagement.Business.Workspace;
 using MyAvaloniaManagement.ViewModels;
 using MyAvaloniaManagement.Business.WorkflowActions;
 using MyAvaloniaManagement.Business.Restart;
+using MyAvaloniaManagement.Business.Plugins.Installation;
+using MyAvaloniaManagement.PluginSdk;
 
 namespace MyAvaloniaManagement.Business.Composition;
 
@@ -34,6 +36,7 @@ internal sealed class HostRuntime : IDisposable
     private readonly Microsoft.Extensions.DependencyInjection.ServiceProvider _provider;
     private readonly HostRuntimeShutdown _shutdown;
     private bool _disposed;
+    private PluginInstallationSession? _installation;
 
     /// <summary>只接收已经建立的所有权；测试与生产共用同一启动回滚边界。</summary>
     internal HostRuntime(Microsoft.Extensions.DependencyInjection.ServiceProvider provider, HostRuntimeShutdown shutdown)
@@ -45,7 +48,7 @@ internal sealed class HostRuntime : IDisposable
     /// <summary>只组合非 UI 服务；调用者在启动工作线程执行，工作区与控件延迟到 AttachWorkbench。</summary>
     internal static async Task<HostRuntime> CreateAsync(HostDiagnosticSession diagnostics,
         IHostRestartHandoff? restart = null, IStartupProgressSink? progress = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default, PluginInstallationSession? installation = null)
     {
         ArgumentNullException.ThrowIfNull(diagnostics);
         cancellationToken.ThrowIfCancellationRequested();
@@ -61,6 +64,11 @@ internal sealed class HostRuntime : IDisposable
         services.AddSingleton<IHostDiagnosticSink>(diagnostics);
         // 实例由 Program 创建和释放，DI 只借用窄端口，不能拥有跨进程交接的寿命。
         if (restart is not null) services.AddSingleton(restart);
+        if (installation is not null)
+        {
+            services.AddSingleton<IPluginInstallationActions>(installation.Service);
+            services.AddSingleton<IPluginInstallationRestartBarrier>(installation.Service);
+        }
 
         var dataRoot = HostDataRootPolicy.ResolveDefault();
         var enablementStore = new PluginEnablementSettingsStore(System.IO.Path.Combine(dataRoot, PluginEnablementSettingsStore.FileName));
@@ -116,7 +124,7 @@ internal sealed class HostRuntime : IDisposable
 
         var shutdown = new HostRuntimeShutdown(pluginProviders, provider, documentScopes.CloseAll,
             participants, HostResourceRetention.ProcessLifetime, diagnostics);
-        var runtime = new HostRuntime(provider, shutdown);
+        var runtime = new HostRuntime(provider, shutdown) { _installation = installation };
         return await InitializeAsync(runtime, async () =>
         {
             pluginProviders.Compose(
@@ -207,6 +215,22 @@ internal sealed class HostRuntime : IDisposable
     /// <summary>失败摘要留在正式工作台；按钮复用同一插件看板服务，不另建诊断窗口体系。</summary>
     internal void ShowStartupWarning(MyAvaloniaManagement.Views.MainWindow window, int count) =>
         window.ShowStartupWarning(count, _provider.GetRequiredService<PluginStatusWindowService>().ShowOrActivate);
+
+    /// <summary>主窗口已展示后确认安装；磁盘摘要在后台计算，贡献可用性沿用唯一生命周期读模型。</summary>
+    internal async Task ConfirmInstallationStartupAsync()
+    {
+        if (_installation is null) return;
+        var operation = _installation.Service.Status.Operation;
+        if (operation?.Phase != PluginInstallPhase.AwaitingStartup) return;
+        var id = PluginId.Parse(operation.PluginId);
+        var discovery = _provider.GetRequiredService<PluginDiscoverySnapshot>();
+        var settings = discovery.StartupSettings.Settings;
+        // 配置损坏导致无法决定启用状态时不能冒充“已禁用且安装成功”。
+        var enabled = settings?.IsEnabled(id) != false;
+        var available = settings is not null && _provider.GetRequiredService<PluginAvailabilityReadModel>().IsAvailable(id);
+        await Task.Run(() => _installation.Applier.ConfirmAsync(enabled, available, CancellationToken.None));
+        await _installation.Service.RefreshAsync();
+    }
 
     /// <summary>异步收尾用于消息循环仍可用的启动失败路径；正常进程退出也共享这个任务。</summary>
     internal Task<HostRuntimeShutdownResult> ShutdownAsync()

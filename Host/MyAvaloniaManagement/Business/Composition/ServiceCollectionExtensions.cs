@@ -236,7 +236,8 @@ internal static class ServiceCollectionExtensions
             var feedback = provider.GetRequiredService<DocumentOperationState>();
             return new HostRestartCoordinator(provider.GetService<IHostRestartHandoff>(),
                 provider.GetService<IPluginEnablementRestartBarrier>(),
-                message => feedback.Apply(DocumentOperationResult.Failure(message)));
+                message => feedback.Apply(DocumentOperationResult.Failure(message)),
+                provider.GetService<MyAvaloniaManagement.Business.Plugins.Installation.IPluginInstallationRestartBarrier>());
         });
         services.AddSingleton<IHostRestartActions>(provider => provider.GetRequiredService<HostRestartCoordinator>());
         services.AddSingleton<HostRestartCommandHandler>();

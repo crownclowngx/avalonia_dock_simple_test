@@ -9,8 +9,8 @@ namespace MyAvaloniaManagement.ViewModels.PluginStatus;
 internal sealed partial class PluginStatusWindowViewModel
 {
     private readonly IHostRestartActions? _restart;
-    public bool HasPendingRestart => _items.Any(item => item.RequiresRestart);
-    public bool CanRestart => !_disposed && !IsSavingEnablement && HasPendingRestart && _restart?.CanRequest == true;
+    public bool HasPendingRestart => _items.Any(item => item.RequiresRestart) || _installation?.Status.RequiresRestart == true;
+    public bool CanRestart => !_disposed && !IsSavingEnablement && !IsInstallationBusy && HasPendingRestart && _restart?.CanRequest == true;
     public string RestartMessage => _restart?.Message ?? string.Empty;
 
     [RelayCommand(CanExecute = nameof(CanRestart))]

@@ -16,6 +16,7 @@
     <Compile Remove="TestAssets\WorkflowActionG1\**\*.cs" />
     <Compile Remove="TestAssets\RestartHarness\**\*.cs" />
     <Compile Remove="TestAssets\StartupProbe\**\*.cs" />
+    <Compile Remove="TestAssets\InstallationProbe\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -41,6 +42,8 @@
     <!-- 隔离夹具只参与构建，不进入测试进程默认上下文。 -->
     <ProjectReference Include="TestAssets\RestartHarness\RestartHarness.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="TestAssets\StartupProbe\StartupProbe.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="TestAssets\InstallationProbe\V1\InstallationProbe.V1.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="TestAssets\InstallationProbe\V2\InstallationProbe.V2.csproj" ReferenceOutputAssembly="false" />
     <ProjectReference Include="TestAssets\PluginIsolation\PluginV1\PluginV1.csproj"
                       ReferenceOutputAssembly="false" />
     <ProjectReference Include="TestAssets\PluginIsolation\PluginV2\PluginV2.csproj"
@@ -56,6 +59,18 @@
                       Condition="Exists('TestAssets\WorkflowActionG1\Consumer\WorkflowActionG1.Consumer.csproj')"
                       ReferenceOutputAssembly="false" />
   </ItemGroup>
+
+  <!-- 两个真实程序集版本保持独立输出；只复制入口、deps，不复制共享 SDK 或完整 Host。 -->
+  <Target Name="CopyInstallationProbe" AfterTargets="Build">
+    <MSBuild Projects="TestAssets\InstallationProbe\V1\InstallationProbe.V1.csproj;TestAssets\InstallationProbe\V2\InstallationProbe.V2.csproj"
+             Targets="Build" Properties="Configuration=$(Configuration)" />
+    <ItemGroup>
+      <InstallationProbeV1 Include="TestAssets\InstallationProbe\V1\bin\$(Configuration)\$(TargetFramework)\InstallationProbe.Plugin.dll;TestAssets\InstallationProbe\V1\bin\$(Configuration)\$(TargetFramework)\InstallationProbe.Plugin.deps.json" />
+      <InstallationProbeV2 Include="TestAssets\InstallationProbe\V2\bin\$(Configuration)\$(TargetFramework)\InstallationProbe.Plugin.dll;TestAssets\InstallationProbe\V2\bin\$(Configuration)\$(TargetFramework)\InstallationProbe.Plugin.deps.json" />
+    </ItemGroup>
+    <Copy SourceFiles="@(InstallationProbeV1)" DestinationFolder="$(OutDir)InstallationProbe\V1" />
+    <Copy SourceFiles="@(InstallationProbeV2)" DestinationFolder="$(OutDir)InstallationProbe\V2" />
+  </Target>
 
   <Target Name="CopyRestartHarness" AfterTargets="Build">
     <MSBuild Projects="$(MSBuildThisFileDirectory)TestAssets\RestartHarness\RestartHarness.csproj" Targets="Build" Properties="Configuration=$(Configuration)" />

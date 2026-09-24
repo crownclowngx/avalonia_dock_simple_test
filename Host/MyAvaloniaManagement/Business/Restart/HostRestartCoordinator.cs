@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MyAvaloniaManagement.Business.Plugins.Enablement;
+using MyAvaloniaManagement.Business.Plugins.Installation;
 
 namespace MyAvaloniaManagement.Business.Restart;
 
@@ -18,11 +19,13 @@ internal interface IHostRestartActions
 /// <summary>UI 线程上的单次重启协调器。窗口拥有关闭许可，设置服务拥有写入，进程入口拥有交接。</summary>
 /// <remarks>不在这里 Dispose Runtime。窗口否决时可撤销；窗口关闭后只允许进程入口完成交接。</remarks>
 internal sealed class HostRestartCoordinator(IHostRestartHandoff? handoff,
-    IPluginEnablementRestartBarrier? settings, Action<string> report) : IHostRestartActions, IDisposable
+    IPluginEnablementRestartBarrier? settings, Action<string> report,
+    IPluginInstallationRestartBarrier? installation = null) : IHostRestartActions, IDisposable
 {
     private Action? _close;
     private Func<bool>? _canClose;
     private IDisposable? _settingsLease;
+    private IDisposable? _installationLease;
     private CancellationTokenSource? _preparing;
     private bool _windowClosed, _disposed;
     public bool CanRequest => !_disposed && !_windowClosed && !IsRequested && handoff is not null && _canClose?.Invoke() == true;
@@ -51,9 +54,10 @@ internal sealed class HostRestartCoordinator(IHostRestartHandoff? handoff,
         try
         {
             if (settings is not null) _settingsLease = await settings.PauseForRestartAsync(_preparing.Token);
+            if (installation is not null) _installationLease = await installation.PauseForRestartAsync(_preparing.Token);
             return IsRequested;
         }
-        catch (Exception) { Fail("插件设置尚未完成保存，自动重启已取消；请确认设置后重试。"); return false; }
+        catch (Exception) { Fail("插件设置或安装操作尚未完成，自动重启已取消；请确认状态后重试。"); return false; }
         finally { _preparing?.Dispose(); _preparing = null; }
     }
 
@@ -77,6 +81,7 @@ internal sealed class HostRestartCoordinator(IHostRestartHandoff? handoff,
         if (_windowClosed) return;
         _preparing?.Cancel(); handoff?.Abort();
         _settingsLease?.Dispose(); _settingsLease = null;
+        _installationLease?.Dispose(); _installationLease = null;
         IsRequested = false; Message = string.Empty; Notify();
     }
 

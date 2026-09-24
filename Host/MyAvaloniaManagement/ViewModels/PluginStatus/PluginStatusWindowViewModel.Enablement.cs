@@ -78,6 +78,7 @@ internal sealed partial class PluginStatusWindowViewModel
     {
         if (_disposed) return;
         NotifyRestartChanged();
+        NotifyInstallationChanged();
         OnPropertyChanged(nameof(SelectedNextStartupEnabled));
         OnPropertyChanged(nameof(EnablementNotice));
         OnPropertyChanged(nameof(HasEnablementNotice));

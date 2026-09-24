@@ -7,6 +7,9 @@ using MyAvaloniaManagement.Business.Diagnostics;
 using MyAvaloniaManagement.Business.Restart;
 using MyAvaloniaManagement.Business.Startup;
 using MyAvaloniaManagement.Business.Presentation;
+using MyAvaloniaManagement.Business.Plugins.Discovery;
+using MyAvaloniaManagement.Business.Plugins.Installation;
+using MyAvaloniaManagement.Business.Constants;
 
 namespace MyAvaloniaManagement;
 
@@ -30,8 +33,21 @@ sealed class Program
         using var restart = new RestartHandoffSession(() => HostLaunchSpecification.Capture(args));
         HostStartupFailureContext.Clear();
         using var diagnostics = HostDiagnosticSession.Start();
+        PluginInstallationSession? installation = null;
         using var startup = new StartupCoordinator((progress, cancellation) =>
-            StartupWorker.RunAsync(() => HostRuntime.CreateAsync(diagnostics, restart, progress, cancellation)));
+            StartupWorker.RunAsync(async () =>
+            {
+                // macOS 仍沿用实验启动，不消费 Windows ZIP 安装指令。
+                if (OperatingSystem.IsWindows())
+                {
+                    installation = new PluginInstallationSession(PluginRootDirectoryPolicy.Resolve(
+                        AppContext.BaseDirectory, PluginDeploymentConstants.PluginsSubdirectory, false));
+                    await installation.PrepareAsync(cancellation).ConfigureAwait(false);
+                    installation.RetainRuntimeUntilProcessExit();
+                }
+                return await HostRuntime.CreateAsync(diagnostics, restart, progress, cancellation,
+                    OperatingSystem.IsWindows() ? installation : null).ConfigureAwait(false);
+            }));
         var exitCode = 1;
         try { exitCode = runDesktop(HostAvaloniaBuilder.Build(startup, diagnostics), args); }
         catch (Exception exception)
@@ -45,6 +61,10 @@ sealed class Program
         if (startup.State != StartupState.Ready) startup.RequestCancellation();
         startup.StartAsync().GetAwaiter().GetResult();
         if (startup.State != StartupState.Ready) exitCode = 1;
+        // 先排空安装用例，再进入插件关闭。已经提交的待办留给下次启动，未提交的检查允许取消。
+        try { installation?.Dispose(); }
+        catch (Exception exception)
+        { exitCode = 1; Console.Error.WriteLine($"Host errorCode=PLUGIN_INSTALL_SHUTDOWN_FAILED type={exception.GetType().Name}"); }
         try
         {
             var result = startup.Runtime?.Shutdown();

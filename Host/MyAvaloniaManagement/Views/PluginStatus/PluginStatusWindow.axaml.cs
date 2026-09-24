@@ -86,4 +86,41 @@ internal sealed partial class PluginStatusWindow : Window
         catch (Exception)
         { if (ReferenceEquals(DataContext, model)) model.CopyFeedback = "导出失败，请重试。"; }
     }
+
+    /// <summary>View 只适配文件选择；ZIP 的解包、校验和路径规则全部由安装服务处理。</summary>
+    private async void InstallZipClick(object? sender, RoutedEventArgs args)
+    {
+        if (DataContext is not PluginStatusWindowViewModel model || !model.CanInspectPackage) return;
+        try
+        {
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            { Title = "选择插件 ZIP 安装包", AllowMultiple = false,
+                FileTypeFilter = [new FilePickerFileType("插件 ZIP") { Patterns = ["*.zip"] }] });
+            try
+            {
+                if (ReferenceEquals(DataContext, model) && files.Count == 1 && files[0].TryGetLocalPath() is { } path)
+                    await model.InspectPackageAsync(path);
+            }
+            finally { foreach (var file in files) file.Dispose(); }
+        }
+        catch (Exception) { if (ReferenceEquals(DataContext, model)) model.InstallationFeedback = "无法选择插件安装包，请重试。"; }
+    }
+
+    private async void SelectPackageManifestClick(object? sender, RoutedEventArgs args)
+    {
+        if (DataContext is not PluginStatusWindowViewModel model || !model.CanChoosePackageManifest) return;
+        try
+        {
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            { Title = "选择配套发布清单", AllowMultiple = false,
+                FileTypeFilter = [new FilePickerFileType("发布清单 JSON") { Patterns = ["*.manifest.json", "*.json"] }] });
+            try
+            {
+                if (ReferenceEquals(DataContext, model) && files.Count == 1 && files[0].TryGetLocalPath() is { } path)
+                    await model.SelectPackageManifestAsync(path);
+            }
+            finally { foreach (var file in files) file.Dispose(); }
+        }
+        catch (Exception) { if (ReferenceEquals(DataContext, model)) model.InstallationFeedback = "无法选择配套清单，请重试。"; }
+    }
 }

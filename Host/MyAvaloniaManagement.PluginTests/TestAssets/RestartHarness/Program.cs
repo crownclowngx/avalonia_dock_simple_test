@@ -101,7 +101,7 @@ internal static class Program
                     var window = desktop.MainWindow!;
                     var model = (MainWindowViewModel)window.DataContext!;
                     // 新 Host 在生产组合时已尝试获取布局锁；测试另一个 Writer 必须失败，证明其确实拥有锁。
-                    var lockPath = Path.Combine(root, "data", "layout-v3.lock");
+                    var lockPath = Path.Combine(Environment.GetEnvironmentVariable("MYAVALONIA_DATA_DIRECTORY")!, "layout-v3.lock");
                     if (!File.Exists(lockPath)) throw new InvalidOperationException("布局锁文件尚未建立，不能把文件缺失当成锁占用。");
                     var locked = false;
                     try { using var probe = new FileStream(lockPath, FileMode.Open, FileAccess.ReadWrite, FileShare.None); }
@@ -110,6 +110,30 @@ internal static class Program
                     File.WriteAllText(Path.Combine(root, $"startup-{stage}.json"), JsonSerializer.Serialize(new
                     { firstFrameMs = firstFrame.TotalMilliseconds, readyMs = ready.TotalMilliseconds,
                         mainVisible = window.IsVisible, splashClosed = !desktop.Windows.OfType<SplashWindow>().Any() }));
+                    if (mode.StartsWith("installation-", StringComparison.Ordinal))
+                    {
+                        if (mode == "installation-dashboard" && stage == 0)
+                        {
+                            var openStatus = model.WorkbenchCommands.Menu.GetItems(WorkbenchMenuLocations.ToolsShared)
+                                .OfType<WorkbenchMenuCommandProjectionEntry>().Single(item => item.CommandId == HostWorkbenchCommandIds.OpenPluginStatus);
+                            openStatus.Command.Execute(null);
+                            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+                            var dashboard = desktop.Windows.OfType<PluginStatusWindow>().Single();
+                            var status = (PluginStatusWindowViewModel)dashboard.DataContext!;
+                            await status.RefreshInstallationAsync();
+                            await status.InspectPackageAsync(args[1]);
+                            if (!status.CanCommitPackage) throw new InvalidOperationException("看板未允许提交合法更新：" + status.InstallationFeedback);
+                            var commit = dashboard.FindControl<Button>("CommitPackageButton")!;
+                            if (!commit.IsEnabled || commit.Command is null) throw new InvalidOperationException("安装按钮绑定未就绪。");
+                            await status.CommitPackageCommand.ExecuteAsync(null);
+                            if (!status.CanRestart || !status.HasPendingRestart) throw new InvalidOperationException("安装待办没有接入重启提示。");
+                            var restart = dashboard.FindControl<Button>("RestartHostButton")!;
+                            if (!restart.IsVisible || !restart.IsEnabled) throw new InvalidOperationException("安装重启按钮不可用。");
+                            restart.Command!.Execute(null);
+                        }
+                        else window.Close();
+                        return;
+                    }
                     if (mode is "startup-empty" or "startup-disabled" or "startup-warning" or "startup-slow")
                     {
                         var banner = window.FindControl<Border>("StartupWarningBanner")!;
@@ -214,6 +238,13 @@ internal static class Program
         });
         File.WriteAllText(Path.Combine(root, identity + ".exit.json"), JsonSerializer.Serialize(new
         { pid = Environment.ProcessId, code = result, at = DateTimeOffset.UtcNow }));
+        if (!helper && mode == "installation-hold")
+        {
+            // 生产 Program 已返回，只有进程本身仍存活。父测试用管道同步验证运行租约的真正寿命。
+            Console.WriteLine("installation-held");
+            Console.Out.Flush();
+            if (Console.ReadLine() != "release") return 1;
+        }
         if (!helper && mode == "delayed-exit" && stage == 0)
         {
             // Program 已发送并收到 CleanExit 确认，但 OS 进程尚在。由父测试的文件信号放行，验证助手等待真实退出。

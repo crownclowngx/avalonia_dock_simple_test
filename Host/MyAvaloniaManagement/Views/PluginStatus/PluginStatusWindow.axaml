@@ -31,7 +31,7 @@
     </Window.Styles>
     <!-- 概览、筛选、主从详情各自拥有布局空间；正文采用滚动，长诊断不会挤出底部操作。 -->
     <Grid Margin="20" RowDefinitions="Auto,Auto,Auto,Auto,*,Auto">
-        <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,10">
+        <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" Margin="0,0,0,10">
             <StackPanel Spacing="5">
                 <TextBlock Text="插件看板" FontSize="25" FontWeight="SemiBold" />
                 <TextBlock Text="当前状态 · 插件开关（重启生效） · 版本与验收证据" Classes="secondary" />
@@ -40,11 +40,34 @@
                 <TextBlock Text="{Binding RestartMessage}" Classes="secondary" />
             </StackPanel>
             <WrapPanel Grid.Column="1" MaxWidth="300" VerticalAlignment="Center" HorizontalAlignment="Right">
+                <Button x:Name="InstallZipButton" Content="从 ZIP 安装/更新…" Click="InstallZipClick"
+                        IsVisible="{Binding HasInstallation}" IsEnabled="{Binding CanInspectPackage}" Margin="4" />
                 <Button x:Name="RefreshButton" Content="刷新状态" Command="{Binding RefreshCommand}" Margin="4" />
                 <Button x:Name="InspectArtifactsButton" Content="检查安装产物" Command="{Binding CheckArtifactsCommand}" IsEnabled="{Binding CanInspect}" Margin="4" />
                 <Button x:Name="ImportReportButton" Content="导入报告…" Click="ImportReportClick" IsEnabled="{Binding CanInspect}" Margin="4" />
                 <Button x:Name="ExportSummaryButton" Content="导出摘要…" Click="ExportSummaryClick" IsEnabled="{Binding HasSelection}" Margin="4" />
             </WrapPanel>
+            <Expander Grid.Row="1" Grid.ColumnSpan="2" Header="本地插件安装与恢复" IsVisible="{Binding HasInstallation}"
+                      IsExpanded="{Binding InstallationExpanded, Mode=TwoWay}" HorizontalAlignment="Stretch">
+                <ScrollViewer MaxHeight="210" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="{Binding InstallationStatusText}" TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding PackagePreviewText}" TextWrapping="Wrap" Classes="secondary" />
+                        <CheckBox Content="我确认重新安装、降级或恢复到预览中的版本"
+                                  IsVisible="{Binding RequiresPackageReplacement}" IsChecked="{Binding AllowPackageReplacement, Mode=TwoWay}" />
+                        <WrapPanel>
+                            <Button Content="选择配套清单…" Click="SelectPackageManifestClick" IsEnabled="{Binding CanChoosePackageManifest}" Margin="0,0,6,6" />
+                            <Button Content="仅 ZIP 重新检查" Command="{Binding RecheckZipOnlyCommand}" Margin="0,0,6,6" />
+                            <Button x:Name="CommitPackageButton" Content="{Binding PackageActionText}" Command="{Binding CommitPackageCommand}" Margin="0,0,6,6" />
+                            <Button Content="取消检查" Command="{Binding CancelPackageInspectionCommand}" IsVisible="{Binding IsInstallationBusy}" Margin="0,0,6,6" />
+                            <Button Content="取消待应用安装" Command="{Binding CancelPendingInstallCommand}" Margin="0,0,6,6" />
+                            <Button Content="恢复所选插件上一版本…" Command="{Binding RestoreSelectedPackageCommand}" Margin="0,0,6,6" />
+                            <Button Content="刷新安装状态" Command="{Binding RefreshInstallationCommand}" Margin="0,0,6,6" />
+                        </WrapPanel>
+                        <TextBlock Text="{Binding InstallationFeedback}" TextWrapping="Wrap" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Expander>
         </Grid>
         <Grid Grid.Row="1" ColumnDefinitions="*,12,*,12,*" Margin="0,0,0,10">
             <Border Classes="summary"><StackPanel Spacing="5">

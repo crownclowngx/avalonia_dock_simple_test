@@ -27,7 +27,8 @@ internal sealed partial class PluginStatusWindowViewModel : ObservableObject, ID
 
     public PluginStatusWindowViewModel(IPluginStatusQuery query, TimeProvider time,
         MyAvaloniaManagement.Business.Compatibility.IPluginDashboardEvidence? evidence = null,
-        IPluginEnablementActions? enablement = null, Func<bool>? canOperate = null, IHostRestartActions? restart = null)
+        IPluginEnablementActions? enablement = null, Func<bool>? canOperate = null, IHostRestartActions? restart = null,
+        MyAvaloniaManagement.Business.Plugins.Installation.IPluginInstallationActions? installation = null)
     {
         _query = query ?? throw new ArgumentNullException(nameof(query));
         _time = time ?? throw new ArgumentNullException(nameof(time));
@@ -35,6 +36,7 @@ internal sealed partial class PluginStatusWindowViewModel : ObservableObject, ID
         _enablement = enablement;
         _canOperate = canOperate ?? (() => true);
         _restart = restart;
+        _installation = installation;
         if (_restart is not null) _restart.Changed += RestartChanged;
     }
 
