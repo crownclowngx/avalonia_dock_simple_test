@@ -1,0 +1,1376 @@
+{
+  "source": {
+    "revision": "6f8071da38526d9e1e4ef233c6c01ec2c02fffba",
+    "tree": "8edf3eec87ea5b44b2eb21ff0d264adccee5e635",
+    "clean": true,
+    "files": 1125,
+    "sha256": "47AF975723271E2C4C126484728125EB680A3223EC7A7962B2E28B52844EA4D9"
+  },
+  "count": 124,
+  "cases": [
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginInstallPlannerTests.版本数字比较及同版本内容策略(candidate: \"1.0.0\", current: \"1.0.0\", sameHash: True, expected: 5, explicitChoice: False)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0000072",
+      "suite": "host-unit",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "20D3AC85E3DD0B55A640B3CD17BE519D463C63488EBC139D5922A57531F52759",
+        "bytes": 1009547
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginInstallPlannerTests.版本数字比较及同版本内容策略(candidate: \"1.0.0\", current: \"1.0.0\", sameHash: False, expected: 2, explicitChoice: True)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0000573",
+      "suite": "host-unit",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "20D3AC85E3DD0B55A640B3CD17BE519D463C63488EBC139D5922A57531F52759",
+        "bytes": 1009547
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HelpContentTests.V23当前契约和归档材料实际嵌入并可渲染(path: \"docs/reference/plugin-installation.md\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0009721",
+      "suite": "host-unit",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "20D3AC85E3DD0B55A640B3CD17BE519D463C63488EBC139D5922A57531F52759",
+        "bytes": 1009547
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HelpContentTests.V23当前契约和归档材料实际嵌入并可渲染(path: \"docs/archive/records/host-v23/test-matrix.md\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0008886",
+      "suite": "host-unit",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "20D3AC85E3DD0B55A640B3CD17BE519D463C63488EBC139D5922A57531F52759",
+        "bytes": 1009547
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginInstallPlannerTests.版本数字比较及同版本内容策略(candidate: \"1.10.0\", current: \"1.9.0\", sameHash: False, expected: 1, explicitChoice: False)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0003450",
+      "suite": "host-unit",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "20D3AC85E3DD0B55A640B3CD17BE519D463C63488EBC139D5922A57531F52759",
+        "bytes": 1009547
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HelpContentTests.V23当前契约和归档材料实际嵌入并可渲染(path: \"docs/maintenance/host-v23-local-zip-installation-v\"···)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0085928",
+      "suite": "host-unit",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "20D3AC85E3DD0B55A640B3CD17BE519D463C63488EBC139D5922A57531F52759",
+        "bytes": 1009547
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginInstallPlannerTests.新装目录空闲而相同目录不同身份拒绝",
+      "outcome": "Passed",
+      "duration": "00:00:00.0014360",
+      "suite": "host-unit",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "20D3AC85E3DD0B55A640B3CD17BE519D463C63488EBC139D5922A57531F52759",
+        "bytes": 1009547
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.PluginInstallPlannerTests.版本数字比较及同版本内容策略(candidate: \"1.0.0\", current: \"2.0.0\", sameHash: False, expected: 3, explicitChoice: True)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0042882",
+      "suite": "host-unit",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "20D3AC85E3DD0B55A640B3CD17BE519D463C63488EBC139D5922A57531F52759",
+        "bytes": 1009547
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HelpContentTests.V23当前契约和归档材料实际嵌入并可渲染(path: \"docs/archive/records/host-v23/development-acceptan\"···)",
+      "outcome": "Passed",
+      "duration": "00:00:00.1291302",
+      "suite": "host-unit",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "20D3AC85E3DD0B55A640B3CD17BE519D463C63488EBC139D5922A57531F52759",
+        "bytes": 1009547
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.Tests.HelpContentTests.V23当前契约和归档材料实际嵌入并可渲染(path: \"docs/archive/plans/host-v23-local-zip-installation\"···)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0099956",
+      "suite": "host-unit",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-unit/host-unit.trx",
+        "sha256": "20D3AC85E3DD0B55A640B3CD17BE519D463C63488EBC139D5922A57531F52759",
+        "bytes": 1009547
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.写待办后返回失败的服务收尾仍保留事务载荷",
+      "outcome": "Passed",
+      "duration": "00:00:00.1623120",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.冻结安装准入可撤销且取消检查不产生待办",
+      "outcome": "Passed",
+      "duration": "00:00:00.0882975",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.异常路径和多插件包拒绝且没有活动目录写入(extra: \"Controls/Probe/../outside.txt\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0372619",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.每个应用和确认提交边界中断均可恢复旧版(step: 2, after: True)",
+      "outcome": "Passed",
+      "duration": "00:00:00.2091646",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.配套文件集合和每个摘要均严格核对(change: \"path\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0914422",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.取消落盘后清理被占用也不能复活待办",
+      "outcome": "Passed",
+      "duration": "00:00:00.1285442",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.损坏操作日志保留原件且不重置为空(mutation: \"future\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0941730",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.损坏登记不能误作新安装(change: \"directory\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0041000",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.错误配套清单不得静默降为仅ZIP(field: \"schemaVersion\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1637892",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.每个应用和确认提交边界中断均可恢复旧版(step: 3, after: True)",
+      "outcome": "Passed",
+      "duration": "00:00:00.2110212",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.取消先落盘再清理且两个服务不能覆盖同一个待办",
+      "outcome": "Passed",
+      "duration": "00:00:00.1701405",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.改名ZIP可显式选择原配套清单且预览不依赖源文件",
+      "outcome": "Passed",
+      "duration": "00:00:00.0939209",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.每个应用和确认提交边界中断均可恢复旧版(step: 4, after: True)",
+      "outcome": "Passed",
+      "duration": "00:00:00.3039771",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationProcessTests.看板确认经过真实助手重启后运行新版本(dotnet: True)",
+      "outcome": "Passed",
+      "duration": "00:00:05.3484006",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.损坏操作日志保留原件且不重置为空(mutation: \"invalid-json\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1027352",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.应用前任一已确认输入变化都保留原目录(location: \"archive\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1191045",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationProcessTests.试启动期间另一实例不能加载候选且终止所有者后可恢复",
+      "outcome": "Passed",
+      "duration": "00:00:04.3688866",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.层级清单大小及坏格式无法绕过预检(change: \"deep\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0319959",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.错误配套清单不得静默降为仅ZIP(field: \"targetFramework\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1240279",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.预览到提交之间的变化必须重新审阅(location: \"archive\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0818353",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.错误配套清单不得静默降为仅ZIP(field: \"duplicate\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1397873",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.私有图标例外和可选构建信息保留",
+      "outcome": "Passed",
+      "duration": "00:00:00.0943782",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.每个应用和确认提交边界中断均可恢复旧版(step: 2, after: False)",
+      "outcome": "Passed",
+      "duration": "00:00:00.1984933",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.结构兼容及资产边界均在执行前拒绝(kind: \"symlink\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0332291",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.配套文件集合和每个摘要均严格核对(change: \"invalid-json\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0951448",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.错误配套清单不得静默降为仅ZIP(field: \"files\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1831838",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationProcessTests.初始化失败在下一真实进程恢复旧版或撤销新装(fresh: True, abrupt: True)",
+      "outcome": "Passed",
+      "duration": "00:00:03.8404393",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.错误配套清单不得静默降为仅ZIP(field: \"archive\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1870798",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.旧协议两种版本有无配套清单均可检查且不执行插件(version: 1, sidecar: False)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0778755",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.结构兼容及资产边界均在执行前拒绝(kind: \"shared\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0843754",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.结构兼容及资产边界均在执行前拒绝(kind: \"native\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0894964",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.损坏操作日志保留原件且不重置为空(mutation: \"missing\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0819877",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.异常路径和多插件包拒绝且没有活动目录写入(extra: \"other.txt\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0330094",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.整目录更新保留旧版并区分禁用与运行确认(disabled: False)",
+      "outcome": "Passed",
+      "duration": "00:00:00.2209818",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.错误配套清单不得静默降为仅ZIP(field: \"extra\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1332837",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.损坏操作日志保留原件且不重置为空(mutation: \"unknown\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1750002",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.资源预算按真实流和条目执行(kind: \"entries\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0226759",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.异常路径和多插件包拒绝且没有活动目录写入(extra: \"C:/absolute.txt\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0352612",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.层级清单大小及坏格式无法绕过预检(change: \"sidecar-directory\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0108289",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.每个应用和确认提交边界中断均可恢复旧版(step: 5, after: True)",
+      "outcome": "Passed",
+      "duration": "00:00:00.2525295",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.结构兼容及资产边界均在执行前拒绝(kind: \"version\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0834711",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.损坏操作日志保留原件且不重置为空(mutation: \"path\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0887199",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.错误配套清单不得静默降为仅ZIP(field: \"sdk\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1774450",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.资源预算按真实流和条目执行(kind: \"archive\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0099565",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationProcessTests.运行租约持续到真实进程退出且独立数据根不能绕过",
+      "outcome": "Passed",
+      "duration": "00:00:05.9333672",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.旧协议两种版本有无配套清单均可检查且不执行插件(version: 2, sidecar: True)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0931485",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.配套文件集合和每个摘要均严格核对(change: \"length\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1047970",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.资源预算按真实流和条目执行(kind: \"sidecar\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0254286",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationProcessTests.新进程真实更新并根据启用状态确认(dotnet: True, disabled: False)",
+      "outcome": "Passed",
+      "duration": "00:00:03.0039876",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.异常路径和多插件包拒绝且没有活动目录写入(extra: \"Controls/Probe/name.\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0308030",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.旧协议两种版本有无配套清单均可检查且不执行插件(version: 1, sidecar: True)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0818897",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.层级清单大小及坏格式无法绕过预检(change: \"nested-manifest\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0892213",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.配套文件集合和每个摘要均严格核对(change: \"extra-file\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1040396",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.损坏登记不能误作新安装(change: \"missing-with-backup\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0058965",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.预览到提交之间的变化必须重新审阅(location: \"candidate\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0995632",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.损坏登记不能误作新安装(change: \"oversize\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0221084",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.配套文件集合和每个摘要均严格核对(change: \"hash\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0779862",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.结构兼容及资产边界均在执行前拒绝(kind: \"empty\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0176588",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.异常路径和多插件包拒绝且没有活动目录写入(extra: \"Controls/Probe/data:stream\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0328809",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.应用前任一已确认输入变化都保留原目录(location: \"original\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1153318",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.结构兼容及资产边界均在执行前拒绝(kind: \"missing-deps\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0353866",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.预览到提交之间的变化必须重新审阅(location: \"original\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1223261",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.损坏备份阻断恢复并保留现有载荷",
+      "outcome": "Passed",
+      "duration": "00:00:00.1854165",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationProcessTests.新进程真实更新并根据启用状态确认(dotnet: False, disabled: True)",
+      "outcome": "Passed",
+      "duration": "00:00:03.6681581",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.异常路径和多插件包拒绝且没有活动目录写入(extra: \"Controls/Probe/sub\\\\..\\\\bad\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0336368",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.整目录更新保留旧版并区分禁用与运行确认(disabled: True)",
+      "outcome": "Passed",
+      "duration": "00:00:00.1643573",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.配套文件集合和每个摘要均严格核对(change: \"duplicate-file\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0993803",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.配额等于真实字节通过而一字节不足拒绝",
+      "outcome": "Passed",
+      "duration": "00:00:00.1081585",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.应用前任一已确认输入变化都保留原目录(location: \"candidate\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1228318",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.旧协议两种版本有无配套清单均可检查且不执行插件(version: 2, sidecar: False)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0763957",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.异常路径和多插件包拒绝且没有活动目录写入(extra: \"Controls/Probe/RESOURCES/说明.txt\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0317504",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.新装未确认恢复为未安装并保留失败载荷",
+      "outcome": "Passed",
+      "duration": "00:00:00.1921107",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.异常路径和多插件包拒绝且没有活动目录写入(extra: \"Controls/Probe/CON.txt\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0274108",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.错误配套清单不得静默降为仅ZIP(field: \"pluginId\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1685483",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.结构兼容及资产边界均在执行前拒绝(kind: \"file-directory\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0299828",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.错误配套清单不得静默降为仅ZIP(field: \"entryPoint\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1591254",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationProcessTests.初始化失败在下一真实进程恢复旧版或撤销新装(fresh: False, abrupt: False)",
+      "outcome": "Passed",
+      "duration": "00:00:04.8007058",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.每个应用和确认提交边界中断均可恢复旧版(step: 5, after: False)",
+      "outcome": "Passed",
+      "duration": "00:00:00.2220999",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.资源预算按真实流和条目执行(kind: \"expanded\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0255979",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.现有只读锁文件仍可协作且不同根相互独立",
+      "outcome": "Passed",
+      "duration": "00:00:00.0150255",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.每个应用和确认提交边界中断均可恢复旧版(step: 3, after: False)",
+      "outcome": "Passed",
+      "duration": "00:00:00.3204014",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.错误配套清单不得静默降为仅ZIP(field: \"directoryName\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1493189",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.异常路径和多插件包拒绝且没有活动目录写入(extra: \"Controls/Probe/name \")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0320986",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationProcessTests.初始化失败在下一真实进程恢复旧版或撤销新装(fresh: True, abrupt: False)",
+      "outcome": "Passed",
+      "duration": "00:00:04.6216557",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.错误配套清单不得静默降为仅ZIP(field: \"runtimeIdentifier\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1678152",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.异常路径和多插件包拒绝且没有活动目录写入(extra: \"../outside.txt\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0305000",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.每个应用和确认提交边界中断均可恢复旧版(step: 6, after: False)",
+      "outcome": "Passed",
+      "duration": "00:00:00.2482480",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.异常路径和多插件包拒绝且没有活动目录写入(extra: \"Controls/Other/file.txt\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0323309",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.层级清单大小及坏格式无法绕过预检(change: \"bad-zip\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0246594",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.已加载失败只记录恢复意图不在本进程替换文件",
+      "outcome": "Passed",
+      "duration": "00:00:00.1994439",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.层级清单大小及坏格式无法绕过预检(change: \"bad-dll\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0889269",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.已确认版本可以预览并恢复到上一版本",
+      "outcome": "Passed",
+      "duration": "00:00:00.3953843",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.异常路径和多插件包拒绝且没有活动目录写入(extra: \"/absolute.txt\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0315658",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationProcessTests.初始化失败在下一真实进程恢复旧版或撤销新装(fresh: False, abrupt: True)",
+      "outcome": "Passed",
+      "duration": "00:00:03.7038282",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.损坏操作日志保留原件且不重置为空(mutation: \"duplicate\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1144123",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.错误配套清单不得静默降为仅ZIP(field: \"pluginVersion\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1678833",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.层级清单大小及坏格式无法绕过预检(change: \"manifest-size\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0399966",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationProcessTests.看板确认经过真实助手重启后运行新版本(dotnet: False)",
+      "outcome": "Passed",
+      "duration": "00:00:05.9188938",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.每个应用和确认提交边界中断均可恢复旧版(step: 1, after: False)",
+      "outcome": "Passed",
+      "duration": "00:00:00.1136528",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.配套文件集合和每个摘要均严格核对(change: \"missing-file\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.1089090",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationBoundaryTests.检查后管理父目录换成Junction会被再次拒绝",
+      "outcome": "Passed",
+      "duration": "00:00:00.0452311",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationProcessTests.新进程真实更新并根据启用状态确认(dotnet: False, disabled: False)",
+      "outcome": "Passed",
+      "duration": "00:00:03.0040199",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.每个应用和确认提交边界中断均可恢复旧版(step: 1, after: True)",
+      "outcome": "Passed",
+      "duration": "00:00:00.2070604",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.结构兼容及资产边界均在执行前拒绝(kind: \"sdk\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0406584",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginInstallationTransactionTests.每个应用和确认提交边界中断均可恢复旧版(step: 4, after: False)",
+      "outcome": "Passed",
+      "duration": "00:00:00.2048131",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.PluginTests.PluginPackageInstallationTests.结构兼容及资产边界均在执行前拒绝(kind: \"duplicate-manifest\")",
+      "outcome": "Passed",
+      "duration": "00:00:00.0425740",
+      "suite": "host-plugin",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-plugin/host-plugin.trx",
+        "sha256": "A5B5771C550EE6EC4EF0C09AD64C370D43792671E402FA5BB060C2F8E238C4D6",
+        "bytes": 617811
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginInstallationWindowTests.空看板也能预览且替换动作必须明确确认(action: 0, explicitChoice: False)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0691210",
+      "suite": "host-ui",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "FD8DB6B79C0DC00536E9E40CA94689FD9DC9A127A180D9CA026BF56BABD7B27F",
+        "bytes": 459417
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginInstallationWindowTests.空看板也能预览且替换动作必须明确确认(action: 1, explicitChoice: False)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0954963",
+      "suite": "host-ui",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "FD8DB6B79C0DC00536E9E40CA94689FD9DC9A127A180D9CA026BF56BABD7B27F",
+        "bytes": 459417
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginInstallationWindowTests.受控失败显示中文而底层异常不泄露路径",
+      "outcome": "Passed",
+      "duration": "00:00:00.0008323",
+      "suite": "host-ui",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "FD8DB6B79C0DC00536E9E40CA94689FD9DC9A127A180D9CA026BF56BABD7B27F",
+        "bytes": 459417
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginInstallationWindowTests.窗口释放不取消已接受提交且迟到结果不再更新窗口",
+      "outcome": "Passed",
+      "duration": "00:00:00.0038991",
+      "suite": "host-ui",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "FD8DB6B79C0DC00536E9E40CA94689FD9DC9A127A180D9CA026BF56BABD7B27F",
+        "bytes": 459417
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginInstallationWindowTests.空看板也能预览且替换动作必须明确确认(action: 4, explicitChoice: True)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0735601",
+      "suite": "host-ui",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "FD8DB6B79C0DC00536E9E40CA94689FD9DC9A127A180D9CA026BF56BABD7B27F",
+        "bytes": 459417
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginInstallationWindowTests.检查忙碌时禁止重复操作并可显式取消",
+      "outcome": "Passed",
+      "duration": "00:00:00.0030047",
+      "suite": "host-ui",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "FD8DB6B79C0DC00536E9E40CA94689FD9DC9A127A180D9CA026BF56BABD7B27F",
+        "bytes": 459417
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginInstallationWindowTests.空看板也能预览且替换动作必须明确确认(action: 3, explicitChoice: True)",
+      "outcome": "Passed",
+      "duration": "00:00:00.0802609",
+      "suite": "host-ui",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "FD8DB6B79C0DC00536E9E40CA94689FD9DC9A127A180D9CA026BF56BABD7B27F",
+        "bytes": 459417
+      }
+    },
+    {
+      "name": "MyAvaloniaManagement.UiTests.PluginInstallationWindowTests.空看板也能预览且替换动作必须明确确认(action: 2, explicitChoice: True)",
+      "outcome": "Passed",
+      "duration": "00:00:00.1397294",
+      "suite": "host-ui",
+      "trx": {
+        "path": "artifacts/gate/20260924-005355-6f8071da3852/pass-1/tests/host-ui/host-ui.trx",
+        "sha256": "FD8DB6B79C0DC00536E9E40CA94689FD9DC9A127A180D9CA026BF56BABD7B27F",
+        "bytes": 459417
+      }
+    }
+  ]
+}
