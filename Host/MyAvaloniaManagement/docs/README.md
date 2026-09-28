@@ -6,6 +6,8 @@
 
 ## 按修改目的阅读
 
+初次系统阅读建议从 [Host 架构文档组](../../../docs/host-architecture/README.md)开始，按“全景 → 模块 → 机制 → 代码与测试”逐层展开。本目录继续保留原架构、设计取舍和兼容约束的稳定入口。
+
 | 目的 | 文档 |
 | --- | --- |
 | 理解启动、组合、Workspace、Dock 与资源所有权 | [内部架构](design/architecture.md) |

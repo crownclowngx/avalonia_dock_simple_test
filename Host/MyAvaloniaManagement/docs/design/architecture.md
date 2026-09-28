@@ -1,5 +1,7 @@
 # MyAvaloniaManagement 内部架构
 
+> 逐层阅读入口：[Host 架构文档组](../../../../docs/host-architecture/README.md)。从大模块概念与交互开始，可继续放大到内部结构、运行时序、状态、资源所有权和关键源码；本篇保留原有架构与帮助引用入口。
+
 > 用途：当前 Host 内部实现与资源所有权。状态：当前；核对日期：2026-09-21。事实源：[Business 实现](../../Business)、[Host 测试](../../../MyAvaloniaManagement.Tests)及 [Plugin 测试](../../../MyAvaloniaManagement.PluginTests)。
 
 版本和交付范围集中在[版本基线](../../../../docs/reference/platform-baseline.md)。本仓仅保留 Host 与 MyPlugTest；其他业务插件独立交付。历史封板不能代表当前工作树的发布资格，未完成事项见[待办](../../../../docs/roadmap/README.md)。

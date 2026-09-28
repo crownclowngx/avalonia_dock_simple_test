@@ -11,6 +11,7 @@
 | `docs/quick-start/` | 当前使用和接入步骤 |
 | `docs/reference/` | 当前版本、协议及对外行为的权威说明 |
 | `Host/MyAvaloniaManagement/docs/` | Host 内部架构、取舍与兼容约束 |
+| `docs/host-architecture/` | Host 从全景到模块、机制、源码的分层导读；引用现行契约，不另建协议权威来源 |
 | `docs/maintenance/` | 当前可复用的验证、部署和维护流程；已实施功能的回归矩阵按主题保留 |
 | `docs/roadmap/` | 待实施方案及配套验证计划、尚未完成的工作、实验和候选；候选不自动获得实施授权 |
 | `docs/archive/plans/` | 已结束的方案与阶段计划 |

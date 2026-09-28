@@ -1,0 +1,358 @@
+{
+  "date": "2026-09-28",
+  "baselineCommit": "7c67ca086bc0571c9285aa71ecea9005916faeb6",
+  "scope": "Host architecture documentation only",
+  "documents": 65,
+  "mermaidDiagrams": 59,
+  "sourceFilesIndexed": 102,
+  "fileLinksChecked": 1091,
+  "anchorLinksEncountered": 0,
+  "linkErrors": [],
+  "orphanDocuments": [],
+  "resources": {
+    "pages": 65,
+    "embeddedTextMatches": true,
+    "markdownRendered": true,
+    "helpMarkdownLinks": 509,
+    "repositoryOnlyMarkdownTargets": [
+      "Host/MyAvaloniaManagement.Icons/README.md",
+      "Host/MyAvaloniaManagement.PluginSdk.UI/README.md",
+      "Host/MyAvaloniaManagement.PluginSdk.Workflow/README.md",
+      "Host/MyAvaloniaManagement.PluginSdk/README.md",
+      "Packaging/MyAvaloniaManagement.Plugin.Build/README.md",
+      "Packaging/MyAvaloniaManagement.Plugin.Templates/README.md",
+      "patches/avalonia-cross-window-layout/README.md",
+      "patches/dock-area-fill/README.md"
+    ],
+    "diagrams": 59
+  },
+  "browser": {
+    "pages": 65,
+    "themes": 2,
+    "renderedDiagrams": 118,
+    "failures": []
+  },
+  "excerpts": {
+    "csharpExcerpts": 10,
+    "errors": []
+  },
+  "tests": [
+    {
+      "suite": "unit",
+      "trx": "artifacts/documentation/host-architecture-20260928/unit/crown_GAOXU_2026-09-28_08_17_42_net10.0.trx",
+      "counters": {
+        "total": "20",
+        "executed": "20",
+        "passed": "20",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    },
+    {
+      "suite": "ui",
+      "trx": "artifacts/documentation/host-architecture-20260928/ui/crown_GAOXU_2026-09-28_08_18_37_net10.0.trx",
+      "counters": {
+        "total": "4",
+        "executed": "4",
+        "passed": "4",
+        "failed": "0",
+        "error": "0",
+        "timeout": "0",
+        "aborted": "0",
+        "inconclusive": "0",
+        "passedButRunAborted": "0",
+        "notRunnable": "0",
+        "notExecuted": "0",
+        "disconnected": "0",
+        "warning": "0",
+        "completed": "0",
+        "inProgress": "0",
+        "pending": "0"
+      }
+    }
+  ],
+  "build": {
+    "configuration": "Debug",
+    "warnings": 0,
+    "errors": 0
+  },
+  "limits": [
+    "No full Gate verify or seal run",
+    "No new native Host manual acceptance, deployment or publishing",
+    "Browser fixture used production reader.js, reader.css and Mermaid; MathJax startup was stubbed because this guide has no formulas",
+    "SDK, Packaging and patches README links are repository-only"
+  ],
+  "files": [
+    {
+      "path": "docs/host-architecture/00-overview/01-system-boundary.md",
+      "sha256": "4ea5ad64c00e7835ddba96b0d959d4e58d406d50179000feee2b003137e9db41"
+    },
+    {
+      "path": "docs/host-architecture/00-overview/02-core-concepts.md",
+      "sha256": "89cbdc77c2f5cfe40852df7e7a6ea7146632e9d7dd7ef89554e9aec193bd481a"
+    },
+    {
+      "path": "docs/host-architecture/00-overview/03-module-map.md",
+      "sha256": "c969c549b1abede480b2febf505ba61b87e1b46a500d894486df88335c9a6262"
+    },
+    {
+      "path": "docs/host-architecture/00-overview/04-runtime-story.md",
+      "sha256": "e6b4dc2d9eeadaa4b4303e1e5fbc2961a3259d690c860d9eb8786150f00134c8"
+    },
+    {
+      "path": "docs/host-architecture/00-overview/05-codebase-map.md",
+      "sha256": "814f2885ced5f40a5e44214ff94713bc85c556bf1d6fbc79dd4216ac810ac42a"
+    },
+    {
+      "path": "docs/host-architecture/01-runtime/01-startup-and-composition.md",
+      "sha256": "c772f503b0c59f351936953391a73da001f6a9a22326dc952479784f2472d544"
+    },
+    {
+      "path": "docs/host-architecture/01-runtime/02-shutdown-and-rollback.md",
+      "sha256": "e2f1fc511ba24cf156d314ba5e913e5f0ed45b3a86244244ec459de2dfa201b8"
+    },
+    {
+      "path": "docs/host-architecture/01-runtime/03-restart-handoff.md",
+      "sha256": "debe7d248d15c336909b68c8536bfd34a356ddc45f72f31ba80b45a08979d79e"
+    },
+    {
+      "path": "docs/host-architecture/01-runtime/README.md",
+      "sha256": "246ea688abc0d4d44108e00a21173ff76c51369d94623faffbdf9ac7536587e3"
+    },
+    {
+      "path": "docs/host-architecture/02-plugins/01-discovery-and-loading.md",
+      "sha256": "0bb1c230d82c7a70ef5be4933957e3481c663374261853202720962e8afe08df"
+    },
+    {
+      "path": "docs/host-architecture/02-plugins/02-registration-and-containers.md",
+      "sha256": "71e0133ed4dce09dcfbe11cff8b23eaa56ea360e5378134817b27ca3e1d9cb89"
+    },
+    {
+      "path": "docs/host-architecture/02-plugins/03-lifecycle-and-availability.md",
+      "sha256": "9d6182147296368347fb0abe1bb2cd6573df11d038e35b86c600af1ab6f2856b"
+    },
+    {
+      "path": "docs/host-architecture/02-plugins/04-enablement.md",
+      "sha256": "1d4bdf3af259ba10544e147db1e2cad4f2b973d0b3c3032ff0b8a20d8de1e2b2"
+    },
+    {
+      "path": "docs/host-architecture/02-plugins/05-installation-and-recovery.md",
+      "sha256": "72e7995db8c030876dd630206480e3e78fa2943d8374fa2ab2bbed05036fce9a"
+    },
+    {
+      "path": "docs/host-architecture/02-plugins/README.md",
+      "sha256": "06784ae47fa398e1933667c53a6459fe4aa819d3115f47c87ab6eaee59b58c35"
+    },
+    {
+      "path": "docs/host-architecture/03-workspace/01-catalog-session-activation.md",
+      "sha256": "4f47e6a21c331e6d389e467e0076fadcb22e0add0378c36a3c23b7e88d19c565"
+    },
+    {
+      "path": "docs/host-architecture/03-workspace/02-pages-targets-and-queries.md",
+      "sha256": "b51fed4156351a61042f410bd77da3784e9bce11022f887fda1aa1564e9246cd"
+    },
+    {
+      "path": "docs/host-architecture/03-workspace/03-tools-and-visibility.md",
+      "sha256": "af5210118357988b9dfd67e44297acab978ef762d907ef4ffc9a3c515379d615"
+    },
+    {
+      "path": "docs/host-architecture/03-workspace/README.md",
+      "sha256": "a6429a1111d30351a95afda71e654a48003566485adfec4b7cd3adc3c6e9d4a4"
+    },
+    {
+      "path": "docs/host-architecture/04-documents/01-concepts.md",
+      "sha256": "6bffdc589857e1a06360076d25ffb520d67cc938e0f97883c4e49e9802543c20"
+    },
+    {
+      "path": "docs/host-architecture/04-documents/02-internal-structure.md",
+      "sha256": "cde16d047ed98611f5a41b54f8cd4647c89f64e9fd31c956f06c088495636ee2"
+    },
+    {
+      "path": "docs/host-architecture/04-documents/03-create-and-activate.md",
+      "sha256": "9cbcd1a6703ccbe397d5c37db81ecd85687f9863599189754ee08e9e7cbc85be"
+    },
+    {
+      "path": "docs/host-architecture/04-documents/04-open-and-restore.md",
+      "sha256": "79ac51f50e6f4c8b4b7c540979e56049e2644edeb89d14094abb8244ac881c69"
+    },
+    {
+      "path": "docs/host-architecture/04-documents/05-save-and-revision.md",
+      "sha256": "9b4e8ae52ba0f764cee8f052bf8838b947346d773c35274c28c53a4427c81f5e"
+    },
+    {
+      "path": "docs/host-architecture/04-documents/06-close-and-release.md",
+      "sha256": "44579376915eafa897a1551f73d175d641344e0b87fc87919649708ea90a5721"
+    },
+    {
+      "path": "docs/host-architecture/04-documents/07-ownership-and-concurrency.md",
+      "sha256": "8ad5d30e41140a5a41249d5a2601f6c7bd82ca95b44633fa9bbfc45c0bc0de15"
+    },
+    {
+      "path": "docs/host-architecture/04-documents/08-code-and-tests.md",
+      "sha256": "a72bf53fbe0bb22dbe6b6ff5f73de21628a82a28aaf60eff7e0e814ddac0aaf1"
+    },
+    {
+      "path": "docs/host-architecture/04-documents/README.md",
+      "sha256": "c82ef2059808e698d51d41a60fa90659c7ad0036eb9a3858db1f725d03d5c3fe"
+    },
+    {
+      "path": "docs/host-architecture/05-docking-layout/01-adapters-and-views.md",
+      "sha256": "cc7d4488697859965f72d72ad249a9af49b89f73ac8a17e5e1c8dd4b28384cd1"
+    },
+    {
+      "path": "docs/host-architecture/05-docking-layout/02-tree-windows-and-placement.md",
+      "sha256": "54897c9dd780514acd86f9cbf6336ae1dfd36f0cf8f83f151c0a36558f223eb1"
+    },
+    {
+      "path": "docs/host-architecture/05-docking-layout/03-snapshot-store-and-restore.md",
+      "sha256": "ef0442e143bbec32dc045dd64fafd8f85d635a013115b56cb4011e7e12ac392a"
+    },
+    {
+      "path": "docs/host-architecture/05-docking-layout/04-save-queue-and-close.md",
+      "sha256": "b1eee0a8d3c283ad94bee2bd94a0ebd333626a542fa8f3f235ae02983a10d774"
+    },
+    {
+      "path": "docs/host-architecture/05-docking-layout/README.md",
+      "sha256": "821d50dc7ac7fd409808001d2c2a9fe501f3d9267c1d35a368b2ff231bb95c8d"
+    },
+    {
+      "path": "docs/host-architecture/06-commands/01-catalog-and-bindings.md",
+      "sha256": "0b3b19ce76906a6cd8f006e5fd727a3ff303577b6454243e6692576cd9a37f8f"
+    },
+    {
+      "path": "docs/host-architecture/06-commands/02-context-and-execution.md",
+      "sha256": "e0327f231aab8c89c09fa135e555c501b4557cc3586723204ee7631db4362c2f"
+    },
+    {
+      "path": "docs/host-architecture/06-commands/03-leases-and-shutdown.md",
+      "sha256": "d9bf16634ac2fa08517b88abe1e5a9ee0f3d3056d45c7def8e3949b2cb4a271f"
+    },
+    {
+      "path": "docs/host-architecture/06-commands/04-presentation-and-palette.md",
+      "sha256": "7a4cf1b42e004c970043fd48c27d1fa4a69a0f6c4c86dbe1dbbf43202031004a"
+    },
+    {
+      "path": "docs/host-architecture/06-commands/README.md",
+      "sha256": "e31a7b2cc0db053db0142e53afa508f11a16c0101c0ed6e2b332eca3b70ca737"
+    },
+    {
+      "path": "docs/host-architecture/07-workflow-actions/01-contracts-and-catalog.md",
+      "sha256": "8ea5d713b1c4386b5ec762ef4d1ba1a0bdce20198ade711a24833eea499d91aa"
+    },
+    {
+      "path": "docs/host-architecture/07-workflow-actions/02-invocation-and-authorization.md",
+      "sha256": "654ce652e773bce856d0352da129b89f1e07cf0cdcbb9a1611d3059f5343a995"
+    },
+    {
+      "path": "docs/host-architecture/07-workflow-actions/03-budgets-and-shutdown.md",
+      "sha256": "91fdaf693f5d017e469f2bc1408cc2ad7b730375e3ae3b93263f36160308ffa5"
+    },
+    {
+      "path": "docs/host-architecture/07-workflow-actions/README.md",
+      "sha256": "2e6e38dadddbcdfb7dd371ec8287255a39481f9b7850204496cefe3c41e20d26"
+    },
+    {
+      "path": "docs/host-architecture/08-presentation/01-shell-and-bindings.md",
+      "sha256": "10256cad570414f72dc26ac25e81e5aae8bba3f8fe45a0e59c4c0481a67a4adb"
+    },
+    {
+      "path": "docs/host-architecture/08-presentation/02-centers-and-dashboard.md",
+      "sha256": "c71ffc7fdf541ab80fac5a78f9453565cb0eadb12813747eab278490a1ad4d65"
+    },
+    {
+      "path": "docs/host-architecture/08-presentation/03-appearance-icons-help.md",
+      "sha256": "ec5896bf23d820d079f017ce6562a09f85577a63ba73f4b732cb6af60caaff9f"
+    },
+    {
+      "path": "docs/host-architecture/08-presentation/README.md",
+      "sha256": "3818f654944e6d386720c9b69250f847779fbcc49de865dc13d4d611fb3e4d27"
+    },
+    {
+      "path": "docs/host-architecture/09-infrastructure/01-storage-and-transactions.md",
+      "sha256": "ec701607f34e6ac3185a95678daee11d688a2cc0dce5af59255d7576073994c8"
+    },
+    {
+      "path": "docs/host-architecture/09-infrastructure/02-diagnostics-and-errors.md",
+      "sha256": "c68e9ce78ca0695d0829f30ecb0bc595fb0dffec4d7b8abb7cf43c15a737ffad"
+    },
+    {
+      "path": "docs/host-architecture/09-infrastructure/03-compatibility-and-patches.md",
+      "sha256": "b8fd1be7adbb58f9a71f1b16e725c7f65170f855f985913dc19d1cbf6a85b0c8"
+    },
+    {
+      "path": "docs/host-architecture/09-infrastructure/README.md",
+      "sha256": "f55c9ef14e763e0d8d907326b6da7adbcf51b87dc87c01081865e44235a70307"
+    },
+    {
+      "path": "docs/host-architecture/10-end-to-end/01-startup.md",
+      "sha256": "75b0f241cdf5a2901d74adfee80a91bb4a7bfdf605047e60dcb8f7499e7ae6a3"
+    },
+    {
+      "path": "docs/host-architecture/10-end-to-end/02-create-document.md",
+      "sha256": "e7761585b62e5fb0eb63d1ee161833172e0e7adca0c4ff64fec4372af24ce08a"
+    },
+    {
+      "path": "docs/host-architecture/10-end-to-end/03-open-save-close.md",
+      "sha256": "d7e964c004515b09b699fc4775d14785954d9c2a2825c4a5af5faf2c30cc24db"
+    },
+    {
+      "path": "docs/host-architecture/10-end-to-end/04-floating-and-layout.md",
+      "sha256": "fd1441d17ad7c0f0950dfd7371c5376461ba13bd7326189a7df8104e7f402ecf"
+    },
+    {
+      "path": "docs/host-architecture/10-end-to-end/05-command-palette.md",
+      "sha256": "93a33f9075b272857fa8f9741d22e6a5e250c2d6b6d24abb405cb4d7a51b0e1e"
+    },
+    {
+      "path": "docs/host-architecture/10-end-to-end/06-workflow-call.md",
+      "sha256": "ec843fefbc9049dd1ac94e2945e7a4e6d437107dbf54b3286e64da94f1251ca7"
+    },
+    {
+      "path": "docs/host-architecture/10-end-to-end/07-install-and-restart.md",
+      "sha256": "d70afd5135760f385e4eb019635c00f691b19045a2d6fd9f13937847a6812235"
+    },
+    {
+      "path": "docs/host-architecture/10-end-to-end/08-shutdown.md",
+      "sha256": "42a1e859e52609c06fd6bb404c6523c080fb4d5a96933fb4420728a0ac2b1638"
+    },
+    {
+      "path": "docs/host-architecture/10-end-to-end/README.md",
+      "sha256": "c0ba116a352998b3159d673c7d80cb88ae612be8f5a995f9730d91c8c23938b5"
+    },
+    {
+      "path": "docs/host-architecture/11-reference/01-glossary.md",
+      "sha256": "89a9f57ba2a2bc92a806dec31d5394e58b131b158d239cacfcd8f0abdde64ed8"
+    },
+    {
+      "path": "docs/host-architecture/11-reference/02-ownership-and-threading.md",
+      "sha256": "7ab26b30f3e7955a82d09f60ac3a54bd0560caabe6ee4807edb4e96848e86ac8"
+    },
+    {
+      "path": "docs/host-architecture/11-reference/03-code-index.md",
+      "sha256": "0f43604b30ffe62eede5a25c7bc414d04c29b9e2fb77765879655c9f83b730b1"
+    },
+    {
+      "path": "docs/host-architecture/11-reference/04-test-index.md",
+      "sha256": "3b26f110d707451d2704566aa29d1802d7fcc1c3c94382f98f7e05d7156c0be1"
+    },
+    {
+      "path": "docs/host-architecture/11-reference/05-maintaining-this-guide.md",
+      "sha256": "94db4c5055012107fc78996a65bd3181e0d267fa439adf06d4445a06f72bc32a"
+    },
+    {
+      "path": "docs/host-architecture/README.md",
+      "sha256": "bdea70a5996e3abe440c44e78327800cdf383506b8dee86f343b7bc3a334dd9e"
+    }
+  ]
+}

@@ -29,9 +29,12 @@
 
 ## 维护 Host 与 SDK
 
+希望从整体概念逐层读到内部机制与源码，可从 [Host 架构文档组](host-architecture/README.md)进入：全景、九个职责模块、跨模块流程，以及术语、源码和测试索引。
+
 | 任务 | 权威入口 |
 | --- | --- |
 | 理解实现、职责和资源所有权 | [Host 内部文档](../Host/MyAvaloniaManagement/docs/README.md) |
+| 从模块全景逐层深入时序、状态与关键代码 | [Host 架构文档组](host-architecture/README.md) |
 | 修改外部可观察行为 | [兼容约束](../Host/MyAvaloniaManagement/docs/reference/compatibility-contracts.md) |
 | 启动与插件进度 | [启动契约](reference/host-startup.md) |
 | 插件安装、开关与重启 | [安装契约](reference/plugin-installation.md)、[开关契约](reference/plugin-enablement.md)、[重启契约](reference/host-restart.md) |
