@@ -4,9 +4,11 @@
 
 ## 已记录的最新交付
 
+2026-10-04 对已安装 V23 源码基线做日志抽象依赖修补，部署本地 Debug 自包含单 EXE；14 个插件已实际加载，HTTP 工作台已打开。产物身份、备份和验证范围见[本次修复记录](../archive/records/host/logging-dependency-fix-20261004.md)。以下 Release 形式及旧 JSON 仍描述原 V23 交付，不代表当前补丁 EXE。
+
 V23 本地 ZIP 插件安装与更新版本的本机交付目标为 `D:\data\avalonia\MyAvaloniaManagement.exe`，见[专用交付说明](../archive/records/host-v23/local-deployment-guide.md)和[部署证据](../archive/records/host-v23/local-deployment-20260924.json)。最终状态、源码 revision、构建参数、EXE 和补丁摘要、安装文件核对及清理结果以该 JSON 为准，`status=completed` 才表示交付完成。此前的 V20 交付保留在[历史记录](../archive/records/host-v20/local-deployment-20260921.json)。记录不能代替对安装目录实时状态的检查。
 
-当前交付形式为 Release、win-x64、自包含压缩单 EXE，打入 .NET 运行时与原生绘制库，关闭裁剪；`Controls` 插件和 `HelpWeb` 帮助资源外置。安装版不要求另装 .NET。每次单文件形式核对和隔离启动/关闭均按本次产物记录；既有[项目所有者人工验收](../archive/records/host/manual-acceptance-20260921.md)只代表原始验收范围。
+原 V23 交付形式为 Release、win-x64、自包含压缩单 EXE，打入 .NET 运行时与原生绘制库，关闭裁剪；`Controls` 插件和 `HelpWeb` 帮助资源外置。2026-10-04 补丁保持该单文件结构，使用 Debug 配置。安装版不要求另装 .NET。每次单文件形式核对和隔离启动/关闭均按本次产物记录；既有[项目所有者人工验收](../archive/records/host/manual-acceptance-20260921.md)只代表原始验收范围。
 
 V20 完整退役 Layout V2，仅由 V3 恢复布局；旧布局文件不读取、不转换，也不删除。文档信封 V2 与默认用户数据目录保持现行契约。方案名称 V11–V23 表示改造阶段，产品和包版本仍以[集中基线](../reference/platform-baseline.md)为准；文档随包嵌入不表示对应方案已经实施。
 

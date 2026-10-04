@@ -56,6 +56,9 @@
       <!-- EPPlus 的配置依赖属于宿主共享闭包，插件包按协议不得私带 Microsoft.Extensions DLL。 -->
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
       <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
+      <!-- 日志抽象是受禁带规则保护的共享依赖，必须由 Host 显式携带。
+           不能依赖测试运行器或其他插件碰巧加载它，否则 Titanium 等插件会在类型预检时缺 DLL。 -->
+      <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
       <PackageReference Include="Semi.Avalonia" />
       <PackageReference Include="Xaml.Behaviors" />
     </ItemGroup>

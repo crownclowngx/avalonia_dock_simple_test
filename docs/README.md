@@ -43,6 +43,7 @@
 | 命令及跨插件调用 | [Workbench Command](reference/workbench-commands.md)、[Workflow Action](reference/workflow-actions.md) |
 | SDK public API 与产物兼容 | [API 基线](reference/plugin-sdk-api-compatibility.md)、[兼容证据](reference/plugin-compatibility.md) |
 | 运行日常验证与专项回归 | [主仓验证与专项索引](maintenance/verification.md) |
+| 排查网络插件缺少日志抽象、类型预检失败 | [日志依赖加载回归](maintenance/plugin-logging-dependency.md) |
 | 部署 Host 与维护六个 NuGet 包 | [本机部署](maintenance/local-deployment.md)、[NuGet 发布](maintenance/nuget-release.md) |
 | 维护文档和归档证据 | [文档维护规则](maintenance/documentation.md) |
 

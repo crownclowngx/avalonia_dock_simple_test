@@ -23,6 +23,8 @@
     <HostSharedAssemblyRoot Include="Ursa.Themes.Semi" Category="Framework" />
     <HostSharedAssemblyRoot Include="CommunityToolkit.Mvvm" Category="Framework" />
     <HostSharedAssemblyRoot Include="Microsoft.Extensions.Configuration.Json" Category="Framework" />
+    <!-- 只承诺日志抽象，不将整个 Extensions 家族都视为已提供；与 Host 直接包引用同步。 -->
+    <HostSharedAssemblyRoot Include="Microsoft.Extensions.Logging.Abstractions" Category="Framework" />
     <!-- 保留既有禁带策略，不将历史限制伪装成运行时提供承诺。 -->
     <PluginPackagingRestriction Include="Newtonsoft.Json" Reason="历史禁带；Host 不承诺提供。" />
     <PluginPackagingRestriction Include="Microsoft.Extensions.*" Reason="除精确声明的 DependencyModel 外维持禁带；Host 仅提供显式根及其实际闭包。" />

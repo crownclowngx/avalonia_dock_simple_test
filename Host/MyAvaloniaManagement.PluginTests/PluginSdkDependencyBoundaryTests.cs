@@ -96,6 +96,7 @@ public sealed class PluginSdkDependencyBoundaryTests
             package => Assert.Contains(package, hostPackages));
         Assert.Contains("Microsoft.Extensions.DependencyInjection", hostPackages);
         Assert.Contains("Microsoft.Extensions.Configuration.Json", hostPackages);
+        Assert.Contains("Microsoft.Extensions.Logging.Abstractions", hostPackages);
         Assert.Contains("Avalonia.Fonts.Inter", hostPackages);
         Assert.Contains("Avalonia.Desktop", hostPackages);
         Assert.DoesNotContain("Microsoft.CodeAnalysis.PublicApiAnalyzers", PackageReferences(host));
@@ -140,6 +141,7 @@ public sealed class PluginSdkDependencyBoundaryTests
     [InlineData("CommunityToolkit.Mvvm")]
     [InlineData("Microsoft.Extensions.Configuration.Abstractions")]
     [InlineData("Microsoft.Extensions.Configuration.Json")]
+    [InlineData("Microsoft.Extensions.Logging.Abstractions")]
     [InlineData("Semi.Avalonia")]
     [InlineData("Ursa")]
     [InlineData("Dock.Avalonia")]
