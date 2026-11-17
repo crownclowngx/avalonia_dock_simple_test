@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0a1122">
+<title>Host 做了什么 · MyAvaloniaManagement</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0a1122;
+    --panel: #101b31;
+    --ink: #f0f5ff;
+    --muted: #afbdd7;
+    --line: #2a3a57;
+    --accent: #68e7e0;
+    --violet: #bbaaff;
+    --amber: #ffd282;
+    font-family: "Inter", "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; background: var(--bg); color: var(--ink); }
+  button, a { -webkit-tap-highlight-color: transparent; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:disabled { cursor: default; opacity: .4; }
+  a { color: var(--accent); text-underline-offset: .2em; }
+  button:focus-visible, a:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  .shell { min-height: 100dvh; display: grid; grid-template-rows: auto 1fr auto; position: relative; isolation: isolate; }
+  .shell::before {
+    content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background: radial-gradient(ellipse at 80% 34%, #25366866, transparent 54%),
+      radial-gradient(ellipse at 13% 100%, #14555c40, transparent 52%),
+      linear-gradient(#8ba8df0b 1px, transparent 1px), linear-gradient(90deg, #8ba8df0b 1px, transparent 1px), var(--bg);
+    background-size: auto, auto, 48px 48px, 48px 48px, auto;
+  }
+  .top, .foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px clamp(16px, 4vw, 64px); background: #0a1122ed;
+  }
+  .top { border-bottom: 1px solid var(--line); }
+  .foot { border-top: 1px solid var(--line); position: sticky; bottom: 0; z-index: 3; }
+  .brand { display: flex; gap: 10px; align-items: center; font-weight: 750; letter-spacing: .02em; }
+  .brand svg { width: 28px; height: 28px; color: var(--accent); flex: none; }
+  .controls { display: flex; flex: none; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .btn {
+    border: 1px solid var(--line); border-radius: 10px; background: #14223b;
+    padding: 8px 13px; line-height: 1.4; font-size: 14px; transition: background .2s, border-color .2s;
+  }
+  .btn:hover:not(:disabled) { border-color: var(--accent); background: #1a354b; }
+  .btn.primary { background: var(--accent); color: #101c2b; border-color: transparent; font-weight: 750; }
+  .btn.primary:hover:not(:disabled) { background: #a2fff8; color: #101c2b; }
+  .counter { font: 700 15px "IBM Plex Mono", Consolas, monospace; color: var(--accent); white-space: nowrap; }
+  .progress { display: block; flex: 1; min-width: 32px; height: 4px; overflow: hidden; border-radius: 4px; background: var(--line); }
+  .progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--violet), var(--accent)); transition: width .34s ease; }
+  .hint { color: var(--muted); font-size: 13px; white-space: nowrap; }
+  main { width: min(100%, 1500px); margin: auto; padding: clamp(22px, 4vw, 64px) clamp(18px, 5vw, 78px); }
+  .slide { min-width: 0; animation: enter .55s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes enter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  .section-label {
+    color: var(--accent); font-size: 13px; font-weight: 750; letter-spacing: .16em;
+    display: flex; align-items: center; gap: 10px; margin: 0 0 10px;
+  }
+  .section-label::before { content: ""; width: 24px; height: 1px; background: currentColor; }
+  h1, h2, h3, p { margin: 0; }
+  h1, h2 { line-height: 1.16; letter-spacing: -.036em; text-wrap: balance; }
+  h1 { font-size: clamp(44px, 6.4vw, 102px); }
+  h2 { font-size: clamp(30px, 4vw, 60px); }
+  h3 { font-size: clamp(18px, 2vw, 27px); line-height: 1.35; }
+  .lead { font-size: clamp(16px, 1.62vw, 23px); line-height: 1.65; color: var(--muted); max-width: 52ch; margin-top: 12px; }
+  .accent { color: var(--accent); }
+  .hero { display: grid; grid-template-columns: 1.13fr 1fr; gap: 24px; align-items: center; }
+  .hero .lead { margin: 22px 0; max-width: 27em; }
+  .hero .btn { padding: 11px 18px; }
+  .hero-figure { width: 100%; max-height: 505px; overflow: visible; }
+  .orbit { transform-origin: 300px 220px; animation: orbit 18s linear infinite; }
+  .orbit.reverse { animation-direction: reverse; animation-duration: 25s; }
+  @keyframes orbit { to { transform: rotate(360deg); } }
+  .signal { stroke-dasharray: 12 22; animation: signal 2.4s linear infinite; }
+  @keyframes signal { to { stroke-dashoffset: -68; } }
+  .core { transform-origin: 300px 220px; animation: core 4s ease-in-out infinite; }
+  @keyframes core { 50% { transform: scale(1.045); } }
+  .visual { margin-top: clamp(18px, 2.4vw, 34px); }
+  .pyramid { display: grid; gap: 12px; justify-items: center; }
+  .tier {
+    display: grid; place-items: center; width: var(--width); text-align: center; min-height: 58px;
+    background: linear-gradient(100deg, #13515b, #182f56 55%, #353263);
+    clip-path: polygon(var(--inset) 0, calc(100% - var(--inset)) 0, 100% 100%, 0 100%);
+    padding: 14px var(--inset); font-size: clamp(16px, 2.15vw, 28px); font-weight: 750;
+  }
+  .pyramid-links { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .pyramid-links button { text-align: left; background: #10223a; border-bottom: 3px solid var(--color); padding: 14px; }
+  .pyramid-links strong { display: block; color: var(--color); font-size: clamp(15px, 1.8vw, 24px); }
+  .pyramid-links span { display: block; margin-top: 5px; color: var(--muted); }
+  .interaction { display: grid; gap: 12px; }
+  .choices { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+  .choice {
+    color: var(--muted); background: #111d34; border: 1px solid var(--line);
+    border-radius: 9px; padding: 7px 12px; font-size: clamp(13px, 1.3vw, 17px);
+    transition: border-color .2s, background .2s, color .2s;
+  }
+  .choice:hover { border-color: var(--accent); color: var(--ink); }
+  .choice[aria-pressed="true"] { border-color: var(--accent); color: var(--ink); background: #163746; }
+  .choice[aria-pressed="true"] .step-number { color: var(--accent); }
+  .step-number { font-family: Consolas, monospace; margin-right: 6px; color: #8598b9; }
+  .interaction-body { display: grid; gap: 15px; grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr); align-items: stretch; }
+  .scene {
+    min-width: 0; min-height: clamp(235px, 26vw, 350px); position: relative; overflow: hidden;
+    display: grid; align-items: center; padding: clamp(12px, 2vw, 28px);
+    border: 1px solid var(--line); border-radius: 18px;
+    background: radial-gradient(ellipse at 45% 54%, #1b395b 0, transparent 78%), #0e192e;
+  }
+  .reading {
+    min-width: 0; border-left: 2px solid var(--accent); padding: clamp(12px, 2.3vw, 28px);
+    align-content: center; background: linear-gradient(90deg, #20374c7a, #15223a44); border-radius: 0 14px 14px 0;
+  }
+  .reading h3 { color: var(--accent); }
+  .reading p { color: var(--ink); font-size: clamp(15px, 1.45vw, 20px); line-height: 1.62; margin-top: 9px; }
+  .reading.swap { animation: swap .34s ease both; }
+  @keyframes swap { from { opacity: .45; transform: translateX(6px); } }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .actions .hint { white-space: normal; }
+  details { margin-top: 14px; color: var(--muted); font-size: 15px; line-height: 1.65; }
+  summary { width: fit-content; cursor: pointer; color: var(--violet); }
+  details p { max-width: 78ch; margin-top: 7px; }
+  .rail { display: flex; align-items: center; isolation: isolate; justify-content: space-between; gap: 6px; }
+  .rail button {
+    position: relative; display: grid; flex: 1 1 0; min-width: 0; align-content: start; justify-items: center; gap: 9px;
+    color: var(--muted); font-size: clamp(12px, 1.3vw, 18px); line-height: 1.3; text-align: center;
+    border: none; background: none; padding: 4px 0;
+  }
+  .rail button::after {
+    content: ""; position: absolute; top: 20px; left: 56%; width: 94%; height: 2px; z-index: -1;
+    background: var(--line);
+  }
+  .rail button:last-child::after { content: none; }
+  .rail button.done::after {
+    background: linear-gradient(90deg, var(--accent), #68e7e033);
+    transform-origin: left; animation: trace .45s ease-out both;
+  }
+  @keyframes trace { from { transform: scaleX(0); } }
+  .rail .dot {
+    display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid #5a7193; background: #15233a; color: var(--muted); font: 700 13px Consolas, monospace;
+  }
+  .rail button[aria-pressed="true"] { color: var(--ink); font-weight: 750; }
+  .rail button[aria-pressed="true"] .dot {
+    border-color: var(--accent); color: #092329; background: var(--accent);
+    box-shadow: 0 0 0 5px #68e7e02a, 0 0 24px #68e7e08c;
+    animation: pulse 1.7s ease-out infinite;
+  }
+  @keyframes pulse { 55% { box-shadow: 0 0 0 10px #68e7e000, 0 0 28px #68e7e05e; } }
+  .rail-wrap { display: grid; gap: 25px; }
+  .rail-status { text-align: center; color: var(--accent); font-weight: 700; font-size: clamp(15px, 1.5vw, 22px); }
+  .desk { position: relative; width: 100%; min-height: 210px; font-size: clamp(11px, 1.15vw, 16px); }
+  .window {
+    position: relative; width: 90%; min-width: 0; overflow: hidden; border: 1px solid #607ca6;
+    border-radius: 12px; background: #111e32; box-shadow: 0 14px 30px #0309199c;
+  }
+  .winbar { display: flex; justify-content: space-between; gap: 8px; align-items: center; min-height: 30px; padding: 6px 9px; background: #263a59; }
+  .winctrl { letter-spacing: .2em; color: #b4c7e7; white-space: nowrap; }
+  .menus { padding: 7px 10px; display: flex; gap: clamp(8px, 1.4vw, 22px); color: var(--muted); border-bottom: 1px solid var(--line); }
+  .window-grid { min-height: 144px; display: grid; grid-template-columns: 29% 1fr; }
+  .tools-side, .doc-side { padding: 10px; min-width: 0; transition: background .35s; }
+  .tools-side { border-right: 1px solid var(--line); color: var(--muted); }
+  .doc-side { display: grid; align-content: start; gap: 9px; }
+  .doc-tab { color: var(--ink); border-bottom: 1px solid var(--line); padding-bottom: 6px; overflow-wrap: anywhere; }
+  .doc-line { height: 5px; border-radius: 4px; background: #416182; width: 76%; opacity: .7; }
+  .doc-line:nth-child(even) { width: 55%; }
+  .floating {
+    position: absolute; right: 0; bottom: 0; z-index: 1; width: 42%;
+    transform: translate(-130%, -40%) scale(.82); transform-origin: bottom right; opacity: 0; visibility: hidden;
+    transition: transform .7s cubic-bezier(.2,.75,.24,1.15), opacity .34s, visibility .7s;
+  }
+  .floating .float-content { padding: 10px; color: var(--muted); }
+  .palette {
+    position: absolute; z-index: 2; top: 24%; left: 20%; width: 61%; padding: 9px;
+    border: 1px solid var(--violet); border-radius: 9px; background: #222446;
+    opacity: 0; transform: translateY(-9px); visibility: hidden;
+    transition: opacity .25s, transform .25s, visibility .25s;
+  }
+  .palette strong { display: block; color: var(--violet); margin-bottom: 4px; }
+  .desk[data-view="float"] .floating, .desk[data-view="return"] .floating, .desk[data-view="restart"] .floating {
+    transform: translate(0) scale(1); opacity: 1; visibility: visible;
+  }
+  .desk[data-view="return"] .floating {
+    transform: translate(-155%, -30%) scale(.76); opacity: 0; visibility: hidden;
+  }
+  .desk[data-view="palette"] .palette { opacity: 1; visibility: visible; transform: translateY(0); }
+  .desk[data-view="doc"] .doc-side { background: #21505a6e; }
+  .desk[data-view="return"] .doc-side { animation: dock-beacon .75s ease-out both; }
+  @keyframes dock-beacon {
+    40% { box-shadow: inset 0 0 0 2px var(--accent), inset 0 0 30px #68e7e044; }
+    to { background: #21505a6e; }
+  }
+  .desk[data-view="tools"] .tools-side { background: #21505a6e; color: var(--ink); }
+  .desk[data-view="close"] .window:first-child { opacity: .43; }
+  .desk .window:first-child { transition: opacity .4s; }
+  .matrix { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px 10px; align-items: center; }
+  .matrix button {
+    border: 1px solid var(--line); background: #14223a; border-radius: 9px;
+    min-width: 0; padding: 8px 9px; color: var(--muted); font-size: clamp(13px, 1.4vw, 18px); line-height: 1.35;
+  }
+  .matrix button.on { background: #173749; border-color: var(--accent); color: var(--ink); }
+  .matrix .arrow { color: #758aaa; }
+  .matrix .arrow.on { color: var(--accent); text-shadow: 0 0 12px var(--accent); }
+  .duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; width: 100%; }
+  .tile { display: grid; gap: 7px; align-content: start; padding: clamp(11px, 2vw, 24px); min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: #121f36; }
+  .tile strong { color: var(--accent); font-size: clamp(15px, 1.65vw, 23px); overflow-wrap: anywhere; }
+  .tile span { color: var(--muted); font-size: clamp(13px, 1.4vw, 19px); line-height: 1.5; }
+  .tile.update { animation: swap .35s ease both; }
+  .duo .tile:nth-child(2) strong { color: var(--violet); }
+  .end-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+  .end-grid .tile { min-height: 160px; }
+  .end-grid a { width: fit-content; }
+  .end-actions { margin-top: 18px; }
+  dialog {
+    color: var(--ink); width: min(810px, calc(100% - 28px)); max-height: 84dvh; overflow: auto;
+    background: #101b31; border: 1px solid #577198; border-radius: 18px; padding: clamp(16px, 3vw, 34px);
+  }
+  dialog::backdrop { background: #050912ca; backdrop-filter: blur(6px); }
+  .dialog-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 18px; }
+  .dialog-head h2 { font-size: 28px; }
+  .toc { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .toc button { display: flex; gap: 8px; align-items: baseline; text-align: left; }
+  .toc button[aria-current="page"] { border-color: var(--accent); }
+  .toc span { color: var(--accent); font-family: Consolas, monospace; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+  @media (max-width: 760px) {
+    .hero, .interaction-body { grid-template-columns: minmax(0, 1fr); }
+    .hero-figure { max-height: 265px; }
+    .pyramid-links, .end-grid, .toc { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .foot .hint { display: none; }
+    .scene { min-height: 205px; }
+  }
+  @media (max-width: 450px) {
+    .brand { font-size: 12px; }
+    .top .btn { padding: 6px 8px; }
+    #overview { display: none; }
+    .end-grid { grid-template-columns: minmax(0, 1fr); }
+    .end-grid .tile { min-height: 0; }
+    .rail button { font-size: 11px; }
+    .rail .dot { width: 26px; height: 26px; }
+    .rail button::after { top: 16px; }
+  }
+  @media (min-width: 761px) and (max-height: 770px) {
+    main { padding-top: 15px; padding-bottom: 15px; }
+    .slide > .lead { max-width: 68ch; }
+    .visual { margin-top: 17px; }
+    .scene { min-height: 224px; }
+    .hero-figure { max-height: 420px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 3 28 10v12l-12 7-12-7V10L16 3Z M4 10l12 7 12-7M16 17v12" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      MyAvaloniaManagement
+    </div>
+    <nav class="controls" aria-label="演示工具">
+      <button class="btn" id="overview" type="button">总览</button>
+      <button class="btn" id="open-toc" type="button">目录</button>
+      <button class="btn" id="fullscreen" type="button">全屏</button>
+    </nav>
+  </header>
+  <main id="stage"></main>
+  <footer class="foot">
+    <span class="counter" id="counter"></span>
+    <span class="progress" aria-hidden="true"><i id="progress"></i></span>
+    <span class="hint">← / → 翻页</span>
+    <nav class="controls" style="flex-wrap: nowrap" aria-label="翻页">
+      <button class="btn" id="previous" type="button">上页</button>
+      <button class="btn primary" id="next" type="button">下页</button>
+    </nav>
+  </footer>
+</div>
+<dialog id="catalog" aria-labelledby="catalog-title">
+  <div class="dialog-head">
+    <h2 id="catalog-title">演示目录</h2>
+    <form method="dialog"><button class="btn" type="submit">关闭</button></form>
+  </div>
+  <nav class="toc" id="toc" aria-label="跳到指定页"></nav>
+</dialog>
+<p class="sr-only" id="announcement" aria-live="polite"></p>
+<noscript>请启用浏览器的 JavaScript 以播放这份演示。</noscript>
+<script>
+"use strict";
+
+const slides = [
+  { title: "Host 做了什么", kind: "cover", group: "项目全景" },
+  { title: "一个工作台，四项职责", kind: "pyramid", group: "项目全景" },
+  {
+    title: "不同插件的功能出现在同一个工作台", short: "工作台全景", group: "组织工作区",
+    lead: "文档、辅助工具和操作入口共用一套窗口体系。选一个区域看它负责什么。",
+    visual: "desk", mode: "workspace", steps: [
+      ["文档区", "独立的工作页面", "同一种编辑器可以打开多个文档，每个标签指向自己的工作实例。", "doc"],
+      ["工具区", "可重复显示的辅助面板", "工具可以固定在主窗，也可以从工具中心隐藏和找回。", "tools"],
+      ["浮窗", "把内容移到另一个窗口", "文档和工具都可浮动。浮窗仍属于同一个工作台。", "float"],
+      ["命令面板", "在当前窗口找操作", "Ctrl+Shift+P 打开命令面板，可搜索功能、打开的页面、工具和命令。", "palette"]
+    ]
+  },
+  {
+    title: "页面可以换窗口，编辑状态随它走", short: "停靠与浮窗", group: "组织工作区",
+    lead: "移动的是页面的呈现位置。Host 复用原模型、界面和文档作用域。",
+    visual: "desk", mode: "document-dock", steps: [
+      ["主窗停靠", "从主窗口开始", "示意中的编辑器仍在主窗口。接下来把同一页移到浮窗。", "doc"],
+      ["浮动文档", "在另一块屏幕继续编辑", "原来的文档和未保存修改随页面移动。浮窗仍可执行保存操作。", "float"],
+      ["回停主窗", "拖回工作区", "进入可接收区域会显示目标预览。松开后，主窗中的目标组接收原页面。", "return"]
+    ],
+    detail: "Host 还支持分屏、整组浮动、找回屏幕外浮窗。回停到有标签的组时合并，空组则由移入内容填满。"
+  },
+  {
+    title: "插件声明业务能力，Host 把它接进来", short: "声明与入口", group: "接入插件",
+    lead: "插件开发者通过 SDK 声明能提供什么。Host 负责目录、呈现和调用入口。",
+    visual: "matrix", mapping: [
+      ["Document", "文档标签与创建入口"], ["Tool", "工具中心与面板"], ["Workbench Command", "菜单、快捷键与命令面板"], ["Workflow Action", "其他插件的调用入口"]
+    ], steps: [
+      ["文档", "让用户创建业务页面", "插件提供页面模型和界面。Host 在用户打开时创建实例，并放进工作区。"],
+      ["工具", "让辅助面板进入工作台", "插件提供工具。Host 负责显示、隐藏、停靠和布局恢复。"],
+      ["命令", "把业务动作放进统一入口", "插件可声明操作以及适用的文档类型。Host 根据当前上下文判断能否执行。"],
+      ["跨插件能力", "把业务能力提供给另一个插件", "插件声明 Action 和输入输出契约。调用方通过 Host 提供的入口调用。"]
+    ]
+  },
+  {
+    title: "插件从磁盘文件变成已注册的贡献", short: "插件加载", group: "接入插件",
+    lead: "启动时，Host 按身份和兼容范围识别候选，并记录哪些插件成功注册。",
+    visual: "rail", steps: [
+      ["发现", "读取插件清单", "从插件目录读取清单，识别插件身份、入口和本次启用意图。"],
+      ["检查", "确定候选能否进入加载", "检查 SDK 兼容范围等条件。失败的候选留下状态和诊断。"],
+      ["加载", "加载精确入口", "Host 加载清单指定的程序集和入口，为插件建立自己的服务容器。"],
+      ["注册", "提交声明到目录", "Host 处理声明和冲突，再向工作区、命令和 Workflow 提供可查询的贡献。"]
+    ],
+    detail: "目录表示已提交的声明。后续的生命周期与可用性状态决定这些入口当前是否可用。"
+  },
+  {
+    title: "插件初始化结果决定运行可用性", short: "插件生命周期", group: "管理运行",
+    lead: "Host 跟踪注册、初始化和停止。切换初始化结果，查看工作台怎样处理。",
+    visual: "rail", variants: [
+      { label: "初始化成功", steps: [
+        ["已注册", "贡献已进入目录", "Host 已经知道插件声明了哪些功能。"],
+        ["初始化", "按顺序尝试启动", "Host 调用插件提供的初始化逻辑，并跟踪完成、失败和取消。"],
+        ["可用", "用户可以使用相应入口", "工作区、命令和 Workflow 根据统一的可用状态提供入口。"],
+        ["停止", "退出时反向收尾", "Host 按记录反向调用应停止的生命周期项。"],
+        ["释放", "在安全时释放容器", "已结束的生命周期和在途调用满足释放条件后，Host 清理插件资源。"]
+      ] },
+      { label: "初始化失败", steps: [
+        ["已注册", "声明已登记", "插件已经贡献元数据，Host 接下来尝试初始化。"],
+        ["初始化", "初始化发生错误", "Host 记录失败阶段，更新插件可用性。"],
+        ["不可用", "相应入口被过滤或拒绝", "插件看板显示状态，工作区入口按可用性处理。"],
+        ["收尾", "按已尝试的顺序收尾", "Host 按运行记录处理停止和诊断，并判断资源能否释放。"]
+      ] }
+    ],
+    detail: "插件可以选择是否提供生命周期回调。Host 使用统一可用性模型判断当前状态。取消是请求，释放判断仍依赖插件工作是否真正结束。"
+  },
+  {
+    title: "Host 管理从首屏到退出的整次运行", short: "Host 生命周期", group: "管理运行",
+    lead: "主窗口成功交接后进入就绪状态。退出时，Host 先处理工作，再释放资源。",
+    visual: "rail", steps: [
+      ["启动首屏", "先给出启动反馈", "轻量首屏展示进度，后台准备完整运行环境。"],
+      ["运行环境", "组装服务与插件", "后台组合 Host 服务和插件贡献，完成后进入 Prepared。"],
+      ["窗口就绪", "主工作台开始接收操作", "界面线程安装资源、创建主窗口并完成交接，Host 进入 Ready。"],
+      ["请求退出", "先处理文档和布局", "协调各窗口的关闭、未保存内容和最终布局，随后关闭新的运行入口。"],
+      ["运行收尾", "等待操作结束后释放", "Host 请求取消并等待在途操作，确认相关工作结束后再释放资源。"]
+    ],
+    detail: "仍在运行的插件代码可能继续使用原来的依赖。无法证明安全释放时，Host 保留相关资源并记录结构化诊断。重启需要完成最终收尾。"
+  },
+  {
+    title: "同一种文档可以有多个独立实例", short: "文档生命周期", group: "管理运行",
+    lead: "打开两份同类型业务文件。下面的操作只作用于文档 A。",
+    visual: "duo", variants: [
+      { label: "保存后关闭", steps: [
+        ["打开", "为每份文档创建独立实例", "Host 创建独立的作用域、模型和界面，初始化成功后才发布标签。", ["文档 A", "已打开", "文档 B", "已打开"]],
+        ["编辑", "修改属于当前文档", "A 进入未保存状态，B 仍维持自己的状态。", ["文档 A", "有未保存修改", "文档 B", "已打开"]],
+        ["保存", "把 A 的内容写入业务文件", "可保存文档由 Host 协调持久化，具体内容和格式由插件定义。", ["文档 A", "已保存", "文档 B", "已打开"]],
+        ["关闭", "释放 A 的文档资源", "关闭获准并完成后，Host 回收 A 的界面与作用域。", ["文档 A", "关闭并释放", "文档 B", "仍可编辑"]]
+      ] },
+      { label: "取消关闭", steps: [
+        ["请求关闭", "Host 询问如何处理修改", "A 有未保存修改，关闭流程等待用户作出选择。", ["文档 A", "等待确认", "文档 B", "已打开"]],
+        ["取消", "原页面继续工作", "Host 终止本次关闭，A 的界面、修改和作用域都保留。", ["文档 A", "继续编辑，保留修改", "文档 B", "仍可编辑"]]
+      ] }
+    ],
+    detail: "支持新建、打开、保存以及文件打开失败的处理。文档能否保存由其注册和模型能力决定，临时页面也可以作为文档打开。"
+  },
+  {
+    title: "工具隐藏后，重新显示时复用实例", short: "工具与服务", group: "管理运行",
+    lead: "文档、辅助工具与后台服务各自有不同的寿命。",
+    visual: "duo", steps: [
+      ["显示", "工具可以多次显示", "通常在首次需要时激活工具。模型由所属插件的服务容器持有。", ["文档", "独立工作实例", "工具", "已创建并可见"]],
+      ["关闭按钮", "先区分关闭的对象", "文档完成关闭后释放资源。工具的关闭入口通常将它隐藏。", ["文档", "关闭后释放", "工具", "隐藏，实例保留"]],
+      ["重新显示", "工具中心找回原面板", "在同一次运行里，Host 恢复该工具的显示并复用实例。", ["文档", "重新打开会创建实例", "工具", "原实例再次可见"]],
+      ["后台服务", "服务寿命由注册或业务协议决定", "插件仓储和后台任务可以独立于工具可见状态运行。", ["工具面板", "当前可隐藏", "插件服务", "按自身生命周期运行"]]
+    ]
+  },
+  {
+    title: "保存文档和记住布局是两件事", short: "保存与布局恢复", group: "管理运行",
+    lead: "Host 分别协调业务文件写入和工具布局快照。重启后可观察到两种结果。",
+    visual: "duo", steps: [
+      ["重启前", "编辑内容与摆放位置分开处理", "文档内容通过保存写入业务文件。工具窗口位置、分组和显隐进入布局记录。", ["业务文件", "已保存的内容", "布局 V3", "工具位置和显隐"]],
+      ["重启后", "恢复工具，按需重新打开文档", "Host 恢复可用工具的布局。文档标签和纯文档浮窗不会自动重开。", ["文档区", "手动打开业务文件", "工具区", "恢复已记录布局"]],
+      ["插件暂缺", "先保留这个工具的位置记录", "插件当前不可用时，不创建空白浮窗。插件恢复可用后可按保留的记录恢复工具。", ["工具窗口", "暂不显示", "布局记录", "保留位置、分组和显示意图"]]
+    ]
+  },
+  {
+    title: "菜单、快捷键和面板调用同一套命令", short: "工作台命令", group: "连接操作",
+    lead: "同一个保存动作可以从不同入口触发，Host 按操作上下文确定目标。",
+    visual: "matrix", mapping: [
+      ["文件菜单", "当前文档"], ["Ctrl+S", "发起窗口中的活动文档"], ["命令面板", "提交时复核目标"]
+    ], steps: [
+      ["文件菜单", "识别当前工作目标", "Host 根据活动文档状态判断保存操作是否可用。"],
+      ["快捷键", "浮窗里也能保存", "浮窗收到快捷键时，Host 使用该窗口的操作上下文解决目标。"],
+      ["命令面板", "打开面板后切页也会校验", "提交时复核目标和状态，避免旧入口把操作发给另一个文档。"]
+    ]
+  },
+  {
+    title: "插件通过 Host 调用彼此的能力", short: "跨插件调用", group: "连接操作",
+    lead: "以插件 A 请求插件 B 生成摘要为例。业务实现由 B 提供，Host 负责调用过程。",
+    visual: "rail", steps: [
+      ["A 发起", "按 Action 身份发出请求", "插件 A 通过自己的调用入口选择 Action，提供 JSON 参数。"],
+      ["Host 校验", "确认身份、参数和调用条件", "Host 检查调用身份、目标可用性、输入格式、并发和授权策略。"],
+      ["B 执行", "在提供方的调用作用域中运行", "插件 B 的处理器执行业务逻辑。调用不依赖当前活动文档。"],
+      ["返回结果", "校验结果并结束调用", "Host 验证输出，返回结构化结果，并在执行结束后释放作用域。"]
+    ],
+    detail: "调用契约与工作台命令契约分别维护。输入不合法、授权拒绝或超过并发限制时，Host 不进入目标处理器。"
+  },
+  {
+    title: "本地 ZIP 更新经过检查、确认和重启", short: "安装、更新与恢复", group: "接入插件",
+    lead: "维护人员通过插件看板管理本地安装包。应用变更时会替换完整插件目录。",
+    visual: "rail", variants: [
+      { label: "正常安装或更新", steps: [
+        ["选择 ZIP", "先生成预检结果", "Host 检查清单、包结构和兼容基线，展示当前版本和候选版本。"],
+        ["确认", "登记待应用变更", "用户核对预览后确认。Host 保存待办，当前运行继续使用现有插件。"],
+        ["重启", "应用到插件目录", "在普通插件加载之前应用变更。后续加载、注册和初始化决定运行可用性。"]
+      ] },
+      { label: "恢复路径", steps: [
+        ["应用失败", "按安装记录尝试恢复", "Host 利用操作记录和备份恢复一致状态，留下可查结果。"],
+        ["恢复上一版", "从看板检查备份", "上一个版本的完整目录可用时，Host 生成恢复预览。"],
+        ["确认并重启", "应用经确认的恢复", "恢复后仍按正常启动链检查兼容性和运行可用性。"]
+      ] }
+    ],
+    detail: "预检阶段只做静态检查，不执行插件入口代码。有配套清单时可对照包和文件摘要。"
+  },
+  {
+    title: "诊断把问题定位到发生的阶段", short: "状态与诊断", group: "管理运行",
+    lead: "用户看到当前能做什么，维护者可以依靠状态、阶段和错误码查找原因。",
+    visual: "duo", steps: [
+      ["启动失败", "从启动反馈进入排查", "Host 显示启动失败，诊断可区分运行环境准备和主窗口交接等阶段。", ["用户界面", "启动失败提示", "维护线索", "阶段与错误码"]],
+      ["插件不可用", "从插件看板看当前状态", "看板汇总插件候选、注册、生命周期及相关诊断，便于区分安装状态和运行状态。", ["用户界面", "插件看板", "维护线索", "候选、注册或初始化结果"]],
+      ["文件保存失败", "保留当前工作，允许处理后再尝试", "工作台给出受控的保存错误。关闭流程遇到保存失败时保留页面和工作内容。", ["用户界面", "保存错误，可继续处理", "维护线索", "持久化失败状态"]]
+    ]
+  },
+  {
+    title: "一次操作串起工作台的主要能力", short: "端到端演示", group: "完整演示",
+    lead: "跟着一份插件文档走完一轮，观察每一步由哪部分负责。",
+    visual: "desk", mode: "full-story", steps: [
+      ["启动", "Host 发现、注册并初始化插件", "插件就绪后，Host 让其贡献在工作台可用。", "tools"],
+      ["打开", "工作区创建文档实例", "文件由对应插件处理，Host 把初始化完成的页面放进工作区。", "doc"],
+      ["浮出工具", "Dock 调整工具的显示位置", "用户把辅助工具从主窗浮出，工作实例仍由原来的插件持有。", "float"],
+      ["保存退出", "保存业务文件，记录工具布局", "Host 完成文档保存和关闭协调，记录最终布局，再等待运行收尾。", "close"],
+      ["重启", "恢复工具，等待用户打开文件", "浮窗回到记录的位置。文档内容可从先前保存的文件重新打开。", "restart"]
+    ]
+  },
+  {
+    title: "当前交付面向团队维护的 Windows 插件", short: "交付和接入边界", group: "交付与接入",
+    lead: "业务插件可独立开发和交付，通过 Host 的 SDK 与运行契约接入。",
+    visual: "duo", steps: [
+      ["运行环境", "Windows x64 为正式支持范围", "Host 以 Windows x64 为交付环境，macOS 路径仍处于实验阶段。", ["正式支持", "Windows x64", "实验路径", "macOS"]],
+      ["信任边界", "同团队插件与 Host 同进程运行", "通过 SDK 管理接入与兼容性。组织接入时需要确认插件受信任并由团队维护。", ["接入对象", "团队维护的可信插件", "执行位置", "Host 进程内"]],
+      ["交付方式", "用版本化插件包交付", "本地 ZIP 可经插件看板预检与确认，在重启时应用变更。", ["交付载荷", "独立插件目录或本地 ZIP", "生效时机", "重启后加载"]]
+    ]
+  },
+  { title: "从示例到接入", kind: "end", group: "交付与接入" }
+];
+
+const stage = document.querySelector("#stage");
+const catalog = document.querySelector("#catalog");
+const previous = document.querySelector("#previous");
+const next = document.querySelector("#next");
+const fullscreen = document.querySelector("#fullscreen");
+const count = slides.length;
+let current = -1;
+let stopPlayback = () => {};
+
+function cover() {
+  return `<div class="hero">
+    <div>
+      <p class="section-label">主 Host 架构演示</p>
+      <h1 tabindex="-1">Host 做了<span class="accent">什么</span></h1>
+      <p class="lead">我们做了一个可扩展的桌面工作台。Host 管理统一的工作区和运行机制，插件把业务页面、工具和操作接进来。</p>
+      <button class="btn primary" data-page="2" type="button">查看职责总览 →</button>
+    </div>
+    <svg class="hero-figure" viewBox="0 0 600 440" role="img" aria-label="Host 将文档、工具、命令和插件能力组织进同一个工作台">
+      <defs>
+        <linearGradient id="cover-core" x2="1" y2="1"><stop stop-color="#265774"/><stop offset="1" stop-color="#262551"/></linearGradient>
+        <linearGradient id="cover-ring"><stop stop-color="#68e7e0"/><stop offset="1" stop-color="#ad9aff"/></linearGradient>
+        <radialGradient id="cover-light"><stop stop-color="#4269c6" stop-opacity=".36"/><stop offset="1" stop-color="#4269c6" stop-opacity="0"/></radialGradient>
+      </defs>
+      <circle cx="300" cy="220" r="210" fill="url(#cover-light)"/>
+      <circle cx="300" cy="220" r="172" fill="none" stroke="#7e94ba" stroke-opacity=".23" stroke-dasharray="3 9"/>
+      <circle cx="300" cy="220" r="143" fill="none" stroke="#7e94ba" stroke-opacity=".3"/>
+      <circle cx="300" cy="220" r="117" fill="none" stroke="#7e94ba" stroke-opacity=".2"/>
+      <g class="orbit"><circle cx="300" cy="48" r="5" fill="#68e7e0"/><circle cx="300" cy="392" r="3" fill="#bbaaff"/></g>
+      <g class="orbit reverse"><circle cx="443" cy="220" r="5" fill="#bbaaff"/><circle cx="157" cy="220" r="4" fill="#ffd282"/></g>
+      <path class="signal" d="M93 115h105l38 40m271-40H402l-38 40 M93 325h105l38-40m271 40H402l-38-40" fill="none" stroke="url(#cover-ring)" stroke-width="2"/>
+      <g fill="#172540" stroke="#536a94">
+        <rect x="27" y="87" width="132" height="56" rx="14"/><rect x="441" y="87" width="132" height="56" rx="14"/>
+        <rect x="27" y="297" width="132" height="56" rx="14"/><rect x="441" y="297" width="132" height="56" rx="14"/>
+      </g>
+      <g fill="#e7efff" text-anchor="middle" font-size="21" font-weight="600">
+        <text x="93" y="123">文档页面</text><text x="507" y="123">工具面板</text>
+        <text x="93" y="333">工作台命令</text><text x="507" y="333">跨插件调用</text>
+      </g>
+      <g class="core">
+        <path d="M300 126 381 173v94l-81 47-81-47v-94Z" fill="url(#cover-core)" stroke="url(#cover-ring)" stroke-width="2.5"/>
+        <path d="M300 139 369 180v80l-69 40-69-40v-80Z" fill="none" stroke="#a8c6e1" stroke-opacity=".32"/>
+        <text x="300" y="226" fill="#f5fcff" text-anchor="middle" font-size="45" font-weight="800">HOST</text>
+        <text x="300" y="255" fill="#b4eae8" text-anchor="middle" font-size="18" letter-spacing="3">桌面工作台</text>
+      </g>
+    </svg></div>`;
+}
+
+function pyramid() {
+  return `<div class="pyramid visual" aria-label="Host 职责金字塔">
+    <div class="tier" style="--width:min(44%, 560px);--inset:12%">统一的桌面工作台</div>
+    <div class="tier" style="--width:min(76%, 940px);--inset:8%">让多种插件在同一个环境里工作</div>
+    <div class="pyramid-links">
+      <button class="btn" style="--color:var(--accent)" data-page="3" type="button"><strong>组织工作区</strong><span>文档、工具、停靠和浮窗</span></button>
+      <button class="btn" style="--color:#92caff" data-page="5" type="button"><strong>接入插件</strong><span>声明、注册、安装与更新</span></button>
+      <button class="btn" style="--color:var(--violet)" data-page="7" type="button"><strong>管理运行</strong><span>生命周期、保存和恢复</span></button>
+      <button class="btn" style="--color:var(--amber)" data-page="12" type="button"><strong>连接操作</strong><span>统一命令、跨插件调用</span></button>
+    </div>
+    <button class="btn" data-page="16" type="button">直接看完整操作演示 →</button>
+  </div>`;
+}
+
+function endPage() {
+  return `<div class="end-grid visual">
+    <div class="tile"><strong>用工作台</strong><span>了解文档、工具、布局和命令入口。</span><button class="btn" data-page="16" type="button">操作演示</button></div>
+    <div class="tile"><strong>接入插件</strong><span>从仓库内的 MyPlugTest 和 Managed Plugin 指南开始。</span><a href="docs/quick-start/README.md">插件开发指南 ↗</a></div>
+    <div class="tile"><strong>维护 Host</strong><span>从职责映射继续查到架构、源码与测试。</span><a href="docs/host-architecture/README.md">架构说明 ↗</a><a href="docs/maintenance/verification.md">验证说明 ↗</a></div>
+  </div>
+  <p class="hint" style="white-space:normal;margin-top:12px">参考文档随项目仓库提供，演示文件本身可单独打开。</p>
+  <div class="actions end-actions"><button class="btn primary" data-page="2" type="button">返回职责总览</button></div>`;
+}
+
+function deskScene() {
+  return `<div class="desk" data-view="doc">
+    <div class="window">
+      <div class="winbar"><strong>Host 工作台</strong><span class="winctrl" aria-hidden="true">– □ ×</span></div>
+      <div class="menus"><span>文件</span><span>视图</span><span>工具</span></div>
+      <div class="window-grid">
+        <div class="tools-side">工具中心<div id="tool-state">辅助工具</div></div>
+        <div class="doc-side">
+          <strong class="doc-tab" id="document-tab">插件文档</strong>
+          <div class="doc-line" aria-hidden="true"></div><div class="doc-line" aria-hidden="true"></div><div class="doc-line" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+    <div class="window floating" aria-hidden="true">
+      <div class="winbar"><strong id="float-title">辅助工具</strong><span class="winctrl">– □ ×</span></div>
+      <div class="float-content" id="float-content">插件工具面板</div>
+    </div>
+    <div class="palette" aria-hidden="true"><strong>命令面板</strong>保存当前文档　<kbd>Ctrl+S</kbd></div>
+  </div>`;
+}
+
+function sceneMarkup(slide) {
+  if (slide.visual === "desk") return deskScene();
+  if (slide.visual === "rail") return `<div class="rail-wrap"><div class="rail" role="group" aria-label="流程状态"></div><p class="rail-status"></p></div>`;
+  if (slide.visual === "matrix") return `<div class="matrix" role="group" aria-label="入口对应关系">${slide.mapping.map(([from, to], index) =>
+    `<button data-map="${index}" type="button">${from}</button><span class="arrow" aria-hidden="true">→</span><button data-map="${index}" type="button">${to}</button>`).join("")}</div>`;
+  return `<div class="duo"><div class="tile"><strong></strong><span></span></div><div class="tile"><strong></strong><span></span></div></div>`;
+}
+
+function mountInteraction(slide) {
+  const root = stage.querySelector(".interaction");
+  const choices = root.querySelector("[data-step-choices]");
+  const scene = root.querySelector(".scene");
+  const reading = root.querySelector(".reading");
+  const forward = root.querySelector("[data-step-next]");
+  const play = root.querySelector("[data-step-play]");
+  const variantButtons = [...root.querySelectorAll("[data-variant]")];
+  let option = 0;
+  let step = 0;
+  let timer;
+  const steps = () => slide.variants ? slide.variants[option].steps : slide.steps;
+
+  function pause() {
+    clearInterval(timer);
+    timer = undefined;
+    play.textContent = "自动播放";
+    play.setAttribute("aria-pressed", "false");
+  }
+  stopPlayback = pause;
+
+  function draw() {
+    const story = steps();
+    const [, title, body, state] = story[step];
+    const rail = scene.querySelector(".rail");
+    reading.querySelector("h3").textContent = title;
+    reading.querySelector("p").textContent = body;
+    reading.classList.remove("swap");
+    void reading.offsetWidth;
+    reading.classList.add("swap");
+    choices.querySelectorAll("[data-step]").forEach((button, index) => button.setAttribute("aria-pressed", index === step));
+    if (rail) {
+      rail.querySelectorAll("[data-step]").forEach((button, index) => {
+        button.classList.toggle("done", index < step);
+        button.setAttribute("aria-pressed", index === step);
+      });
+      scene.querySelector(".rail-status").textContent = story[step][0];
+    }
+    if (slide.visual === "desk") {
+      const desk = scene.querySelector(".desk");
+      desk.dataset.view = state;
+      const documentDock = slide.mode === "document-dock";
+      desk.querySelector("#float-title").textContent = documentDock ? "文档浮窗" : "工具浮窗";
+      desk.querySelector("#float-content").textContent = documentDock ? "插件文档（原实例）" : "插件辅助工具";
+      const tab = desk.querySelector("#document-tab");
+      tab.textContent = state === "restart" ? "打开文档…" :
+        documentDock && state === "float" ? "文档已移到浮窗" :
+        state === "close" ? "文档已保存并关闭" :
+        slide.mode === "full-story" && step === 0 ? "工作台已就绪" : "插件文档";
+      desk.querySelectorAll(".doc-line").forEach(line => {
+        line.hidden = ["close", "restart"].includes(state) || tab.textContent !== "插件文档";
+      });
+      desk.querySelector("#tool-state").textContent = state === "restart" ? "已恢复工具布局" : "辅助工具";
+      desk.querySelector(".floating").setAttribute("aria-hidden", !["float", "restart"].includes(state));
+      desk.querySelector(".palette").setAttribute("aria-hidden", state !== "palette");
+    }
+    if (slide.visual === "matrix") {
+      scene.querySelectorAll("[data-map]").forEach(button => {
+        const active = Number(button.dataset.map) === step;
+        button.classList.toggle("on", active);
+        button.setAttribute("aria-pressed", active);
+      });
+      scene.querySelectorAll(".arrow").forEach((arrow, index) => arrow.classList.toggle("on", index === step));
+    }
+    if (slide.visual === "duo") {
+      scene.querySelectorAll(".tile").forEach((tile, index) => {
+        tile.querySelector("strong").textContent = state[index * 2];
+        tile.querySelector("span").textContent = state[index * 2 + 1];
+        tile.classList.remove("update");
+        void tile.offsetWidth;
+        tile.classList.add("update");
+      });
+    }
+    forward.textContent = step < story.length - 1 ? "下一步" : "重新演示";
+  }
+
+  function buildSteps() {
+    const rail = scene.querySelector(".rail");
+    if (rail) {
+      rail.innerHTML = steps().map(([label], index) =>
+        `<button data-step="${index}" type="button"><span class="dot" aria-hidden="true">${index + 1}</span><span>${label}</span></button>`).join("");
+    } else {
+      choices.innerHTML = steps().map(([label], index) =>
+        `<button class="choice" data-step="${index}" type="button"><span class="step-number" aria-hidden="true">${index + 1}</span>${label}</button>`).join("");
+    }
+    variantButtons.forEach((button, index) => button.setAttribute("aria-pressed", index === option));
+    draw();
+  }
+
+  root.addEventListener("click", event => {
+    const button = event.target.closest("button");
+    if (!button) return;
+    if (button.hasAttribute("data-variant")) {
+      pause();
+      option = Number(button.dataset.variant);
+      step = 0;
+      buildSteps();
+    } else if (button.hasAttribute("data-step") || button.hasAttribute("data-map")) {
+      pause();
+      step = Number(button.dataset.step ?? button.dataset.map);
+      draw();
+    } else if (button === forward) {
+      pause();
+      step = (step + 1) % steps().length;
+      draw();
+    } else if (button === play) {
+      if (timer) {
+        pause();
+        return;
+      }
+      if (step === steps().length - 1) {
+        step = 0;
+        draw();
+      }
+      play.textContent = "暂停播放";
+      play.setAttribute("aria-pressed", "true");
+      timer = setInterval(() => {
+        step += 1;
+        draw();
+        if (step === steps().length - 1) pause();
+      }, 3800);
+    }
+  });
+  buildSteps();
+}
+
+function interactionMarkup(slide) {
+  return `<div class="interaction visual">
+    ${slide.variants ? `<div class="choices" role="group" aria-label="选择演示情景">${slide.variants.map((variant, index) =>
+      `<button class="choice" data-variant="${index}" type="button">${variant.label}</button>`).join("")}</div>` : ""}
+    <div class="choices" data-step-choices role="group" aria-label="选择演示步骤"${slide.visual === "rail" ? " hidden" : ""}></div>
+    <div class="interaction-body">
+      <div class="scene">${sceneMarkup(slide)}</div>
+      <div class="reading" aria-live="polite" aria-atomic="true"><h3></h3><p></p></div>
+    </div>
+    <div class="actions">
+      <button class="btn" data-step-next type="button">下一步</button>
+      <button class="btn" data-step-play aria-pressed="false" type="button">自动播放</button>
+      ${slide.visual === "desk" ? '<span class="hint">工作台示意</span>' : ""}
+    </div>
+  </div>`;
+}
+
+function display(index, focus = true) {
+  if (!Number.isInteger(index) || index < 0 || index >= count || index === current) return;
+  stopPlayback();
+  stopPlayback = () => {};
+  current = index;
+  const slide = slides[index];
+  const leads = {
+    pyramid: "先看 Host 的职责全景，再沿感兴趣的一项下钻。",
+    end: "可以直接回看操作，也可以在项目仓库中继续查接入和验证资料。"
+  };
+  const heading = `<p class="section-label">${slide.group}</p><h2 tabindex="-1">${slide.title}</h2>`;
+  const body = slide.kind === "pyramid" ? pyramid() : slide.kind === "end" ? endPage() : interactionMarkup(slide);
+  stage.innerHTML = `<section class="slide" aria-label="第 ${index + 1} 页">
+    ${slide.kind === "cover" ? cover() : `${heading}<p class="lead">${slide.lead ?? leads[slide.kind]}</p>${body}
+    ${slide.detail ? `<details><summary>查看技术细节</summary><p>${slide.detail}</p></details>` : ""}`}
+  </section>`;
+  if (!slide.kind) mountInteraction(slide);
+  previous.disabled = index === 0;
+  next.disabled = index === count - 1;
+  document.querySelector("#counter").textContent = `${String(index + 1).padStart(2, "0")} / ${count}`;
+  document.querySelector("#progress").style.width = `${(index + 1) * 100 / count}%`;
+  document.querySelector("#announcement").textContent = `第 ${index + 1} 页，共 ${count} 页`;
+  window.scrollTo(0, 0);
+  if (focus) stage.querySelector("h1, h2").focus({ preventScroll: true });
+}
+
+function goToPage(page) {
+  if (catalog.open) catalog.close();
+  display(page - 1);
+}
+
+stage.addEventListener("click", event => {
+  const link = event.target.closest("[data-page]");
+  if (link) goToPage(Number(link.dataset.page));
+});
+previous.addEventListener("click", () => display(current - 1));
+next.addEventListener("click", () => display(current + 1));
+document.querySelector("#overview").addEventListener("click", () => goToPage(2));
+document.querySelector("#open-toc").addEventListener("click", () => {
+  const toc = document.querySelector("#toc");
+  toc.innerHTML = slides.map((slide, index) =>
+    `<button class="btn" data-page="${index + 1}" type="button"${index === current ? ' aria-current="page"' : ""}>
+      <span>${String(index + 1).padStart(2, "0")}</span>${slide.short ?? slide.title}</button>`).join("");
+  catalog.showModal();
+  toc.querySelector('[aria-current="page"]').focus();
+});
+catalog.addEventListener("click", event => {
+  const link = event.target.closest("[data-page]");
+  if (link) goToPage(Number(link.dataset.page));
+  else if (event.target === catalog) {
+    const box = catalog.getBoundingClientRect();
+    if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) catalog.close();
+  }
+});
+
+async function toggleFullscreen() {
+  try {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await document.documentElement.requestFullscreen();
+  } catch {
+    document.querySelector("#announcement").textContent = "浏览器未进入全屏，可使用浏览器的全屏快捷键。";
+    fullscreen.textContent = "全屏（F11）";
+  }
+}
+fullscreen.addEventListener("click", toggleFullscreen);
+document.addEventListener("fullscreenchange", () => {
+  fullscreen.textContent = document.fullscreenElement ? "退出全屏" : "全屏";
+});
+document.addEventListener("keydown", event => {
+  if (catalog.open || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  const interactive = event.target.closest("button, a, summary, input, select, textarea, [contenteditable]");
+  const pageKeys = { ArrowRight: current + 1, PageDown: current + 1, ArrowLeft: current - 1, PageUp: current - 1, Home: 0, End: count - 1 };
+  if (Object.hasOwn(pageKeys, event.key)) {
+    event.preventDefault();
+    display(pageKeys[event.key]);
+  } else if (event.key === " " && !interactive) {
+    event.preventDefault();
+    display(current + 1);
+  } else if (event.key.toLowerCase() === "f" && !interactive) {
+    event.preventDefault();
+    void toggleFullscreen();
+  }
+});
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) stopPlayback();
+});
+display(0, false);
+</script>
+</body>
+</html>
