@@ -153,6 +153,16 @@ public sealed class WorkflowActionContext
         Guid invocationId,
         PluginId callerId,
         IProgress<WorkflowActionProgress> progress)
+        : this(invocationId, callerId, progress, null)
+    {
+    }
+
+    /// <summary>创建包含本次调用产物写入能力的上下文。</summary>
+    public WorkflowActionContext(
+        Guid invocationId,
+        PluginId callerId,
+        IProgress<WorkflowActionProgress> progress,
+        IWorkflowActionArtifactWriter? artifactWriter)
     {
         if (invocationId == Guid.Empty)
         {
@@ -161,6 +171,7 @@ public sealed class WorkflowActionContext
         InvocationId = invocationId;
         CallerId = callerId ?? throw new ArgumentNullException(nameof(callerId));
         Progress = progress ?? throw new ArgumentNullException(nameof(progress));
+        ArtifactWriter = artifactWriter;
     }
 
     /// <summary>获取 Host 为本次调用生成的唯一身份。</summary>
@@ -169,6 +180,8 @@ public sealed class WorkflowActionContext
     public PluginId CallerId { get; }
     /// <summary>获取由 Host 限流和脱敏的进度端口。</summary>
     public IProgress<WorkflowActionProgress> Progress { get; }
+    /// <summary>取得本次调用的可选内存产物写入器。</summary>
+    public IWorkflowActionArtifactWriter? ArtifactWriter { get; }
 }
 
 /// <summary>定义所有 Provider 插件共同实现的非泛型 JSON 调用边界。</summary>

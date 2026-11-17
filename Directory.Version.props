@@ -17,7 +17,7 @@
       六个对外 NuGet 包统一使用一个发布版本。保留各组件属性作为语义明确的映射，
       项目文件不再各自保存数字；包版本统一不改变产品版本、磁盘协议或 API 基线。
     -->
-    <MyAvaloniaPackageVersion>3.4.1</MyAvaloniaPackageVersion>
+    <MyAvaloniaPackageVersion>3.4.2</MyAvaloniaPackageVersion>
     <MyAvaloniaPackageFileVersion>$(MyAvaloniaPackageVersion).0</MyAvaloniaPackageFileVersion>
     <MyAvaloniaPluginSdkVersion>$(MyAvaloniaPackageVersion)</MyAvaloniaPluginSdkVersion>
     <MyAvaloniaPluginSdkNextMajorVersion>4.0.0</MyAvaloniaPluginSdkNextMajorVersion>

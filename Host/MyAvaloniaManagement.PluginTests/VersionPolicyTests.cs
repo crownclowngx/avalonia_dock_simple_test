@@ -34,8 +34,8 @@ public sealed class VersionPolicyTests
         var sdkContractAssembly = typeof(PluginId).Assembly;
 
         Assert.Equal("3.0.0", properties["MyAvaloniaProductVersion"]);
-        Assert.Equal("3.4.1", properties["MyAvaloniaPluginSdkVersion"]);
-        Assert.Equal("3.4.1", properties["MyAvaloniaPluginSdkWorkflowVersion"]);
+        Assert.Equal("3.4.2", properties["MyAvaloniaPluginSdkVersion"]);
+        Assert.Equal("3.4.2", properties["MyAvaloniaPluginSdkWorkflowVersion"]);
         Assert.False(
             properties.ContainsKey("MyAvaloniaHostApiAssemblyVersion"),
             "V3 不得重新引入独立 Host API 版本事实。");

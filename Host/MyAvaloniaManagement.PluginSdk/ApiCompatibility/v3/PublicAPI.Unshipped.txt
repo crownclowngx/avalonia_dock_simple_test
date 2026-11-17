@@ -8,6 +8,11 @@ MyAvaloniaManagement.PluginSdk.IWorkbenchDocumentCommandTarget
 MyAvaloniaManagement.PluginSdk.IWorkbenchDocumentCommandTarget.CanExecute(MyAvaloniaManagement.PluginSdk.CommandId! commandId) -> bool
 MyAvaloniaManagement.PluginSdk.IWorkbenchDocumentCommandTarget.CommandStateChanged -> System.EventHandler<MyAvaloniaManagement.PluginSdk.WorkbenchCommandStateChangedEventArgs!>?
 MyAvaloniaManagement.PluginSdk.IWorkbenchDocumentCommandTarget.ExecuteAsync(MyAvaloniaManagement.PluginSdk.CommandId! commandId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+MyAvaloniaManagement.PluginSdk.IWorkflowActionArtifactReader
+MyAvaloniaManagement.PluginSdk.IWorkflowActionArtifactReader.OpenReadAsync(string! artifactId, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<System.IO.Stream!>
+MyAvaloniaManagement.PluginSdk.IWorkflowActionArtifactWriter
+MyAvaloniaManagement.PluginSdk.IWorkflowActionArtifactWriter.Seal(string! outputProperty, string! mediaType) -> MyAvaloniaManagement.PluginSdk.WorkflowActionArtifactReference!
+MyAvaloniaManagement.PluginSdk.IWorkflowActionArtifactWriter.WriteAsync(System.ReadOnlyMemory<byte> bytes, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
 MyAvaloniaManagement.PluginSdk.IWorkflowActionGateway
 MyAvaloniaManagement.PluginSdk.IWorkflowActionGateway.CreateRun() -> MyAvaloniaManagement.PluginSdk.IWorkflowActionRun!
 MyAvaloniaManagement.PluginSdk.IWorkflowActionGateway.GetAvailableActions() -> System.Collections.Generic.IReadOnlyList<MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor!>!
@@ -18,15 +23,22 @@ MyAvaloniaManagement.PluginSdk.IWorkflowActionRun.InvokeAsync(MyAvaloniaManageme
 MyAvaloniaManagement.PluginSdk.WorkbenchCommandStateChangedEventArgs
 MyAvaloniaManagement.PluginSdk.WorkbenchCommandStateChangedEventArgs.CommandId.get -> MyAvaloniaManagement.PluginSdk.CommandId!
 MyAvaloniaManagement.PluginSdk.WorkbenchCommandStateChangedEventArgs.WorkbenchCommandStateChangedEventArgs(MyAvaloniaManagement.PluginSdk.CommandId! commandId) -> void
+MyAvaloniaManagement.PluginSdk.WorkflowActionArtifactReference
+MyAvaloniaManagement.PluginSdk.WorkflowActionArtifactReference.Id.get -> string!
+MyAvaloniaManagement.PluginSdk.WorkflowActionArtifactReference.MediaType.get -> string!
+MyAvaloniaManagement.PluginSdk.WorkflowActionArtifactReference.SizeBytes.get -> long
+MyAvaloniaManagement.PluginSdk.WorkflowActionArtifactReference.WorkflowActionArtifactReference(string! id, string! mediaType, long sizeBytes) -> void
 MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy
 MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy.EveryInvocation = 2 -> MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy
 MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy.Never = 0 -> MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy
 MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy.OncePerRun = 1 -> MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy
 MyAvaloniaManagement.PluginSdk.WorkflowActionContext
+MyAvaloniaManagement.PluginSdk.WorkflowActionContext.ArtifactWriter.get -> MyAvaloniaManagement.PluginSdk.IWorkflowActionArtifactWriter?
 MyAvaloniaManagement.PluginSdk.WorkflowActionContext.CallerId.get -> MyAvaloniaManagement.PluginSdk.PluginId!
 MyAvaloniaManagement.PluginSdk.WorkflowActionContext.InvocationId.get -> System.Guid
 MyAvaloniaManagement.PluginSdk.WorkflowActionContext.Progress.get -> System.IProgress<MyAvaloniaManagement.PluginSdk.WorkflowActionProgress!>!
 MyAvaloniaManagement.PluginSdk.WorkflowActionContext.WorkflowActionContext(System.Guid invocationId, MyAvaloniaManagement.PluginSdk.PluginId! callerId, System.IProgress<MyAvaloniaManagement.PluginSdk.WorkflowActionProgress!>! progress) -> void
+MyAvaloniaManagement.PluginSdk.WorkflowActionContext.WorkflowActionContext(System.Guid invocationId, MyAvaloniaManagement.PluginSdk.PluginId! callerId, System.IProgress<MyAvaloniaManagement.PluginSdk.WorkflowActionProgress!>! progress, MyAvaloniaManagement.PluginSdk.IWorkflowActionArtifactWriter? artifactWriter) -> void
 MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor
 MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor.ConfirmationPolicy.get -> MyAvaloniaManagement.PluginSdk.WorkflowActionConfirmationPolicy
 MyAvaloniaManagement.PluginSdk.WorkflowActionDescriptor.Description.get -> string!

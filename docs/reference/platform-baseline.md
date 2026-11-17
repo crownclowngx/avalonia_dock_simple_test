@@ -8,7 +8,7 @@
 | --- | --- |
 | .NET SDK / 目标框架 | 10.0.302，latestPatch / net10.0 |
 | Host 产品 | 3.0.0 |
-| 六个自有 NuGet 包 | 统一 3.4.1 |
+| 六个自有 NuGet 包 | 源码候选统一 3.4.2 |
 | Avalonia / Dock | 12.1.2 / 12.1.0.6 |
 | Host Avalonia 布局运行时补丁 | Avalonia.Base 12.1.2-host-layout.1；程序集 12.1.2.0；[固定源码与重建](../../patches/avalonia-cross-window-layout/README.md) |
 | Host Dock 呈现层补丁 | Dock.Avalonia 12.1.0.7-area.5；程序集 12.1.0.6；[固定源码与重建](../../patches/dock-area-fill/README.md) |
@@ -23,7 +23,7 @@ V10–V18 已实现插件看板、兼容报告、浮窗与 Layout V3、插件开
 
 ## 六个包
 
-下列包当前均为 `3.4.1`，唯一发布号来自 `MyAvaloniaPackageVersion`：
+下列包的当前源码候选版本为 `3.4.2`，版本来自 `MyAvaloniaPackageVersion`：
 
 | 包 | 职责 | 插件 ZIP |
 | --- | --- | --- |
@@ -34,11 +34,11 @@ V10–V18 已实现插件看板、兼容报告、浮窗与 Layout V3、插件开
 | MyAvaloniaManagement.Plugin.Build | manifest、资产校验、部署与确定性打包 | 开发期依赖，不携带 |
 | MyAvaloniaManagement.Plugin.Templates | 生成插件、Standalone、测试和文档 | 创建项目时使用 |
 
-Core/UI 的包和程序集版本同步；Workflow 虽使用包号 3.4.1，仍保留 `AssemblyVersion=1.0.0.0` 与 v1 API 基线。Icons 属于插件私有资源，不加入共享 SDK 闭包。
+Core/UI 的包和程序集版本同步。Workflow 的程序集使用 `AssemblyVersion=1.0.0.0` 与 v1 API 基线。Icons 作为插件私有资源随插件交付。
 
 ## 新插件与旧二进制
 
-当前模板精确锁定 Core/UI、Icons、Build `[3.4.1]`，生成插件业务版本从 `1.0.0` 开始，manifest 最低 SDK 为 `3.4.1`、上界为 `4.0.0`。使用可选 Workflow 包时同样采用当前包号。
+当前源码模板精确锁定 Core/UI、Icons、Build `[3.4.2]`，生成插件业务版本从 `1.0.0` 开始，manifest 最低 SDK 为 `3.4.2`、上界为 `4.0.0`。使用可选 Workflow 包时同样采用当前包号。
 
 旧 SDK 3.4.0 插件可以保留原 DLL 与 manifest，在新版 Host 回归；已经验证的范围见 [V9 使用与验证](../quick-start/host-v9-upgrade.md)。不能把加载/视图构造通过扩大为所有业务流程通过，也不能将新编译插件的最低 SDK 手动降回旧值。
 

@@ -59,7 +59,7 @@ public sealed class WorkflowActionG1IntegrationTests
             hostProvider.GetRequiredService<WorkflowActionCatalogStore>().Commit(
                 registry,
                 hostProvider.GetRequiredService<PluginAvailabilityReadModel>());
-            Assert.Single(registry.WorkflowActions);
+            Assert.Equal(2, registry.WorkflowActions.Count);
             Assert.Equal(2, registry.Plugins.Count);
 
             var providerId = new PluginId("myavalonia.plugin.workflow-g1-provider");
@@ -68,7 +68,7 @@ public sealed class WorkflowActionG1IntegrationTests
                 providerId, typeof(IWorkflowActionGateway)));
             var gateway = Assert.IsAssignableFrom<IWorkflowActionGateway>(
                 pluginProviders.GetRequiredService(consumerId, typeof(IWorkflowActionGateway)));
-            Assert.Single(gateway.GetAvailableActions());
+            Assert.Equal(2, gateway.GetAvailableActions().Count);
             await using var run = gateway.CreateRun();
             var progress = new List<WorkflowActionProgress>();
             var result = await run.InvokeAsync(
@@ -82,6 +82,30 @@ public sealed class WorkflowActionG1IntegrationTests
             Assert.Equal("跨 ALC", result.Output!.Value.GetProperty("echoed").GetString());
             Assert.Equal(consumerId.Value, result.Output.Value.GetProperty("caller").GetString());
             Assert.Single(progress);
+
+            var audioResult = await run.InvokeAsync(
+                new WorkflowActionInvocationRequest(
+                    new WorkflowActionId("myavalonia.plugin.workflow-g1-provider.workflow.artifact"),
+                    JsonSerializer.SerializeToElement(new { value = "sample" })),
+                null, CancellationToken.None);
+            Assert.Equal(WorkflowActionInvocationStatus.Succeeded, audioResult.Status);
+            var artifact = audioResult.Output!.Value.GetProperty("audio");
+            Assert.Equal("audio/mpeg", artifact.GetProperty("mediaType").GetString());
+            var id = artifact.GetProperty("id").GetString()!;
+            var reader = Assert.IsAssignableFrom<IWorkflowActionArtifactReader>(run);
+            await using var stream = await reader.OpenReadAsync(id, CancellationToken.None);
+            Assert.False(stream.CanWrite);
+            using var content = new MemoryStream();
+            await stream.CopyToAsync(content);
+            Assert.Equal("MP3 sample"u8.ToArray(), content.ToArray());
+            Assert.Equal(content.Length, artifact.GetProperty("sizeBytes").GetInt64());
+
+            await using var anotherRun = gateway.CreateRun();
+            var anotherReader = Assert.IsAssignableFrom<IWorkflowActionArtifactReader>(anotherRun);
+            await Assert.ThrowsAsync<KeyNotFoundException>(async () =>
+                await anotherReader.OpenReadAsync(id, CancellationToken.None));
+            await run.DisposeAsync();
+            Assert.Throws<ObjectDisposedException>(() => stream.ReadByte());
         }
         finally
         {

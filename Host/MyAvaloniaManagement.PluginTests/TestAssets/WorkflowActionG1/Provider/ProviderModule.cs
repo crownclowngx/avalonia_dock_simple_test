@@ -25,6 +25,35 @@ public sealed class ProviderModule : IPluginModule
             output.RootElement,
             WorkflowActionRiskFlags.None,
             WorkflowActionConfirmationPolicy.Never));
+
+        using var artifactOutput = JsonDocument.Parse("""
+            {"type":"object","properties":{"audio":{"type":"object","properties":{
+              "id":{"type":"string","maxLength":32},
+              "mediaType":{"type":"string","maxLength":128},
+              "sizeBytes":{"type":"integer","minimum":1}
+            },"required":["id","mediaType","sizeBytes"],"additionalProperties":false}},"required":["audio"],"additionalProperties":false}
+            """);
+        registration.AddWorkflowAction<ArtifactHandler>(new WorkflowActionDescriptor(
+            new WorkflowActionId("myavalonia.plugin.workflow-g1-provider.workflow.artifact"),
+            "G1 内存产物", "验证跨 ALC 内存产物读取。",
+            input.RootElement, artifactOutput.RootElement, WorkflowActionRiskFlags.None,
+            WorkflowActionConfirmationPolicy.Never));
+    }
+}
+
+public sealed class ArtifactHandler : IWorkflowActionHandler
+{
+    public async ValueTask<JsonElement> InvokeAsync(
+        JsonElement arguments, WorkflowActionContext context, CancellationToken cancellationToken)
+    {
+        var writer = context.ArtifactWriter ?? throw new InvalidOperationException();
+        await writer.WriteAsync("MP3"u8.ToArray(), cancellationToken);
+        await writer.WriteAsync(" sample"u8.ToArray(), cancellationToken);
+        var audio = writer.Seal("audio", "audio/mpeg");
+        return JsonSerializer.SerializeToElement(new
+        {
+            audio = new { id = audio.Id, mediaType = audio.MediaType, sizeBytes = audio.SizeBytes },
+        });
     }
 }
 

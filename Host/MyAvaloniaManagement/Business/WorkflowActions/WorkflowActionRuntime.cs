@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text.Json;
@@ -70,6 +71,7 @@ internal sealed class WorkflowActionRunManager : IWorkflowActionShutdownParticip
     private readonly IHostDiagnosticSink? _diagnostics;
     private readonly CancellationTokenSource _shutdown = new();
     private readonly HashSet<WorkflowActionRun> _runs = [];
+    private readonly WorkflowArtifactStore _artifacts = new();
     private readonly Dictionary<PluginId, int> _ownerConcurrency = [];
     private TaskCompletionSource _drained = CompletedDrainSource();
     private int _activeInvocations;
@@ -119,7 +121,7 @@ internal sealed class WorkflowActionRunManager : IWorkflowActionShutdownParticip
             {
                 throw new InvalidOperationException("Workflow Action 目录尚未提交。");
             }
-            var run = new WorkflowActionRun(this, callerId, _catalog.ContractRevision);
+            var run = new WorkflowActionRun(this, callerId, _catalog.ContractRevision, _artifacts.CreateRun());
             _runs.Add(run);
             return run;
         }
@@ -136,9 +138,13 @@ internal sealed class WorkflowActionRunManager : IWorkflowActionShutdownParticip
                 return;
             }
             _accepting = false;
-            _shutdown.Cancel(throwOnFirstException: false);
             runs = _runs.ToArray();
         }
+        foreach (var run in runs)
+        {
+            run.Artifacts.Close();
+        }
+        _shutdown.Cancel(throwOnFirstException: false);
         foreach (var run in runs)
         {
             run.CancelFromHost();
@@ -310,29 +316,25 @@ internal sealed class WorkflowActionRunManager : IWorkflowActionShutdownParticip
             progress, _limits.MinimumProgressInterval, _timeProvider);
         try
         {
-            await using var scope = _scopeFactory.CreateWorkflowActionScope(
-                registration.OwnerId, registration.HandlerType);
-            using var invocationGuard = WorkflowActionInvocationGuard.Enter();
-            var output = await scope.Handler.InvokeAsync(
-                arguments.Clone(),
-                new WorkflowActionContext(invocationId, run.CallerId, relay),
-                linked.Token).ConfigureAwait(false);
-
-            if (timeout.IsCancellationRequested &&
-                !callerCancellation.IsCancellationRequested &&
-                !run.CancellationToken.IsCancellationRequested &&
-                !_shutdown.IsCancellationRequested)
+            using var artifact = run.Artifacts.Begin(linked.Token);
+            JsonElement output;
+            await using (var scope = _scopeFactory.CreateWorkflowActionScope(
+                registration.OwnerId, registration.HandlerType))
             {
-                return Failure(invocationId, WorkflowActionInvocationStatus.TimedOut,
-                    "WORKFLOW_ACTION_TIMEOUT", "Workflow Action 已超过 Host 时间预算。",
-                    registration, stopwatch.Elapsed);
+                using var invocationGuard = WorkflowActionInvocationGuard.Enter();
+                output = (await scope.Handler.InvokeAsync(
+                    arguments.Clone(),
+                    new WorkflowActionContext(invocationId, run.CallerId, relay, artifact),
+                    linked.Token).ConfigureAwait(false)).Clone();
             }
+            linked.Token.ThrowIfCancellationRequested();
             try
             {
                 WorkflowActionSchemaValidator.ValidateInstance(
                     registration.Descriptor.OutputSchema,
                     output,
                     WorkflowActionSchemaValidator.MaximumOutputBytes);
+                artifact.Publish(output);
             }
             catch (Exception exception) when (exception is ArgumentException or InvalidOperationException)
             {
@@ -343,8 +345,14 @@ internal sealed class WorkflowActionRunManager : IWorkflowActionShutdownParticip
             return new WorkflowActionInvocationResult(
                 invocationId,
                 WorkflowActionInvocationStatus.Succeeded,
-                output.Clone(),
+                output,
                 failure: null);
+        }
+        catch (WorkflowArtifactQuotaException exception)
+        {
+            return Failure(invocationId, WorkflowActionInvocationStatus.Failed,
+                "WORKFLOW_ACTION_ARTIFACT_QUOTA", "Workflow Action 内存产物超出配额。",
+                registration, stopwatch.Elapsed, exception);
         }
         catch (OperationCanceledException) when (
             timeout.IsCancellationRequested &&
@@ -565,7 +573,8 @@ internal static class WorkflowActionInvocationGuard
 internal sealed class WorkflowActionRun(
     WorkflowActionRunManager manager,
     PluginId callerId,
-    string revision) : IWorkflowActionRun
+    string revision,
+    WorkflowArtifactStore.Run artifacts) : IWorkflowActionRun, IWorkflowActionArtifactReader
 {
     private readonly object _gate = new();
     private readonly WorkflowActionRunManager _manager = manager;
@@ -578,6 +587,10 @@ internal sealed class WorkflowActionRun(
     internal PluginId CallerId { get; } = callerId;
     internal string Revision { get; } = revision;
     internal CancellationToken CancellationToken => _cancellation.Token;
+    internal WorkflowArtifactStore.Run Artifacts { get; } = artifacts;
+
+    public ValueTask<Stream> OpenReadAsync(string artifactId, CancellationToken cancellationToken) =>
+        Artifacts.OpenReadAsync(artifactId, cancellationToken);
 
     public Task<WorkflowActionInvocationResult> InvokeAsync(
         WorkflowActionInvocationRequest request,
@@ -610,6 +623,7 @@ internal sealed class WorkflowActionRun(
                 return;
             }
             _disposed = true;
+            Artifacts.Close();
             _cancellation.Cancel(throwOnFirstException: false);
             tasks = _activeTasks.ToArray();
         }
@@ -624,7 +638,17 @@ internal sealed class WorkflowActionRun(
         }
     }
 
-    internal void CancelFromHost() => _cancellation.Cancel(throwOnFirstException: false);
+    internal void CancelFromHost()
+    {
+        try
+        {
+            _cancellation.Cancel(throwOnFirstException: false);
+        }
+        catch (ObjectDisposedException)
+        {
+            // Consumer 已先关闭 Run 并排空其调用。
+        }
+    }
 
     internal bool TryEnter(int maximum)
     {

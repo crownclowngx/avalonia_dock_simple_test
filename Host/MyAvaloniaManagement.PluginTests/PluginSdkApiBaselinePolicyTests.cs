@@ -110,7 +110,7 @@ public sealed class PluginSdkApiBaselinePolicyTests
         // Shipped，或遗漏本次重新签署的 Run/Target/Placement 边界。
         Assert.Equal(127, v3Shipped.Length);
         Assert.Equal(45, uiV3Shipped.Length);
-        Assert.Equal(91, coreV3Unshipped.Length);
+        Assert.Equal(103, coreV3Unshipped.Length);
         // V6.1 增加 13 条可选图标契约签名，历史 Shipped 不移动。
         Assert.Equal(79, uiV3Unshipped.Length);
         Assert.Contains(uiV3Unshipped, entry => entry.Contains("IPluginIconRegistration.AddIcon", StringComparison.Ordinal));
@@ -118,6 +118,8 @@ public sealed class PluginSdkApiBaselinePolicyTests
             "IWorkflowActionGateway.CreateRun()", StringComparison.Ordinal));
         Assert.Contains(coreV3Unshipped, entry => entry.Contains(
             "IWorkflowActionRun.InvokeAsync", StringComparison.Ordinal));
+        Assert.Contains(coreV3Unshipped, entry => entry.Contains(
+            "IWorkflowActionArtifactReader.OpenReadAsync", StringComparison.Ordinal));
         Assert.Contains(uiV3Unshipped, entry => entry.Contains(
             "UseWorkflowActionGateway", StringComparison.Ordinal));
         Assert.Contains(coreV3Unshipped, entry => entry.Contains(
