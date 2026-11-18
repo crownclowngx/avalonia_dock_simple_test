@@ -1,6 +1,6 @@
 # 版本与交付边界
 
-> 用途：集中解释当前版本、包职责和支持范围。状态：当前；核对日期：2026-09-21。事实源：[版本属性](../../Directory.Version.props)、[SDK 选择](../../global.json)、[模板依赖](../../Packaging/MyAvaloniaManagement.Plugin.Templates/content/myavalonia-plugin/Directory.Packages.props)。
+> 用途：集中解释当前版本、包职责和支持范围。状态：当前；核对日期：2026-11-18。事实源：[版本属性](../../Directory.Version.props)、[SDK 选择](../../global.json)、[模板依赖](../../Packaging/MyAvaloniaManagement.Plugin.Templates/content/myavalonia-plugin/Directory.Packages.props)。
 
 ## 当前源码基线
 
@@ -8,7 +8,7 @@
 | --- | --- |
 | .NET SDK / 目标框架 | 10.0.302，latestPatch / net10.0 |
 | Host 产品 | 3.0.0 |
-| 六个自有 NuGet 包 | 源码候选统一 3.4.2 |
+| 六个自有 NuGet 包 | 统一发布为 3.4.2 |
 | Avalonia / Dock | 官方 Avalonia 12.1.6 / Dock 12.1.5 |
 | Host Dock 呈现层补丁 | Dock.Avalonia 12.1.5.1-area.2，程序集 12.1.5.0。[固定源码与重建](../../patches/dock-area-fill/README.md) |
 | Semi / Ursa | 12.1.0.1 / 2.3.1 |
@@ -22,16 +22,16 @@ V10–V18 已实现插件看板、兼容报告、浮窗与 Layout V3、插件开
 
 ## 六个包
 
-下列包的当前源码候选版本为 `3.4.2`，版本来自 `MyAvaloniaPackageVersion`：
+下列包已在 NuGet.org 发布 `3.4.2`，版本来自 `MyAvaloniaPackageVersion`。
 
 | 包 | 职责 | 插件 ZIP |
 | --- | --- | --- |
-| MyAvaloniaManagement.PluginSdk | BCL-only 身份、Document、生命周期、Action、Command 契约 | 不携带，由 Host 提供 |
-| MyAvaloniaManagement.PluginSdk.UI | 模块、私有 DI、View、窗口端口及贡献声明 | 不携带，由 Host 提供 |
-| MyAvaloniaManagement.PluginSdk.Workflow | Schema Profile、引用路径、类型兼容、双 revision | 不携带，由 Host 提供 |
-| MyAvaloniaManagement.Icons | 无 UI/SDK 依赖的矢量数据 | 使用时作为声明过的私有依赖携带 |
-| MyAvaloniaManagement.Plugin.Build | manifest、资产校验、部署与确定性打包 | 开发期依赖，不携带 |
-| MyAvaloniaManagement.Plugin.Templates | 生成插件、Standalone、测试和文档 | 创建项目时使用 |
+| [MyAvaloniaManagement.PluginSdk](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk/3.4.2) | BCL-only 身份、Document、生命周期、Action、Command 契约 | 不携带，由 Host 提供 |
+| [MyAvaloniaManagement.PluginSdk.UI](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk.UI/3.4.2) | 模块、私有 DI、View、窗口端口及贡献声明 | 不携带，由 Host 提供 |
+| [MyAvaloniaManagement.PluginSdk.Workflow](https://www.nuget.org/packages/MyAvaloniaManagement.PluginSdk.Workflow/3.4.2) | Schema Profile、引用路径、类型兼容、双 revision | 不携带，由 Host 提供 |
+| [MyAvaloniaManagement.Icons](https://www.nuget.org/packages/MyAvaloniaManagement.Icons/3.4.2) | 无 UI/SDK 依赖的矢量数据 | 使用时作为声明过的私有依赖携带 |
+| [MyAvaloniaManagement.Plugin.Build](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Build/3.4.2) | manifest、资产校验、部署与确定性打包 | 开发期依赖，不携带 |
+| [MyAvaloniaManagement.Plugin.Templates](https://www.nuget.org/packages/MyAvaloniaManagement.Plugin.Templates/3.4.2) | 生成插件、Standalone、测试和文档 | 创建项目时使用 |
 
 Core/UI 的包和程序集版本同步。Workflow 的程序集使用 `AssemblyVersion=1.0.0.0` 与 v1 API 基线。Icons 作为插件私有资源随插件交付。
 

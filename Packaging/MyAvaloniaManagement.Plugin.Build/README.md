@@ -13,14 +13,12 @@ Host 主程序集、Core/UI/Workflow SDK 和其他既有共享程序集仍受原
 `ManagedPluginDeployRoot` 时才部署插件目录；调用 `BuildManagedPluginPackage` 会在隔离目录中执行
 锁定还原和 Release 构建，最终生成确定性 ZIP 与外置摘要清单。
 
-V10 工作树增量（尚未公开发布）：构建同时生成可选 `plugin.build.json`，包含目标框架、实际解析的
+从 `3.4.2` 起，构建同时生成可选 `plugin.build.json`，包含目标框架、实际解析的
 NuGet 包版本和 Build 版本。此文件随部署和 ZIP 一起交付，不修改严格 manifest；不要手动填写或加入时间、
 个人路径。旧产物没有该文件时仍可加载，其编译包版本显示未知。程序集引用版本与 NuGet 包版本分别展示。
-候选消费验证使用隔离版本和 feed，不覆盖已经发布的 3.4.1。
 
-小镇部署修正的本地候选 `3.4.2-richtown.1` 精确允许 `Microsoft.Extensions.DependencyModel.dll`，
-保留 DI、Configuration 及所有其他既有共享/禁带保护。该组件不属于 Host 的实际共享闭包；由声明其依赖的插件携带，
-运行时仍走现有插件 ALC/deps 解析，不增加全局解析器或改变 Host 共享实例。此候选只在本地 feed 消费，不代表已上传 NuGet.org。
+`3.4.2` 允许插件声明 `Microsoft.Extensions.DependencyModel.dll` 为私有运行时依赖。依赖由声明它的插件携带，
+通过插件自己的加载上下文和 deps 文件解析。DI、Configuration 等共享程序集仍受打包规则保护。
 
 兼容验收报告放在插件目录之外，由 Host 维护者的本地工具生成。在“工具 → 插件看板…”导入，
 再显式检查安装产物；加载成功不能代表 Workspace、原生播放或业务流程已经验证。
@@ -47,7 +45,7 @@ NuGet 包版本和 Build 版本。此文件随部署和 ZIP 一起交付，不�
 `ManagedPluginPrivatePackage`。可用 `dotnet list <Plugin.csproj> package --include-transitive` 查看依赖树。
 SDK、Avalonia、Dock、Semi、Ursa、CommunityToolkit、`Microsoft.Extensions.*` 和 Newtonsoft.Json 受禁带规则保护，
 除上述精确的 DependencyModel 私有例外外，不得声明为插件私有包。禁带不等于 Host 保证提供：Newtonsoft.Json 是历史限制，Microsoft.Extensions 仅提供
-明确根及其实际依赖闭包。V10 开发中的规则统一来自 `MyAvaloniaManagement.RuntimeProfile.props`，尚未公开发布。
+明确根及其实际依赖闭包。打包规则统一来自 `MyAvaloniaManagement.RuntimeProfile.props`。
 只被 Standalone 或 Tests 使用的包只加到对应项目，不进入插件 ZIP。
 
 如果漏掉第 3 步，普通 `bin` 或 Standalone 可能仍能运行，但 Build 生成的正式 ZIP 不会携带该 DLL，部署后
