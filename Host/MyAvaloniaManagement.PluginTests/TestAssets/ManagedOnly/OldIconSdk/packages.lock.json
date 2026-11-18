@@ -72,7 +72,7 @@
       },
       "Irihi.Ursa": {
         "type": "CentralTransitive",
-        "requested": "[2.1.0, )",
+        "requested": "[2.3.1, )",
         "resolved": "2.1.0",
         "contentHash": "G2wAmenCgMZkBOqs5MYRtlurhU2tAKKmcNJzjjaA9Mj5v3YIivuv7wyNpIpgYZ602sOZhFtQwYrCaLVUhn9Htw==",
         "dependencies": {
@@ -83,7 +83,7 @@
       },
       "Irihi.Ursa.Themes.Semi": {
         "type": "CentralTransitive",
-        "requested": "[2.1.0, )",
+        "requested": "[2.3.1, )",
         "resolved": "2.1.0",
         "contentHash": "vz7iA6YcAqJ9Z34CXGtapsROERLjZ7vD1CqblO7V5NWQyrJ5igbAYSuFFWnZnPVFKkyKM/c43oGmcWjiDBLoHA==",
         "dependencies": {
@@ -100,7 +100,7 @@
       },
       "Semi.Avalonia": {
         "type": "CentralTransitive",
-        "requested": "[12.1.0, )",
+        "requested": "[12.1.0.1, )",
         "resolved": "12.1.0",
         "contentHash": "me56M9qqcCTdYrsnf2vmd1xNF9gBN33PE3CXc9Gq1NPHO8fieZgFkmeqvaJnLMHg927UQyb7xmRSRf/ORAbv/w==",
         "dependencies": {

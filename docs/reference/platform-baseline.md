@@ -12,7 +12,7 @@
 | Avalonia / Dock | 12.1.2 / 12.1.0.6 |
 | Host Avalonia 布局运行时补丁 | Avalonia.Base 12.1.2-host-layout.1；程序集 12.1.2.0；[固定源码与重建](../../patches/avalonia-cross-window-layout/README.md) |
 | Host Dock 呈现层补丁 | Dock.Avalonia 12.1.0.7-area.5；程序集 12.1.0.6；[固定源码与重建](../../patches/dock-area-fill/README.md) |
-| Semi / Ursa | 12.1.0 / 2.1.0 |
+| Semi / Ursa | 12.1.0.1 / 2.3.1 |
 | manifest / Document envelope | schema 2 |
 | Layout | schema 3；布局文件 layout-v3.json；V1/V2 不探测、不读取、不迁移 |
 | 默认数据根 | `%LOCALAPPDATA%/MyAvaloniaManagement/v2/` |

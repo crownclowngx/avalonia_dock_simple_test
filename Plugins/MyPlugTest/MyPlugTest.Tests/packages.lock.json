@@ -57,16 +57,16 @@
       },
       "Irihi.Avalonia.Shared": {
         "type": "Transitive",
-        "resolved": "0.4.0",
-        "contentHash": "T6+jezCUjisJNz6zkNcNLVNI2ttWznbyQnW6MS9L45EXhePqRCIxB3xV/5L8gFAJ83JrhiCIokMOxRWdq9/1Zg==",
+        "resolved": "0.5.0",
+        "contentHash": "UiUCCdP2xBuKWByLUvc+eMIZypBPESGC9PKUA3vF2v7F8bkzWQ6m0ung4gZtIhzH+RU2xclvcDBge0E368M58g==",
         "dependencies": {
           "Avalonia": "12.0.0"
         }
       },
       "Irihi.Avalonia.Shared.Contracts": {
         "type": "Transitive",
-        "resolved": "0.4.0",
-        "contentHash": "Du8DY2YqlSmCmywqZtuOhgwLkgklMeE1ajZ4Dd/iqVz6HmAKptjVTqA1oloZX5ihqsdKRiNuUGCdYPe1rekf2Q=="
+        "resolved": "0.5.0",
+        "contentHash": "Is1wn/QEBsHnY632WpUX5+iKmQ+GzmE15iHXpohbRCjN/gfrxTxzIxgriNWvPI9+S4Lq/oDw8Yz2js/QzqV0xA=="
       },
       "MicroCom.Runtime": {
         "type": "Transitive",
@@ -222,11 +222,11 @@
         "dependencies": {
           "Avalonia": "[12.1.2, 12.1.2]",
           "Avalonia.Themes.Fluent": "[12.1.2, 12.1.2]",
-          "Irihi.Ursa": "[2.1.0, 2.1.0]",
-          "Irihi.Ursa.Themes.Semi": "[2.1.0, 2.1.0]",
+          "Irihi.Ursa": "[2.3.1, 2.3.1]",
+          "Irihi.Ursa.Themes.Semi": "[2.3.1, 2.3.1]",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.15, 10.0.15]",
           "MyAvaloniaManagement.PluginSdk": "[3.4.2, )",
-          "Semi.Avalonia": "[12.1.0, 12.1.0]"
+          "Semi.Avalonia": "[12.1.0.1, 12.1.0.1]"
         }
       },
       "myplugtest": {
@@ -292,23 +292,23 @@
       },
       "Irihi.Ursa": {
         "type": "CentralTransitive",
-        "requested": "[2.1.0, )",
-        "resolved": "2.1.0",
-        "contentHash": "G2wAmenCgMZkBOqs5MYRtlurhU2tAKKmcNJzjjaA9Mj5v3YIivuv7wyNpIpgYZ602sOZhFtQwYrCaLVUhn9Htw==",
+        "requested": "[2.3.1, )",
+        "resolved": "2.3.1",
+        "contentHash": "jmogDDjn2TwJHRK+gmdDUfUyP3+GpUf299Eyt+RuiP+rmH6lCRg+agBMxmvgvPiiryQUY54x9KN0wyN6K3HKRw==",
         "dependencies": {
           "Avalonia": "12.0.2",
-          "Irihi.Avalonia.Shared": "0.4.0",
-          "Irihi.Avalonia.Shared.Contracts": "0.4.0"
+          "Irihi.Avalonia.Shared": "0.5.0",
+          "Irihi.Avalonia.Shared.Contracts": "0.5.0"
         }
       },
       "Irihi.Ursa.Themes.Semi": {
         "type": "CentralTransitive",
-        "requested": "[2.1.0, )",
-        "resolved": "2.1.0",
-        "contentHash": "vz7iA6YcAqJ9Z34CXGtapsROERLjZ7vD1CqblO7V5NWQyrJ5igbAYSuFFWnZnPVFKkyKM/c43oGmcWjiDBLoHA==",
+        "requested": "[2.3.1, )",
+        "resolved": "2.3.1",
+        "contentHash": "gK0WAievyct6dGcQGou5qGNr8p9eh5SWHdvKxAf6Oskg0NLcqOmrwYRJGwNrZPfPeO0+aHjJpMDIPaQi2U7rYA==",
         "dependencies": {
           "Avalonia": "12.0.2",
-          "Irihi.Ursa": "2.1.0",
+          "Irihi.Ursa": "2.3.1",
           "Semi.Avalonia": "12.0.1"
         }
       },
@@ -332,12 +332,12 @@
       },
       "Semi.Avalonia": {
         "type": "CentralTransitive",
-        "requested": "[12.1.0, )",
-        "resolved": "12.1.0",
-        "contentHash": "me56M9qqcCTdYrsnf2vmd1xNF9gBN33PE3CXc9Gq1NPHO8fieZgFkmeqvaJnLMHg927UQyb7xmRSRf/ORAbv/w==",
+        "requested": "[12.1.0.1, )",
+        "resolved": "12.1.0.1",
+        "contentHash": "8wSI5jaGOpnWRurYGyaPjccnimVUa2xAsuKqYjJBLXSMbAiYB3QkCtJ/zrWnOVh/wXY4nSKQA1sWqZpcF7pE3g==",
         "dependencies": {
           "Avalonia": "12.1.0",
-          "Irihi.Avalonia.Shared": "0.4.0"
+          "Irihi.Avalonia.Shared": "0.5.0"
         }
       }
     }
