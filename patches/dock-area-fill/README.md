@@ -4,7 +4,7 @@
 
 ## 固定输入与产物
 
-唯一版本事实见 [baseline.json](baseline.json)：上游仓库、提交 `cc08602d02fde1b85067cec064da29f34785e505`、官方依赖 `12.1.0.6`、补丁包 `12.1.0.7-area.5`、SDK `10.0.302`、最低测试数量与最终包 SHA-256。补丁见 [area-fill.patch](area-fill.patch)。仅 `Dock.Avalonia` 使用补丁，其 Model、Settings、Controls、Theme 使用官方依赖。程序集版本仍为 `12.1.0.6`，以便官方主题按原身份绑定。
+固定基线为官方 `12.1.5`，本地包为 `12.1.5.1-area.1`，保留 `Dock.Avalonia` 程序集版本 `12.1.5.0` 以便官方主题绑定。Model、Settings、Controls 和 Theme 使用官方包。SDK `10.0.302`、固定提交、最低测试数量和最终包 SHA-256 见 [baseline.json](baseline.json)，源码差异见 [area-fill.patch](area-fill.patch)。
 
 上游只有公开签名密钥，因此补丁启用 PublicSign，保持相同公钥标识；不能把它说成持有上游私钥签名的官方产物。本项目运行于 .NET 10；其他运行时的签名验证不在本次范围。
 
@@ -31,19 +31,18 @@ dotnet restore MyAvaloniaManagement.sln --locked-mode
 | --- | --- |
 | `DockTarget.FillOnAreaDrop` | 默认关闭的局部区域策略，Host 样式显式开启 |
 | `DockTargetBase` | 区分明确按钮命中与校验结果，检查正文边界和裁剪，绘制选中区域 |
-| `DockManagerState` | 两条入口共用操作决策，全局明确按钮优先，统一预览清理与额外限制 |
-| `DockControlState`、`HostWindowState` | 保留原输入协议，在松开时刷新最终落点和权限；取消清理 |
+| `DockManagerState` | 将宿主预览矩形投影到当前提示层 |
+| `DockControlState`、`HostWindowState` | 接入宿主局部预览，使用上游拖动、校验和预览清理逻辑 |
 | `DockHelpers` | 排除关闭窗口后再进行窗口层级排序，保留非 Window 的有效 TopLevel |
-| `IDockDropGuard` | 由 Host 提供额外拒绝条件，不代替 Dock 能力验证 |
-| `IDockPreviewProvider` | 由 Host 提供绘制矩形，不接管布局与模型 |
+| `IDockPreviewProvider` | 提供宿主特有的分屏预览矩形 |
 
-上游测试依赖的 xUnit 对齐到 `3.2.2`；SourceLink 构建工具固定到 `10.0.401`，避免原版本 NuGet 审计告警。打包时仅呈现项目切换为官方 PackageReference，防止补丁包版本传递给未修改的 Model 项目。
+额外的停靠约束接入官方 `IDockDropPolicy`。测试沿用上游 xUnit `3.2.2`，SourceLink 沿用 `10.0.402`。打包时呈现项目引用与基线同版的官方包，保持 Model 等程序集的来源。
 
 ## 后续更新和回退
 
 1. 在独立上游检出修改并验证；从固定基线生成 `git diff --binary --full-index --no-ext-diff`，不要手工复制 DLL。
 2. 修改 `baseline.json`、中央补丁版本并递增预发布尾号，同时分配新的固定 `packageTimestampUtc`。同版本的已知哈希必须保留；新候选首次定稿后固定哈希，再用全新检出重建验证。
 3. 审阅并更新主仓锁文件，执行 [专项开发验证](../../docs/maintenance/dock-area-fill-verification.md) 和完整 verify。
-4. 临时关闭区域回退只需将 Host 的 `FillOnAreaDrop` 样式设为 False；恢复官方包还必须同时移除 Host 对两个补丁接口的实现，并恢复官方包源映射和锁文件。不能只替换 DLL。
+4. 可以通过 Host 的 `FillOnAreaDrop` 样式停用正文区域回停。切换到官方包时，一并替换区域回停和预览实现，调整包源映射以及锁文件。
 
 新 SDK、上游版本、签名方式或补丁输入都需要重新构建、审阅哈希及完整回归。原生遮挡、多屏 DPI 和外部原生控件验收继续单独记录。

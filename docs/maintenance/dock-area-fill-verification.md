@@ -19,7 +19,6 @@ Host 的 `DockSplitPolicy` 由预览与提交共同使用：Tool 对主文档区
 在仓库根目录执行：
 
 ```powershell
-pwsh -NoProfile -File tools/Build-AvaloniaLayoutPatch.ps1
 pwsh -NoProfile -File tools/Build-DockAreaFillPackage.ps1
 dotnet restore MyAvaloniaManagement.sln --locked-mode
 dotnet test Host/MyAvaloniaManagement.UiTests -c Release -m:1 --filter 'FullyQualifiedName~DockAreaFill|FullyQualifiedName~DockToolSplit|FullyQualifiedName~DockToolWindowClose|FullyQualifiedName~DockPointerCapture|FullyQualifiedName~DockLayoutV3'
@@ -27,7 +26,7 @@ dotnet test tools/MyAvaloniaManagement.Gate.Tests -c Release -m:1
 dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 ```
 
-verify 在 `avalonia-layout-patch` 之后执行 `dock-patch` 准备 Dock 补丁，失败会阻断 restore 和所有后续阶段。构建完成后，门禁核对 Host 与测试输出中的 Dock DLL 是否与包内 DLL 字节相同，拒绝增量复制留下的旧文件。主仓完整测试、SDK API 比较、MyPlugTest ZIP 验收继续沿用原门禁。没有运行任何 Windows 发布门禁。直接构建 Host 前先准备本地补丁源；外部插件无需引用补丁包。
+verify 的第一阶段 `dock-patch` 准备 Dock 补丁，失败会阻断 restore 和后续阶段。构建完成后，门禁核对 Host 与测试输出中的 Dock DLL 是否与包内 DLL 字节相同。主仓完整测试、SDK API 比较和 MyPlugTest ZIP 验收仍在同一次 verify 内执行。直接构建 Host 前先准备本地补丁源。
 
 ## 自动化覆盖
 

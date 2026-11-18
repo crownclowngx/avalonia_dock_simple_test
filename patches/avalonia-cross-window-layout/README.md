@@ -1,5 +1,7 @@
 # Avalonia 跨窗口布局队列补丁
 
+本目录记录 Avalonia `12.1.2` 宿主补丁。当前分支使用官方 `12.1.6`。如需按本文重建历史产物，请检出旧发布所用提交。[当前跨窗回归](../../docs/maintenance/dock-cross-window-layout-verification.md)
+
 Host 专用运行时身份：`avalonia-12.1.2-host-layout.1`。固定上游、SDK、程序集身份及 DLL/PDB 摘要以 [baseline.json](baseline.json) 为准。保留 [MIT 许可](LICENSE.md)。
 
 ## 修复边界

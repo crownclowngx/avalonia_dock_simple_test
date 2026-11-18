@@ -42,10 +42,10 @@
       可选 UI Profile 在打包时把下列值写成精确 NuGet 区间，避免外部插件在还原时
       自动漂移到宿主未验证的主题版本。
     -->
-    <MyAvaloniaAvaloniaUiVersion>12.1.2</MyAvaloniaAvaloniaUiVersion>
-    <MyAvaloniaDockUiVersion>12.1.0.6</MyAvaloniaDockUiVersion>
+    <MyAvaloniaAvaloniaUiVersion>12.1.6</MyAvaloniaAvaloniaUiVersion>
+    <MyAvaloniaDockUiVersion>12.1.5</MyAvaloniaDockUiVersion>
     <!-- 仅 Host 呈现层使用可重建补丁；Model、Theme 与对外 UI Profile 保持官方版本。 -->
-    <MyAvaloniaDockAvaloniaVersion>12.1.0.7-area.5</MyAvaloniaDockAvaloniaVersion>
+    <MyAvaloniaDockAvaloniaVersion>12.1.5.1-area.1</MyAvaloniaDockAvaloniaVersion>
     <MyAvaloniaSemiUiVersion>12.1.0.1</MyAvaloniaSemiUiVersion>
     <MyAvaloniaUrsaUiVersion>2.3.1</MyAvaloniaUrsaUiVersion>
     <MyAvaloniaDependencyInjectionUiVersion>10.0.15</MyAvaloniaDependencyInjectionUiVersion>

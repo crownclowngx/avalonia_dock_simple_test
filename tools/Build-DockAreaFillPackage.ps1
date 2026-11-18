@@ -140,7 +140,7 @@ try {
     $restoreConfig = Join-Path $sourceRoot 'NuGet.Config'
     Invoke-Checked dotnet @('test', $testProject, '-c', 'Release', '-m:1', '--nologo',
         "-p:RestoreConfigFile=$restoreConfig",
-        '--filter', 'FullyQualifiedName~DockAreaFill|FullyQualifiedName~DockHelpers|FullyQualifiedName~DockTargetTests|FullyQualifiedName~HostWindowStateTests|FullyQualifiedName~DockControlStateTests',
+        '--filter', 'FullyQualifiedName~DockAreaFill|FullyQualifiedName~DockHelpers|FullyQualifiedName~DockTargetTests|FullyQualifiedName~HostWindowStateTests|FullyQualifiedName~DockControlStateTests|FullyQualifiedName~DockDropPreviewTests',
         '--logger', 'trx;LogFileName=dock-area-fill.trx', '--results-directory', (Join-Path $buildRoot 'tests'))
     [xml]$testReport = Get-Content -LiteralPath (Join-Path $buildRoot 'tests/dock-area-fill.trx') -Raw
     $counters = $testReport.TestRun.ResultSummary.Counters

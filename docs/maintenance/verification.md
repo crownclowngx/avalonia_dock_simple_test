@@ -10,7 +10,7 @@
 dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 ```
 
-`verify` 允许未提交修改，只使用本仓源码。它先经过 `avalonia-layout-patch` 和 `dock-patch`，准备[布局运行时补丁](../../patches/avalonia-cross-window-layout/README.md)及[固定 Dock 补丁](../../patches/dock-area-fill/README.md)，再执行 locked restore、Release 零警告构建和输出 DLL 摘要检查、契约及已发布 API 比较、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit、MyPlugTest 打包和真实 ZIP 验收。不采集覆盖率，不启动 Windows Smoke，不授予发布资格。首次补丁构建需要 Git、PowerShell 7、SDK 10.0.302 及上游下载；首次 API 比较需要下载已记录摘要的三个公共基线包，后续使用校验后的缓存。跨窗崩溃的回归矩阵见[专项指南](dock-cross-window-layout-verification.md)。
+`verify` 允许未提交修改，只使用本仓源码。它先执行 `dock-patch` 准备固定 Dock 补丁，再执行 locked restore、Release 零警告构建和输出 DLL 摘要检查、契约与已发布 API 比较、SDK/Host Unit/Host Plugin/Host Headless UI/MyPlugTest Unit，以及 MyPlugTest 打包和真实 ZIP 验收。输出的 `Avalonia.Base.dll` 与锁定还原的官方资产逐字节比对。覆盖率和 Windows Smoke 由发布门禁执行。首次补丁构建需要 Git、PowerShell 7、SDK 10.0.302 及上游下载。首次 API 比较需要下载已记录摘要的三个公共基线包，后续复用校验后的缓存。[Dock 补丁](../../patches/dock-area-fill/README.md) · [跨窗口回归矩阵](dock-cross-window-layout-verification.md)
 
 `--scope host` 和 `--scope all` 都执行完整本仓验证。`workflow`、`workbench` scope 以及旧外部仓库参数均已退役；外部插件业务验证由各仓库独立负责。
 
@@ -40,7 +40,7 @@ Host 整体人工验收已由项目所有者[确认通过](../archive/records/ho
 | 主题 | 专项验证 |
 | --- | --- |
 | 浮窗、工具关闭与布局 V3 | [浮窗与布局](floating-layout-verification.md) |
-| 区域回停及跨窗口布局补丁 | [区域回停](dock-area-fill-verification.md)、[跨窗布局](dock-cross-window-layout-verification.md) |
+| 区域回停及跨窗口布局 | [区域回停](dock-area-fill-verification.md)、[跨窗布局](dock-cross-window-layout-verification.md) |
 | Registry、UI 调度与工作区查询 | [V12 内部职责](host-v12-refactor-verification.md) |
 | 插件兼容与下次启动开关 | [产物兼容](plugin-compatibility-verification.md)、[V13 插件开关](host-v13-plugin-enablement-verification.md) |
 | 进程重启与关闭交接 | [V14 自动重启](host-v14-automatic-restart-verification.md) |

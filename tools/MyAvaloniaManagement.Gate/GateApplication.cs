@@ -220,11 +220,6 @@ internal sealed class GateRunner
             {
                 switch (id)
                 {
-                    case "avalonia-layout-patch":
-                        await processes.RunCheckedAsync("pwsh", ["-NoProfile", "-File", "tools/Build-AvaloniaLayoutPatch.ps1"],
-                            root, environment, Path.Combine(evidenceRoot, "logs", "avalonia-layout-patch.log"), cancellationToken);
-                        AvaloniaLayoutPatchIdentity.Verify(root, []);
-                        break;
                     case "dock-patch":
                         // locked restore 之前生成唯一可信的本地依赖。脚本自身验证上游、补丁和包摘要，
                         // 并保存通过的测试收据；不能靠开发机全局 NuGet 缓存碰巧存在来通过门禁。
@@ -243,7 +238,7 @@ internal sealed class GateRunner
                             ["build", configuration.MainSolution, "-c", "Release", "--no-restore", "--nologo", "-warnaserror", "-m:1"],
                             root, environment, Path.Combine(evidenceRoot, "logs", "build-main.log"), cancellationToken);
                         DockPatchIdentity.Verify(root, RequiredHostAssemblies(root, "Dock.Avalonia.dll"));
-                        AvaloniaLayoutPatchIdentity.Verify(root, RequiredHostAssemblies(root, "Avalonia.Base.dll"));
+                        AvaloniaRuntimeIdentity.Verify(root, RequiredHostAssemblies(root, "Avalonia.Base.dll"));
                         break;
                     case "tests":
                         foreach (var suite in configuration.TestSuites)

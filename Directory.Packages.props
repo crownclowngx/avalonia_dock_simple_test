@@ -36,7 +36,7 @@
     <PackageVersion Include="QRCoder" Version="1.8.0" />
     <PackageVersion Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.12" />
     <PackageVersion Include="Semi.Avalonia" Version="$(MyAvaloniaSemiUiVersion)" />
-    <PackageVersion Include="Xaml.Behaviors" Version="12.0.7" />
+    <PackageVersion Include="Xaml.Behaviors" Version="12.1.5" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.v3" Version="3.2.2" />

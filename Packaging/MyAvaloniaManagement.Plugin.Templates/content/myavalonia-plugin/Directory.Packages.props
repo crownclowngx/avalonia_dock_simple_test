@@ -4,7 +4,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageVersion Include="Avalonia.Desktop" Version="[12.1.2]" />
+    <PackageVersion Include="Avalonia.Desktop" Version="[12.1.6]" />
     <PackageVersion Include="CommunityToolkit.Mvvm" Version="[8.4.2]" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="[18.8.1]" />
     <PackageVersion Include="MyAvaloniaManagement.Plugin.Build" Version="[3.4.2]" />

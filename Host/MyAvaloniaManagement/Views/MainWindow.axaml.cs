@@ -22,6 +22,8 @@ internal sealed partial class MainWindow : Window, IWindowContentFullscreenHost
     internal MainWindow(WorkbenchWindowContext windows, HostRestartCoordinator? restart = null)
     {
         InitializeComponent();
+        // 整体退出由主窗确认文档和保存布局，原生子窗清理在许可之后执行。
+        ClosingBehavior = WindowClosingBehavior.OwnerWindowOnly;
         _restart = restart;
         _restart?.Attach(Close, () => IsVisible && !_windowClosePending && !_windowCloseApproved && !CommandPaletteHost.IsBusy);
         _interaction = new WorkbenchWindowInteraction(this, windows, CommandPaletteLayer,

@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><MyAvaloniaUseLayoutPatch>true</MyAvaloniaUseLayoutPatch></PropertyGroup>
 
   <PropertyGroup>
     <ImplicitUsings>enable</ImplicitUsings>

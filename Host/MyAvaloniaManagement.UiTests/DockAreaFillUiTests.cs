@@ -202,7 +202,7 @@ public sealed class DockAreaFillUiTests
         {
             await Flush();
             var document = Assert.Single(context.Workspace.GetDocuments());
-            var guard = (IDockDropGuard)context.Workspace.DockFactory;
+            var guard = (IDockDropPolicy)context.Workspace.DockFactory;
             using (var fullscreen = ((IWindowContentFullscreenHost)main).TryPresent(new Border()))
             {
                 Assert.NotNull(fullscreen);
@@ -305,7 +305,7 @@ public sealed class DockAreaFillUiTests
         }
         internal DockOperation Resolve(IDockable source, IDockable target, HostDockFactory factory, Point? point = null) =>
             _target.GetDockOperation(point ?? new Point(30, 100), _area, _area, DragAction.Move, (_, operation, _, _) =>
-                ((IDockDropGuard)factory).CanDrop(source, target, operation) &&
+                ((IDockDropPolicy)factory).CanDrop(source, target, operation) &&
                 new DockManager(new DockService()).ValidateDockable(source, target, DragAction.Move, operation, false));
         public void Dispose() { ((IDockTarget)_target).Reset(); _layer.Children.Remove(_target); }
     }

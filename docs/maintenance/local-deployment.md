@@ -15,7 +15,7 @@ V20 完整退役 Layout V2，仅由 V3 恢复布局；旧布局文件不读取�
 ## 后续部署流程
 
 1. 固定本次源码与文档输入，保存验证结果；从该输入创建独立构建目录。RID restore/publish 在隔离副本进行，避免改变主仓锁文件。
-2. 按[跨窗布局](dock-cross-window-layout-verification.md)和[区域回停](dock-area-fill-verification.md)说明准备固定补丁。只发布 Host，设置 `SkipPluginDeploy=true`。
+2. 按[区域回停](dock-area-fill-verification.md)说明准备固定 Dock 补丁。发布 Host 时设置 `SkipPluginDeploy=true`。
 3. 使用 `SelfContained=true`、`PublishSingleFile=true`、`IncludeNativeLibrariesForSelfExtract=true`、`EnableCompressionInSingleFile=true`、`PublishTrimmed=false`，将构建警告视为错误。
 4. 核对最终 bundle 中实际运行时和补丁身份，再用空插件、隔离数据根与解包缓存验证实际 EXE 启动、正常关闭及 Layout V3。需要验证单文件重启或具体业务时，另记实际覆盖场景。
 5. 安装前检查实例是否退出，记录目标目录文件摘要并落实本次备份/回退安排；逐项交付已核对的文件，保留现有插件及用户数据，核对保留文件字节不变。

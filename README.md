@@ -4,7 +4,7 @@ MyAvaloniaManagement 是基于 .NET 10、Avalonia 和 Dock 的模块化桌面工
 
 > 当前说明，核对日期：2026-09-21。版本以 [Directory.Version.props](Directory.Version.props) 为准；操作与维护入口统一见[文档导航](docs/README.md)。
 
-当前产品版本为 `3.0.0`，六个自有 NuGet 包统一为 `3.4.1`，Avalonia / Dock 基线为 `12.1.2` / `12.1.0.6`。Host 的 Avalonia.Base 使用[跨窗布局运行时补丁](patches/avalonia-cross-window-layout/README.md) `12.1.2-host-layout.1`；Dock 呈现层使用[可重建区域回停补丁](patches/dock-area-fill/README.md) `12.1.0.7-area.5`。包发布状态、最低兼容版本与数据格式分别说明，见[版本与交付边界](docs/reference/platform-baseline.md)。
+当前产品版本为 `3.0.0`，六个自有 NuGet 包的源码版本为 `3.4.2`。Host 使用官方 Avalonia `12.1.6`，Dock 基线为 `12.1.5`，呈现层使用[可重建区域回停补丁](patches/dock-area-fill/README.md) `12.1.5.1-area.1`。包发布状态、最低兼容版本和数据格式见[版本与交付边界](docs/reference/platform-baseline.md)。
 
 正式支持范围为 Windows x64、同一团队维护的可信进程内插件。更新插件需要退出 Host、整体替换插件目录并重新启动；不提供插件沙箱、在线市场或热卸载。macOS 仍为[实验路径](docs/quick-start/macos-experiment.md)。
 
@@ -23,7 +23,6 @@ V23 本地 ZIP 插件安装与更新已接入当前源码：从“工具 → 插
 安装 [global.json](global.json) 指定的 .NET SDK `10.0.302`（允许 latestPatch），在仓库根目录执行：
 
 ```powershell
-pwsh -NoProfile -File tools/Build-AvaloniaLayoutPatch.ps1
 pwsh -NoProfile -File tools/Build-DockAreaFillPackage.ps1
 dotnet build Host/MyAvaloniaManagement/MyAvaloniaManagement.csproj -c Debug
 dotnet build Plugins/MyPlugTest/MyPlugTest/MyPlugTest.csproj -c Debug

@@ -48,8 +48,9 @@ public sealed class ExternalPluginBinaryAcceptanceTests(ITestOutputHelper output
         var loadContext = AssemblyLoadContext.GetLoadContext(assembly)!;
         Assert.NotSame(AssemblyLoadContext.Default, loadContext);
         foreach (var reference in assembly.GetReferencedAssemblies().Where(name =>
-                     name.Name!.StartsWith("Avalonia", StringComparison.Ordinal) ||
-                     name.Name.StartsWith("MyAvaloniaManagement.PluginSdk", StringComparison.Ordinal)))
+                     name.Name is "Avalonia" or "MyAvaloniaManagement.PluginSdk" ||
+                     name.Name!.StartsWith("Avalonia.", StringComparison.Ordinal) ||
+                     name.Name.StartsWith("MyAvaloniaManagement.PluginSdk.", StringComparison.Ordinal)))
         {
             var shared = loadContext.LoadFromAssemblyName(reference);
             Assert.Same(AssemblyLoadContext.Default, AssemblyLoadContext.GetLoadContext(shared));

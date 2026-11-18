@@ -11,6 +11,7 @@ using Dock.Avalonia.Behaviors;
 using Dock.Avalonia.Controls;
 using Dock.Avalonia.Controls.Overlays;
 using Dock.Model.Controls;
+using MyAvaloniaManagement.Business.Docking;
 using MyAvaloniaManagement.Business.Layout;
 using MyAvaloniaManagement.Business.Presentation;
 using MyAvaloniaManagement.PluginSdk.UI;
@@ -26,6 +27,7 @@ internal sealed class HostFloatingWindow : HostWindow, IWindowContentFullscreenH
     private readonly WorkbenchWindowContext _windows;
     private WorkbenchWindowInteraction? _interaction;
     private WindowClosingEventArgs? _closingArgs;
+    private bool _factoryCheckedClose;
     private bool _layoutTransfer;
 
     internal HostFloatingWindow(WorkbenchWindowContext windows)
@@ -38,7 +40,6 @@ internal sealed class HostFloatingWindow : HostWindow, IWindowContentFullscreenH
         AddHandler(Button.ClickEvent, OnToolChromeCloseClick, RoutingStrategies.Bubble);
     }
 
-    internal bool IsCloseCancelled => _closingArgs?.Cancel == true;
     internal bool IsInNativeCloseCallback => _closingArgs is not null;
     internal bool HasFullscreenContent => _interaction?.HasFullscreenContent == true;
     internal void OpenCommandPalette() => _interaction?.OpenCommandPalette();
@@ -102,14 +103,22 @@ internal sealed class HostFloatingWindow : HostWindow, IWindowContentFullscreenH
     protected override void OnClosing(WindowClosingEventArgs args)
     {
         _closingArgs = args;
+        _factoryCheckedClose = false;
         if (!_layoutTransfer && _interaction?.IsBusy == true) args.Cancel = true;
         try
         {
-            // Dock 先触发 Window.Closing，再咨询 Factory。Factory 必须读取同一 args 的最终
-            // Cancel 值；否则框架可能在其他监听者取消窗口后仍执行 Root.Close，先拆掉页面。
             base.OnClosing(args);
+            // 新版 Dock 在原生监听者拒绝时跳过 Factory。异步重试已取得的许可仍须撤销。
+            if (args.Cancel && !_factoryCheckedClose && Window is { Factory: HostDockFactory factory } window)
+                factory.CancelNativeWindowClose(window);
         }
         finally { _closingArgs = null; }
+    }
+
+    internal bool ObserveNativeCloseCancellation()
+    {
+        _factoryCheckedClose = true;
+        return _closingArgs?.Cancel == true;
     }
 
     protected override void OnClosed(EventArgs args)

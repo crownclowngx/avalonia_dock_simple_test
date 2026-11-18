@@ -109,7 +109,7 @@ public sealed class DockCrossWindowLayoutUiTests
         using var context = new UiTestContext(modules: PluginModuleCatalog.CreateForTests([(Plugin, (IPluginModule)new Module())]));
         var session = context.Workspace;
         var main = new MainWindow(session.DockFactory.WindowContext)
-            { Width = 400, Height = 300, DataContext = context.ViewModel };
+            { Width = 400, Height = 300, Position = new PixelPoint(40, 40), DataContext = context.ViewModel };
         main.Show();
         try
         {
@@ -122,6 +122,7 @@ public sealed class DockCrossWindowLayoutUiTests
             await Flush(); Dispatcher.UIThread.RunJobs(); main.UpdateLayout();
             var target = (HostFloatingWindow)DockTreeNavigator.FindWindow(session.RootDock!, welcome)!.Host!;
             target.Width = 1100; target.Height = 800;
+            target.Position = new PixelPoint(550, 40);
             target.UpdateLayout(); Dispatcher.UIThread.RunJobs();
             var view = Assert.IsType<ProbeView>(moved.PreparedView);
             Assert.Same(main, TopLevel.GetTopLevel(view));
@@ -129,7 +130,7 @@ public sealed class DockCrossWindowLayoutUiTests
             var area = target.GetVisualDescendants().OfType<Control>().First(control =>
                 DockProperties.GetIsDockTarget(control) && ReferenceEquals(control.DataContext, welcome.Owner) && control.IsEffectivelyVisible);
             var start = tab.TranslatePoint(new Point(15, tab.Bounds.Height / 2), main)!.Value;
-            // Headless 不模拟原生 Position。落点置于小源窗以外，确保测试命中已有目标浮窗。
+            // 两窗明确分开，按屏幕坐标将目标正文位置转换回源窗的鼠标输入坐标。
             var finish = main.PointToClient(area.PointToScreen(new Point(area.Bounds.Width * .8, area.Bounds.Height * .75)));
             main.MouseDown(start, MouseButton.Left);
             main.MouseMove(finish, RawInputModifiers.LeftMouseButton);

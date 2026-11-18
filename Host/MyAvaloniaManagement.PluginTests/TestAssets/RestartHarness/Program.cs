@@ -69,10 +69,7 @@ internal static class Program
                         { visible = splash.IsVisible, frameDuringBlockedPlugin = true, uiThread = Environment.CurrentManagedThreadId }));
                         if (mode == "startup-cancel-loading")
                         {
-                            splash.Close();
-                            await application.StartupCompletion;
-                            File.WriteAllText(Path.Combine(root, "startup.json"), JsonSerializer.Serialize(new
-                            { mainCreated = desktop.Windows.OfType<MainWindow>().Any(), cancelled = true }));
+                            CancelStartup(splash, desktop, root);
                             return;
                         }
                         File.WriteAllText(Path.Combine(root, "startup-release.json"), "{}");
@@ -80,10 +77,7 @@ internal static class Program
                     if (mode == "startup-cancel")
                     {
                         var splash = desktop.MainWindow as SplashWindow ?? throw new InvalidOperationException("启动首屏缺失。");
-                        splash.Close();
-                        await application.StartupCompletion;
-                        File.WriteAllText(Path.Combine(root, "startup.json"), JsonSerializer.Serialize(new
-                        { mainCreated = desktop.Windows.OfType<MainWindow>().Any(), cancelled = true }));
+                        CancelStartup(splash, desktop, root);
                         return;
                     }
                     await application.StartupCompletion;
@@ -230,6 +224,12 @@ internal static class Program
                 }
             }, DispatcherPriority.Background));
             var code = builder.StartWithClassicDesktopLifetime(arguments);
+            if (mode is ("startup-cancel" or "startup-cancel-loading") && !failure &&
+                Application.Current is not MyAvaloniaManagement.App { StartupCompletion.IsCompletedSuccessfully: true })
+            {
+                failure = true;
+                File.WriteAllText(Path.Combine(root, identity + ".error"), "启动取消后未完成收尾。");
+            }
             return mode == "bad-exit" || failure ? 1 : code;
         }, exception =>
         {
@@ -255,6 +255,18 @@ internal static class Program
             if (!File.Exists(Path.Combine(root, "release.json")) && !release.Wait(TimeSpan.FromSeconds(25))) return 1;
         }
         return result;
+    }
+
+    private static void CancelStartup(SplashWindow splash, IClassicDesktopStyleApplicationLifetime desktop, string root)
+    {
+        // Avalonia 关闭调度器时可能丢弃排队的 continuation。同步记录退出时的窗口事实，
+        // 消息循环返回后再独立核对生产启动任务是否完成收尾。
+        desktop.Exit += (_, _) => File.WriteAllText(Path.Combine(root, "startup.json"), JsonSerializer.Serialize(new
+        {
+            mainCreated = desktop.MainWindow is MainWindow || desktop.Windows.OfType<MainWindow>().Any(),
+            cancelled = true,
+        }));
+        splash.Close();
     }
 
     /// <summary>收据记录子进程实际加载的程序集字节，避免缩小副本时碰巧加载到别处的旧运行时。</summary>

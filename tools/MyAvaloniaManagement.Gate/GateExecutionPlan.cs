@@ -11,8 +11,8 @@ internal sealed class GateExecutionPlan
         this.execute = execute;
         Stages = profile switch
         {
-            GateProfile.Verify => ["avalonia-layout-patch", "dock-patch", "restore", "build", "contracts", "tests", "packages", "package-acceptance"],
-            GateProfile.Seal => ["avalonia-layout-patch", "dock-patch", "restore", "build", "tests", "contracts", "packages", "package-acceptance", "coverage", "windows-smoke"],
+            GateProfile.Verify => ["dock-patch", "restore", "build", "contracts", "tests", "packages", "package-acceptance"],
+            GateProfile.Seal => ["dock-patch", "restore", "build", "tests", "contracts", "packages", "package-acceptance", "coverage", "windows-smoke"],
             _ => throw new ArgumentOutOfRangeException(nameof(profile)),
         };
     }

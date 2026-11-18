@@ -1,5 +1,7 @@
 # Document 跨窗口布局崩溃专项维护
 
+Host 当前使用官方 Avalonia `12.1.6`，升级后仍执行下列布局归属及跨窗停靠回归。以下故障分析与修复证据记录的是原 `12.1.2` 基线。[上游修复](https://github.com/AvaloniaUI/Avalonia/pull/22491)
+
 > 当前状态（2026-09-21）：Host 整体人工验收由项目所有者手工使用后确认通过，见[人工验收确认](../archive/records/host/manual-acceptance-20260921.md)。本文保留专项命令和后续回归矩阵；原阶段自动化结果以关联记录/JSON 为准，当前交付见[本机部署](local-deployment.md)。
 
 > 核对日期：2026-09-21。框架补丁和自动化回归已实现；最终开发 verify 与产物身份以[开发证据](../archive/records/dock-area-fill/cross-window-layout-fix-evidence.json)为准。Host 人工验收见页首确认；交付状态与现行流程见[本机部署](local-deployment.md)。
@@ -18,8 +20,6 @@
 
 ```powershell
 $ErrorActionPreference = 'Stop'
-pwsh -NoProfile -File tools/Build-AvaloniaLayoutPatch.ps1
-if ($LASTEXITCODE -ne 0) { throw 'Avalonia 布局补丁准备失败' }
 pwsh -NoProfile -File tools/Build-DockAreaFillPackage.ps1
 if ($LASTEXITCODE -ne 0) { throw 'Dock 补丁准备失败' }
 dotnet restore MyAvaloniaManagement.sln --locked-mode
@@ -32,7 +32,7 @@ dotnet run --project tools/MyAvaloniaManagement.Gate -- verify
 if ($LASTEXITCODE -ne 0) { throw '完整开发验证失败' }
 ```
 
-默认 verify 在 restore 之前准备两个补丁，构建后核对 Host 和三个 Host 测试输出的真实 Base DLL。测试收据必须具有通过项、无失败、无跳过；DLL 缺失、旧缓存、摘要不符都阻断。没有执行 Windows CI、seal 或发布 Smoke。
+默认 verify 在 restore 前准备 Dock 补丁，构建后逐字节校验 Host 和三个 Host 测试的 Dock 与官方 Avalonia 运行时。DLL 缺失或摘要不符会中止验证。
 
 ## 自动化覆盖与证据解释
 

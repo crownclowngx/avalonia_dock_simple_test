@@ -33,7 +33,6 @@ public sealed class GateInfrastructureTests
     }
 
     [Theory]
-    [InlineData("avalonia-layout-patch")]
     [InlineData("dock-patch")]
     [InlineData("restore")]
     [InlineData("build")]
