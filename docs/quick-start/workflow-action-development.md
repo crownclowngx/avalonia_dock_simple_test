@@ -2,7 +2,7 @@
 
 > 用途：插件 Provider/Consumer 接入。状态：当前；核对日期：2026-09-16。事实源：[当前调用契约](../reference/workflow-actions.md)、Workflow SDK 和生成模板文档。
 
-当前新项目使用同版本 Core/UI 与可选 Workflow SDK `3.4.1`。共享 Schema 协议首次提供于 SDK 3.2.0；它是历史能力下限，新模板 manifest 最低为 3.4.1，不应手动降级。
+当前新项目使用同版本 Core/UI 与可选 Workflow SDK `3.4.2`。共享 Schema 协议首次提供于 SDK 3.2.0；它是历史能力下限，新模板 manifest 最低为 3.4.2，不应手动降级。
 
 ## 注册与调用
 

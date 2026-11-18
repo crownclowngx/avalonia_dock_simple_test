@@ -176,7 +176,7 @@ Rider。Preview 不是运行时调试；交互、键盘输入和完整资源行�
 模板搜索索引可能晚于普通 NuGet 包索引。直接安装精确 ID：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@3.4.1
+dotnet new install MyAvaloniaManagement.Plugin.Templates@3.4.2
 ```
 
 该命令安装当前公开模板。生成后按本指南依次验证源码、Standalone、真实 ZIP 和 Host；主仓包维护流程见[NuGet 发布维护](../maintenance/nuget-release.md)。
@@ -199,7 +199,7 @@ dotnet restore --source https://api.nuget.org/v3/index.json
 3. ZIP 是否误带 SDK/Avalonia/Host 共享程序集；
 4. 私有依赖是否声明为 `ManagedPluginPrivatePackage`；
 5. Document/Tool ID 是否属于 manifest Plugin ID；
-6. 目标 Host SDK 是否满足实际 manifest 区间；当前模板最低为 3.4.1，旧插件保留自身真实下限。Workbench Command 首次提供于 3.3.0，不表示按新 SDK 编译后可以降低清单下限。
+6. 目标 Host SDK 是否满足实际 manifest 区间；当前模板最低为 3.4.2，旧插件保留自身真实下限。Workbench Command 首次提供于 3.3.0，不表示按新 SDK 编译后可以降低清单下限。
 
 ### Host 报 `FileNotFoundException` 或提示缺少 DLL
 

@@ -2,12 +2,12 @@
 
 > 用途：外部插件作者入门。状态：当前；核对日期：2026-09-16。事实源：[模板内容](../../Packaging/MyAvaloniaManagement.Plugin.Templates/content/myavalonia-plugin)、[版本与交付边界](../reference/platform-baseline.md)。
 
-不需要克隆 Host；需要 .NET 10 SDK、Rider 或其他 .NET IDE，以及 NuGet.org 访问能力。当前模板使用 SDK/UI、Icons、Build 3.4.1，manifest schema 2，目标 Windows x64。
+不需要克隆 Host；需要 .NET 10 SDK、Rider 或其他 .NET IDE，以及 NuGet.org 访问能力。当前模板使用 SDK/UI、Icons、Build 3.4.2，manifest schema 2，目标 Windows x64。
 
 ## 最短路径
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@3.4.1
+dotnet new install MyAvaloniaManagement.Plugin.Templates@3.4.2
 dotnet new myavalonia-plugin -n ExamplePlugin --plugin-id myavalonia.plugin.example
 cd ExamplePlugin
 dotnet restore --locked-mode

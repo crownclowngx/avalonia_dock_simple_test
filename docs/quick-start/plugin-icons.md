@@ -7,16 +7,16 @@ V6.1 同时提供插件专属图标和 `MyAvaloniaManagement.Icons` 公共矢量
 
 ## 版本与职责
 
-V9 将所有自有 NuGet 包统一为 `3.4.1`，图标 API 没有变化；新模板按 `3.4.1` 声明最低 Host SDK。见 [V9 说明](host-v9-upgrade.md)。
+当前模板使用统一的 `3.4.2` 包版本，最低 Host SDK 为 `3.4.2`。版本详情见[集中基线](../reference/platform-baseline.md)。
 
 | 组件 | 版本 | 职责 |
 | --- | --- | --- |
-| Core / UI SDK | 3.4.1 | 保持同版本；UI 新增可选注册接口与纯值描述 |
-| MyAvaloniaManagement.Icons | 3.4.1 | 独立 .NET 10 资源包，无 SDK/Avalonia/DI 依赖 |
-| Plugin.Build | 3.4.1 | 允许图标资源 DLL 作为私有依赖部署及打包 |
-| Plugin.Templates | 3.4.1 | 包含公共资源注册、页面直接使用和独立预览示例 |
+| Core / UI SDK | 3.4.2 | 版本同步，UI 提供可选注册接口与纯值描述 |
+| MyAvaloniaManagement.Icons | 3.4.2 | 独立 .NET 10 资源包，无 SDK/Avalonia/DI 依赖 |
+| Plugin.Build | 3.4.2 | 允许图标资源 DLL 作为私有依赖部署及打包 |
+| Plugin.Templates | 3.4.2 | 包含公共资源注册、页面直接使用和独立预览示例 |
 
-`AddIcon` 最初由 SDK 3.4.0 提供；按本模板 3.4.1 编译的新插件，其 manifest 的 `sdk.minInclusive` 为 `3.4.1`。旧二进制保留原清单。
+`AddIcon` 最初由 SDK 3.4.0 提供。按本模板 3.4.2 编译的新插件，其 manifest 的 `sdk.minInclusive` 为 `3.4.2`。旧二进制保留原清单。
 仅在自己的 View 使用资源包的旧 SDK 插件，不因资源包本身被强制升级 SDK。
 资源包升级后要重新构建并交付消费者，不会自动替换已安装程序中的资源。
 
@@ -65,14 +65,14 @@ var icon = registration.AddIcon("text-review", new VectorIconDefinition(
 
 ```xml
 <!-- Directory.Packages.props -->
-<PackageVersion Include="MyAvaloniaManagement.Icons" Version="[3.4.1]" />
+<PackageVersion Include="MyAvaloniaManagement.Icons" Version="[3.4.2]" />
 
 <!-- 插件 csproj：引用包，并声明它是插件拥有的私有运行时资产。 -->
 <PackageReference Include="MyAvaloniaManagement.Icons" />
 <ManagedPluginPrivatePackage Include="MyAvaloniaManagement.Icons" />
 ```
 
-当前项目使用 Build `3.4.1`；图标私有资产能力最初提供于 `1.1.3`。ZIP 中应包含 `MyAvaloniaManagement.Icons.dll`，不能包含共享 Core/UI SDK DLL。
+当前项目使用 Build `3.4.2`。图标私有资产能力最初提供于 `1.1.3`。ZIP 中应包含 `MyAvaloniaManagement.Icons.dll`，不能包含共享 Core/UI SDK DLL。
 本仓 MyPlugTest 使用 ProjectReference，通过既有 `ManagedPluginAsset` 扩展点部署图标 DLL；
 外部模板使用上述 NuGet 私有包声明。两条路径均需验收真实 ZIP，不能只检查普通 bin 目录。
 

@@ -53,12 +53,12 @@ V9 将自有包统一为 `3.4.1`，模板使用 Avalonia `12.1.2`。兼容边界
 在准备存放源码的目录打开 PowerShell：
 
 ```powershell
-dotnet new install MyAvaloniaManagement.Plugin.Templates@3.4.1
+dotnet new install MyAvaloniaManagement.Plugin.Templates@3.4.2
 dotnet new list myavalonia
 dotnet new myavalonia-plugin --help
 ```
 
-模板 `3.4.1` 精确使用 Core/UI、Icons 与 Build `3.4.1`，并为三个生成项目携带 lock file。
+模板 `3.4.2` 精确使用 Core/UI、Icons 与 Build `3.4.2`，并为三个生成项目携带 lock file。
 它还生成一个不占用默认快捷键的 Document Command 示例，便于验证活动文档实例路由。
 
 应能看到短名称 `myavalonia-plugin`。若想搜索公开包：
@@ -132,11 +132,11 @@ dotnet test -c Debug --no-build
 
 模板使用 NuGet.org 上的精确版本：
 
-- `MyAvaloniaManagement.PluginSdk` `3.4.1`；
-- `MyAvaloniaManagement.PluginSdk.UI` `3.4.1`；
-- `MyAvaloniaManagement.Plugin.Build` `3.4.1`；
-- `MyAvaloniaManagement.Icons` `3.4.1`；
-- Avalonia.Desktop `12.1.2`。
+- `MyAvaloniaManagement.PluginSdk` `3.4.2`；
+- `MyAvaloniaManagement.PluginSdk.UI` `3.4.2`；
+- `MyAvaloniaManagement.Plugin.Build` `3.4.2`；
+- `MyAvaloniaManagement.Icons` `3.4.2`；
+- Avalonia.Desktop `12.1.6`。
 
 首次还原需要下载 Avalonia 和测试依赖，可能比后续构建慢。公司代理或自定义 NuGet 源下失败时，先用：
 
