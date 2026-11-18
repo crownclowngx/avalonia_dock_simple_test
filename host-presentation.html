@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0a1122">
-<title>Host 做了什么 · MyAvaloniaManagement</title>
+<title>软件可以拆，工作可以接着做 · MyAvaloniaManagement</title>
 <style>
   :root {
     color-scheme: dark;
@@ -57,6 +57,7 @@
   main { width: min(100%, 1500px); margin: auto; padding: clamp(22px, 4vw, 64px) clamp(18px, 5vw, 78px); }
   .slide { min-width: 0; animation: enter .55s cubic-bezier(.2,.8,.2,1) both; }
   @keyframes enter { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes trace { from { transform: scaleX(0); } }
   .section-label {
     color: var(--accent); font-size: 13px; font-weight: 750; letter-spacing: .16em;
     display: flex; align-items: center; gap: 10px; margin: 0 0 10px;
@@ -64,6 +65,7 @@
   .section-label::before { content: ""; width: 24px; height: 1px; background: currentColor; }
   h1, h2, h3, p { margin: 0; }
   h1, h2 { line-height: 1.16; letter-spacing: -.036em; text-wrap: balance; }
+  .slide :is(h1, h2)[tabindex="-1"]:focus { outline: none; }
   h1 { font-size: clamp(44px, 6.4vw, 102px); }
   h2 { font-size: clamp(30px, 4vw, 60px); }
   h3 { font-size: clamp(18px, 2vw, 27px); line-height: 1.35; }
@@ -82,6 +84,9 @@
   @keyframes core { 50% { transform: scale(1.045); } }
   .visual { margin-top: clamp(18px, 2.4vw, 34px); }
   .pyramid { display: grid; gap: 12px; justify-items: center; }
+  .pyramid .tier, .pyramid-links { animation: enter .45s ease-out both; }
+  .pyramid .tier:nth-child(2) { animation-delay: .11s; }
+  .pyramid-links { animation-delay: .22s; }
   .tier {
     display: grid; place-items: center; width: var(--width); text-align: center; min-height: 58px;
     background: linear-gradient(100deg, #13515b, #182f56 55%, #353263);
@@ -123,35 +128,6 @@
   details { margin-top: 14px; color: var(--muted); font-size: 15px; line-height: 1.65; }
   summary { width: fit-content; cursor: pointer; color: var(--violet); }
   details p { max-width: 78ch; margin-top: 7px; }
-  .rail { display: flex; align-items: center; isolation: isolate; justify-content: space-between; gap: 6px; }
-  .rail button {
-    position: relative; display: grid; flex: 1 1 0; min-width: 0; align-content: start; justify-items: center; gap: 9px;
-    color: var(--muted); font-size: clamp(12px, 1.3vw, 18px); line-height: 1.3; text-align: center;
-    border: none; background: none; padding: 4px 0;
-  }
-  .rail button::after {
-    content: ""; position: absolute; top: 20px; left: 56%; width: 94%; height: 2px; z-index: -1;
-    background: var(--line);
-  }
-  .rail button:last-child::after { content: none; }
-  .rail button.done::after {
-    background: linear-gradient(90deg, var(--accent), #68e7e033);
-    transform-origin: left; animation: trace .45s ease-out both;
-  }
-  @keyframes trace { from { transform: scaleX(0); } }
-  .rail .dot {
-    display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%;
-    border: 1px solid #5a7193; background: #15233a; color: var(--muted); font: 700 13px Consolas, monospace;
-  }
-  .rail button[aria-pressed="true"] { color: var(--ink); font-weight: 750; }
-  .rail button[aria-pressed="true"] .dot {
-    border-color: var(--accent); color: #092329; background: var(--accent);
-    box-shadow: 0 0 0 5px #68e7e02a, 0 0 24px #68e7e08c;
-    animation: pulse 1.7s ease-out infinite;
-  }
-  @keyframes pulse { 55% { box-shadow: 0 0 0 10px #68e7e000, 0 0 28px #68e7e05e; } }
-  .rail-wrap { display: grid; gap: 25px; }
-  .rail-status { text-align: center; color: var(--accent); font-weight: 700; font-size: clamp(15px, 1.5vw, 22px); }
   .desk { position: relative; width: 100%; min-height: 210px; font-size: clamp(11px, 1.15vw, 16px); }
   .window {
     position: relative; width: 90%; min-width: 0; overflow: hidden; border: 1px solid #607ca6;
@@ -196,20 +172,218 @@
   .desk[data-view="tools"] .tools-side { background: #21505a6e; color: var(--ink); }
   .desk[data-view="close"] .window:first-child { opacity: .43; }
   .desk .window:first-child { transition: opacity .4s; }
-  .matrix { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 8px 10px; align-items: center; }
-  .matrix button {
-    border: 1px solid var(--line); background: #14223a; border-radius: 9px;
-    min-width: 0; padding: 8px 9px; color: var(--muted); font-size: clamp(13px, 1.4vw, 18px); line-height: 1.35;
-  }
-  .matrix button.on { background: #173749; border-color: var(--accent); color: var(--ink); }
-  .matrix .arrow { color: #758aaa; }
-  .matrix .arrow.on { color: var(--accent); text-shadow: 0 0 12px var(--accent); }
-  .duo { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; width: 100%; }
   .tile { display: grid; gap: 7px; align-content: start; padding: clamp(11px, 2vw, 24px); min-width: 0; border: 1px solid var(--line); border-radius: 12px; background: #121f36; }
   .tile strong { color: var(--accent); font-size: clamp(15px, 1.65vw, 23px); overflow-wrap: anywhere; }
   .tile span { color: var(--muted); font-size: clamp(13px, 1.4vw, 19px); line-height: 1.5; }
-  .tile.update { animation: swap .35s ease both; }
-  .duo .tile:nth-child(2) strong { color: var(--violet); }
+  .sketch .interaction-body { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+  .sketch .scene { padding: clamp(11px, 1.7vw, 22px); }
+  .sketch-app {
+    min-width: 0; overflow: hidden; border: 1px solid #5f7393; border-radius: 11px;
+    background: #0d182b; box-shadow: 0 12px 22px #050a1766;
+  }
+  .sketch-bar {
+    display: flex; align-items: center; justify-content: space-between; gap: 6px;
+    padding: 7px 10px; color: var(--ink); background: #293952; font-size: 13px;
+  }
+  .sketch-actions { display: flex; gap: 12px; padding: 6px 10px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+  .sketch-actions span { white-space: nowrap; }
+  .module-map { display: grid; justify-items: center; padding: 10px; }
+  .feature-module {
+    display: grid; grid-template-columns: auto auto; align-items: center; gap: 7px;
+    border: 1px dashed #61708b; border-radius: 7px; color: var(--muted);
+    padding: 5px 10px; font-size: 13px; background: #17233a;
+  }
+  .feature-module span { font-size: 11px; color: var(--muted); }
+  .branch {
+    display: block; width: 100%; height: 24px; color: var(--amber);
+    opacity: 0; transition: opacity .24s;
+  }
+  .branch path { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  .module-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 100%; }
+  .module {
+    min-width: 0; display: grid; gap: 5px; padding: 7px 5px; text-align: center;
+    border: 1px solid #40516f; background: #17253d; border-radius: 7px;
+    font-size: clamp(11px, 1.14vw, 15px); line-height: 1.2; transition: border-color .28s, background .3s;
+  }
+  .module span { font-size: 11px; color: var(--muted); }
+  .package-track {
+    display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 25px; margin-top: 8px;
+    border: 1px dashed #40516f; border-radius: 6px; width: 100%; color: var(--muted); font-size: 12px;
+  }
+  .package-track strong { color: var(--ink); }
+  .demo-monolith[data-state="change"] .feature-module, .demo-monolith[data-state="release"] .feature-module {
+    color: #1f1720; background: var(--amber); border-color: var(--amber); border-style: solid;
+  }
+  .demo-monolith[data-state="change"] .feature-module span, .demo-monolith[data-state="release"] .feature-module span { color: #442b18; }
+  .demo-monolith[data-state="change"] .feature-module { animation: insert-module .5s cubic-bezier(.2,.8,.3,1.25) both; }
+  @keyframes insert-module { from { opacity: .35; transform: translateY(-13px) scale(.92); } }
+  .demo-monolith:is([data-state="change"], [data-state="release"]) .branch { opacity: 1; }
+  .demo-monolith:is([data-state="change"], [data-state="release"]) .branch path { stroke-dashoffset: 0; transition: stroke-dashoffset .55s .1s ease-out; }
+  .demo-monolith[data-state="change"] .module { border-color: #d49c61; background: #3a2c2b; animation: module-flash .8s .36s both; }
+  @keyframes module-flash { from { box-shadow: 0 0 0 #ffd28200; } 34% { box-shadow: 0 0 14px #ffd28265; } }
+  .demo-monolith[data-state="release"] .package-track { border-color: var(--amber); border-style: solid; background: #3a2c2b; animation: module-flash .85s; }
+  .demo-split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(60px, .65fr) minmax(0, 1fr); align-items: center; gap: 7px; }
+  .demo-split .sketch-bar { background: #3c3357; }
+  .sketch-document { display: grid; gap: 6px; min-height: 84px; padding: 9px; font-size: 12px; color: var(--muted); }
+  .sketch-document strong { color: var(--ink); overflow-wrap: anywhere; }
+  .sketch-document i { display: block; width: 90%; height: 4px; border-radius: 4px; background: #526486; }
+  .sketch-document i:last-child { width: 68%; }
+  .handoff { position: relative; display: grid; justify-items: center; gap: 7px; color: var(--violet); text-align: center; font-size: 12px; }
+  .handoff::before { content: ""; position: absolute; top: 11px; left: 0; right: 0; border-top: 1px dashed currentColor; opacity: .65; }
+  .handoff svg { position: relative; width: 24px; height: 26px; padding: 2px; background: #15213b; }
+  .demo-split[data-state="transfer"] .handoff svg { animation: transfer-file 1.5s ease-in-out both; }
+  @keyframes transfer-file {
+    from { transform: translateX(clamp(-72px, -5vw, -24px)); opacity: .4; }
+    to { transform: translateX(clamp(24px, 5vw, 72px)); }
+  }
+  .demo-split[data-state="transfer"] .sketch-app:last-child { border-color: var(--violet); animation: module-flash .8s .8s both; }
+  .demo-split[data-state="duplicate"] .sketch-actions { background: #352b50; color: var(--ink); }
+  .dialogue { align-content: start; display: grid; gap: 7px; padding: 10px 13px; }
+  .dialogue > h3 { font-size: clamp(16px, 1.55vw, 23px); }
+  .chat { display: grid; gap: 7px; list-style: none; margin: 0; padding: 0; }
+  .chat li { justify-self: start; width: fit-content; max-width: 94%; padding: 6px 9px; border: 1px solid #405777; border-radius: 4px 11px 11px; background: #172940; font-size: clamp(13px, 1.18vw, 16px); line-height: 1.45; }
+  .chat li:nth-child(2) { justify-self: end; border-color: #5b4d78; border-radius: 11px 4px 11px 11px; background: #272541; }
+  .chat strong { display: block; margin-bottom: 2px; font-size: 11px; color: var(--accent); }
+  .chat li:nth-child(2) strong { color: var(--violet); }
+  .chat li:nth-child(3) strong { color: var(--amber); }
+  .dialogue.swap li { animation: enter .38s ease-out both; }
+  .dialogue.swap li:nth-child(2) { animation-delay: .13s; }
+  .dialogue.swap li:nth-child(3) { animation-delay: .26s; }
+  .host-scene.scene {
+    background: radial-gradient(ellipse at 48% 48%, #243d62 0, transparent 78%),
+      repeating-linear-gradient(90deg, #90bdf00b 0 1px, transparent 1px 24px), #0d192c;
+  }
+  .demo-frame { display: grid; align-items: center; gap: 9px; min-width: 0; width: 100%; }
+  .frame-pair { grid-template-columns: minmax(0, 1fr) minmax(25px, .22fr) minmax(0, 1fr); }
+  .frame-pair.direct { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .frame-trio { grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr) 22px minmax(0, 1fr); }
+  .frame-window {
+    display: grid; min-width: 0; border: 1px solid #61799d; border-radius: 10px; overflow: hidden;
+    background: #111e34; box-shadow: 0 8px 21px #060b1b75;
+  }
+  .frame-window.good { border-color: #53b6ae; }
+  .frame-window.warn { border-color: #b98850; }
+  .frame-window.bad { border-color: #cb707d; }
+  .frame-window.dim { border-style: dashed; opacity: .72; }
+  .frame-bar {
+    display: flex; gap: 6px; justify-content: space-between; align-items: center;
+    padding: 5px 8px; min-height: 26px; color: var(--ink); background: #293d5b;
+    font-size: clamp(11px, 1vw, 14px); line-height: 1.3;
+  }
+  .frame-window.good .frame-bar { background: #1a4350; }
+  .frame-window.warn .frame-bar { background: #493b35; }
+  .frame-window.bad .frame-bar { background: #4c2c3c; }
+  .frame-body { display: grid; gap: 5px; padding: 8px; min-width: 0; }
+  .frame-row {
+    display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+    gap: 3px 6px; min-width: 0; padding: 5px 6px; border-radius: 5px;
+    background: #20324c; color: var(--ink); font-size: clamp(11px, 1vw, 14px); overflow-wrap: anywhere;
+  }
+  .frame-row.dim { opacity: .70; background: #1a2941; }
+  .frame-row.removed { opacity: .65; border: 1px dashed #687a96; background: transparent; }
+  .frame-row.good { background: #1d414a; }
+  .frame-row.warn { background: #4c3b33; }
+  .frame-row.bad { background: #48283b; }
+  .frame-row.flash { animation: frame-flash .75s ease-out both; }
+  @keyframes frame-flash { from { box-shadow: inset 0 0 0 1px var(--accent); filter: brightness(1.42); } }
+  .badge { font-size: 11px; font-weight: 700; color: var(--muted); }
+  .frame-row.good .badge, .frame-status.good { color: var(--accent); }
+  .frame-row.warn .badge, .frame-status.warn { color: var(--amber); }
+  .frame-row.bad .badge, .frame-status.bad { color: #ffadba; }
+  .frame-status { color: var(--muted); font-size: clamp(12px, 1.1vw, 15px); text-align: center; }
+  .transit { display: grid; justify-items: center; gap: 4px; min-width: 0; color: #84a4d0; text-align: center; }
+  .transit strong { font-size: 11px; overflow-wrap: anywhere; }
+  .signal-track { position: relative; display: grid; align-items: center; width: 100%; height: 15px; }
+  .signal-track::before { content: ""; width: 100%; border-top: 1px dashed currentColor; opacity: .68; }
+  .signal-track i { position: absolute; inset-inline-start: 0; width: 8px; height: 8px; background: currentColor; border-radius: 50%; opacity: 0; }
+  .transit.go { color: var(--accent); }
+  .transit.stop { color: #ffadba; }
+  .transit.go .signal-track i { opacity: 1; box-shadow: 0 0 8px currentColor; animation: send-packet .8s ease-out both; }
+  .transit.reverse .signal-track i { animation-direction: reverse; }
+  .transit.stop .signal-track i { opacity: 1; inset-inline-start: calc(50% - 4px); border-radius: 2px; }
+  @keyframes send-packet { from { left: 0; } to { left: calc(100% - 8px); } }
+  .file-object {
+    display: grid; justify-items: center; gap: 4px; min-width: 0; padding: 7px;
+    color: var(--accent); text-align: center; font-size: clamp(11px, 1.15vw, 16px);
+  }
+  .file-object svg { width: 28px; height: 31px; color: inherit; }
+  .file-object strong { color: var(--ink); overflow-wrap: anywhere; }
+  .file-object .badge { color: inherit; }
+  .file-object.violet { color: var(--violet); }
+  .file-object.warning { color: var(--amber); }
+  .file-object.arrive { animation: insert-module .48s ease-out both; }
+  .demo-tabs { display: flex; gap: 4px; min-height: 28px; flex-wrap: wrap; padding: 5px 5px 0; border-bottom: 1px solid var(--line); }
+  .demo-tab {
+    padding: 4px 7px; border-radius: 5px 5px 0 0; color: var(--muted); background: #20334e;
+    font: inherit; font-size: 11px; border: 1px solid transparent; line-height: 1.25;
+  }
+  .demo-tab.active { background: #1e4450; color: var(--ink); border-bottom-color: var(--accent); }
+  .demo-tab.leaving { animation: tab-leave .56s ease-out both; visibility: hidden; pointer-events: none; }
+  @keyframes tab-leave {
+    from { visibility: visible; }
+    to { opacity: 0; transform: translateY(-6px) scale(.8); visibility: hidden; }
+  }
+  .demo-editor { min-height: 68px; padding: 9px; display: grid; align-content: start; gap: 6px; color: var(--muted); font-size: 12px; }
+  .demo-editor strong { color: var(--ink); }
+  .fake-lines { display: grid; gap: 5px; }
+  .fake-lines i { width: 90%; height: 4px; border-radius: 6px; display: block; background: #456182; }
+  .fake-lines i:nth-child(2) { width: 72%; }
+  .fake-lines i:nth-child(3) { width: 54%; }
+  .fake-lines.dirty i:nth-child(2) { background: var(--amber); animation: trace .48s ease-out both; transform-origin: left; }
+  .demo-prompt { display: grid; gap: 5px; border: 1px solid #bd8955; border-radius: 6px; padding: 6px; background: #45352f; font-size: 11px; }
+  .demo-prompt.bad { border-color: #cb707d; background: #48283b; }
+  .demo-prompt strong { color: var(--ink); }
+  .mock-buttons { display: flex; flex-wrap: wrap; gap: 4px; }
+  .mock-btn { background: #283a54; color: var(--ink); border: 1px solid #657c9d; border-radius: 5px; padding: 3px 6px; font-size: 11px; line-height: 1.15; }
+  .mock-btn:hover { border-color: var(--accent); }
+  .tool-panel { transform-origin: right center; min-height: 65px; }
+  .tool-panel.disappear { animation: tool-hide .56s ease-out both; visibility: hidden; }
+  .tool-panel.appear { animation: tool-hide .56s ease-out reverse both; }
+  @keyframes tool-hide {
+    from { visibility: visible; }
+    to { opacity: 0; transform: translateX(12px) scale(.92); visibility: hidden; }
+  }
+  .mock-progress { height: 7px; border-radius: 10px; overflow: hidden; background: #263b58; }
+  .mock-progress i { display: block; width: var(--fill); height: 100%; background: linear-gradient(90deg, #9587ef, var(--accent)); transform-origin: left; animation: trace .65s ease-out both; }
+  .layout-mini { display: grid; grid-template-columns: 2fr 1fr; gap: 4px; min-height: 45px; }
+  .layout-mini span { display: grid; place-items: center; padding: 3px; text-align: center; border: 1px solid #557390; border-radius: 5px; background: #233450; font-size: 11px; }
+  .layout-mini span + span { border-color: #4c9a96; background: #204249; }
+  .layout-mini .empty { border-style: dashed; border-color: #65738a; background: #19263c; color: var(--muted); }
+  .scene-caption { grid-column: 1 / -1; margin-top: 3px; }
+  .comparison .interaction-body { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .comparison .scene { min-height: 0; padding: 0; background: none; border: 0; overflow: visible; }
+  .compare-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+  .compare-card {
+    --tone: var(--amber);
+    display: grid; align-content: start; gap: 9px; min-width: 0; padding: clamp(12px, 1.65vw, 22px);
+    border: 1px solid var(--line); border-top: 2px solid var(--tone); border-radius: 13px;
+    background: radial-gradient(ellipse at top right, color-mix(in srgb, var(--tone) 11%, transparent), transparent 70%), #101b31;
+  }
+  .compare-card.split { --tone: var(--violet); }
+  .compare-card.host { --tone: var(--accent); border-color: #4eaaa9; }
+  .compare-card h3 { color: var(--tone); font-size: clamp(16px, 1.75vw, 25px); }
+  .compare-card b { font-size: clamp(14px, 1.4vw, 20px); line-height: 1.35; }
+  .compare-card p { color: var(--muted); font-size: clamp(13px, 1.25vw, 17px); line-height: 1.5; }
+  .mini-map { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; gap: 5px; padding: 17px 6px 6px; border: 1px solid var(--tone); border-radius: 7px; background: #111e32; }
+  .mini-map::before, .mini-pane::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 11px; border-radius: 5px 5px 0 0;
+    color: var(--tone); background: radial-gradient(circle at 7px 5px, currentColor 1.2px, transparent 1.6px),
+      radial-gradient(circle at 13px 5px, currentColor 1.2px, transparent 1.6px),
+      radial-gradient(circle at 19px 5px, currentColor 1.2px, transparent 1.6px), #27354e;
+  }
+  .mini-pane { position: relative; display: grid; place-items: center; min-height: 34px; padding: 5px; text-align: center; font-size: clamp(11px, 1.08vw, 15px); color: var(--ink); background: #233552; border-radius: 4px; }
+  .mini-pane::before { display: none; }
+  .split .mini-map { border: 0; padding: 0; gap: 13px; background: none; }
+  .split .mini-pane { border: 1px solid #8271a7; padding-top: 16px; min-height: 58px; }
+  .split .mini-map::before { display: none; }
+  .split .mini-pane::before { display: block; background-color: #3c3357; }
+  .host .mini-pane { background: #1c434e; }
+  .host .mini-pane + .mini-pane { border-left: 2px solid var(--accent); }
+  .compare-card.update .mini-map { animation: ignite .65s ease-out both; }
+  @keyframes ignite { from { opacity: .4; transform: translateY(4px); filter: brightness(1.5); } }
+  .comparison .reading { padding: 8px 13px; }
+  .comparison .reading h3 { font-size: clamp(15px, 1.5vw, 22px); }
+  .comparison .reading p { margin-top: 3px; font-size: clamp(14px, 1.3vw, 18px); }
   .end-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
   .end-grid .tile { min-height: 160px; }
   .end-grid a { width: fit-content; }
@@ -232,6 +406,11 @@
     .pyramid-links, .end-grid, .toc { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     .foot .hint { display: none; }
     .scene { min-height: 205px; }
+    .sketch .interaction-body { grid-template-columns: minmax(0, 1fr); }
+    .compare-grid { grid-template-columns: minmax(0, 1fr); }
+    .compare-card { grid-template-columns: minmax(0, .75fr) minmax(0, 1fr); }
+    .compare-card h3, .compare-card p { grid-column: 1 / -1; }
+    .compare-card b { align-self: center; }
   }
   @media (max-width: 450px) {
     .brand { font-size: 12px; }
@@ -239,16 +418,25 @@
     #overview { display: none; }
     .end-grid { grid-template-columns: minmax(0, 1fr); }
     .end-grid .tile { min-height: 0; }
-    .rail button { font-size: 11px; }
-    .rail .dot { width: 26px; height: 26px; }
-    .rail button::after { top: 16px; }
+    .host-scene.scene { padding: 10px; }
+    .demo-frame { gap: 5px; }
+    .frame-trio { grid-template-columns: minmax(0, 1fr) 10px minmax(0, 1fr) 10px minmax(0, 1fr); }
+    .frame-trio .transit strong { display: none; }
+    .frame-body { padding: 5px; }
   }
   @media (min-width: 761px) and (max-height: 770px) {
     main { padding-top: 15px; padding-bottom: 15px; }
     .slide > .lead { max-width: 68ch; }
     .visual { margin-top: 17px; }
     .scene { min-height: 224px; }
+    .host-scene.scene { min-height: 200px; padding: 11px; }
+    .host-scene .demo-editor { min-height: 45px; padding: 6px; }
+    .host-scene .file-object { padding-block: 4px; }
     .hero-figure { max-height: 420px; }
+    .comparison { gap: 8px; }
+    .compare-card { padding: 12px; gap: 6px; }
+    .comparison .reading { padding-block: 6px; }
+    .sketch .scene { min-height: 215px; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
@@ -292,10 +480,76 @@
 "use strict";
 
 const slides = [
-  { title: "Host 做了什么", kind: "cover", group: "项目全景" },
-  { title: "一个工作台，四项职责", kind: "pyramid", group: "项目全景" },
+  { title: "软件可以拆，工作可以接着做", kind: "cover", group: "项目全景" },
   {
-    title: "不同插件的功能出现在同一个工作台", short: "工作台全景", group: "组织工作区",
+    id: "large", title: "给一个大软件加功能，会动到哪里？", short: "一个大软件",
+    group: "方案取舍", lead: "给现有编辑器加一个检查功能。点击「加入检查功能」，看这次改动碰到哪些地方。",
+    visual: "monolith", steps: [
+      ["现有软件", "需求从一份文档开始", "base", [
+        ["用户", "我能在这里打开、编辑、保存报告，能不能顺手检查一下？"],
+        ["开发", "可以把检查功能放进同一个窗口。"]
+      ]],
+      ["加入检查功能", "一个功能接进三个位置", "change", [
+        ["产品", "我想一边改报告，一边看到检查结果。"],
+        ["开发", "检查要读取编辑中的内容，菜单要加入口，保存流程也要触发重查。"],
+        ["测试", "那就把未保存时的检查、菜单操作和保存一起测一遍。"]
+      ]],
+      ["整包发布", "整套应用一起交付", "release", [
+        ["发布", "这次只新增检查，但这些功能都在同一个安装包里。"],
+        ["测试", "按整包跑一遍回归，确认原来的打开和保存还能用。"]
+      ]]
+    ],
+    detail: "这是检查功能直接接入编辑器、菜单和保存流程，且应用统一打包的示例。接口和发布单位怎样划分，会改变实际的验证与交付范围。"
+  },
+  {
+    title: "拆成多个软件，开发更独立，任务如何接上？", short: "多个独立软件",
+    group: "方案取舍", lead: "把检查器单独做成一个软件。点击「交接文件」，看同一份报告怎么过去。",
+    visual: "split-apps", steps: [
+      ["独立交付", "检查器可以单独更新", "base", [
+        ["检查团队", "检查规则改了，我们直接发检查器 2.1。"],
+        ["编辑团队", "编辑器这次继续用 1.4。"]
+      ]],
+      ["交接文件", "用户需要把文件带过去", "transfer", [
+        ["用户", "先保存报告，切到检查器，再把这份文件打开。"],
+        ["同事", "改完一处，要再检查的话，就把更新后的文件带过去。"]
+      ]],
+      ["各管桌面体验", "两个软件各自维护桌面功能", "duplicate", [
+        ["用户", "两个窗口怎么记住上次的位置？"],
+        ["开发", "这里是两套布局和命令。要一起恢复，我们还得加一层协调。"]
+      ]]
+    ],
+    detail: "此处展示只以文件交接的例子。独立应用可以另行约定接口、同步当前文件或统筹窗口布局。"
+  },
+  {
+    id: "comparison", title: "同一件事，三种做法", short: "三种做法对照",
+    group: "方案取舍", lead: "选一个场景，比较用户要做什么，以及团队需要负责什么。",
+    visual: "compare", steps: [
+      ["编辑并检查", "把编辑和检查留在同一工作区", "检查功能可以作为插件工具或命令出现。业务数据怎样交接，仍由插件约定。", [
+        ["在一个应用内切功能", "应用集中提供编辑和检查。", ["编辑页面", "检查功能"]],
+        ["在应用之间交接文件", "只通过文件交接时，通常先保存，再切到检查器打开。", ["编辑器窗口", "检查器窗口"]],
+        ["文档和检查工具并排", "Host 统一页面与工具位置，两项业务功能可以分别由插件提供。", ["文档标签", "检查面板"]]
+      ]],
+      ["调用检查能力", "给跨插件协作一个可检查的调用契约", "Host 可以校验身份、参数和许可。调用方与提供方仍需约定输入输出。", [
+        ["走应用内部调用", "跨模块调用规则由应用维护。", ["编辑模块", "检查模块"]],
+        ["做文件交接或另建集成", "直接调用时，需要双方约定接口和连接方式。", ["调用应用", "接收应用"]],
+        ["通过 Workflow Action 调用", "Host 校验调用条件，插件提供实际的执行逻辑。", ["调用插件", "提供插件"]]
+      ]],
+      ["只更新检查功能", "插件可以独立交付，由 Host 组织应用变更", "通过插件看板预检本地 ZIP，确认后在重启过程中应用。兼容性和插件来源仍需确认。", [
+        ["随主程序发版", "如果都在同一发布单位，检查功能更新随整包交付。", ["主程序", "业务功能"]],
+        ["更新检查应用", "检查器独立发布，由用户维护各应用的安装与版本。", ["编辑器版本", "检查器版本"]],
+        ["更新检查插件", "检查插件可独立交付，Host 提供兼容性检查和恢复入口。", ["已安装插件", "更新包"]]
+      ]],
+      ["退出后接着做", "分开处理布局和文档", "重启时可恢复工具位置和显隐，用户按需重新打开保存过的业务文档。", [
+        ["由应用统一设计恢复", "是否恢复、恢复哪些工作状态，取决于应用实现。", ["应用布局", "文档内容"]],
+        ["每个应用恢复自己的窗口", "一次跨应用任务的整体布局由用户安排，或由额外集成协调。", ["编辑器布局", "检查器布局"]],
+        ["恢复同一工作台的工具布局", "从业务文件重新打开文档，工具按布局记录恢复。", ["保存的文件", "工具布局"]]
+      ]]
+    ],
+    detail: "大应用与独立软件是两种示意方案。它们都可以采用模块化和定制集成，实际成本取决于项目设计。这里用相同任务说明 Host 当前承接的职责。"
+  },
+  { id: "overview", title: "Host 把共用能力集中起来，业务通过插件接入", short: "Host 的四项职责", kind: "pyramid", group: "Host 的做法" },
+  {
+    id: "workspace", title: "不同插件的功能出现在同一个工作台", short: "工作台全景", group: "组织工作区",
     lead: "文档、辅助工具和操作入口共用一套窗口体系。选一个区域看它负责什么。",
     visual: "desk", mode: "workspace", steps: [
       ["文档区", "独立的工作页面", "同一种编辑器可以打开多个文档，每个标签指向自己的工作实例。", "doc"],
@@ -315,11 +569,9 @@ const slides = [
     detail: "Host 还支持分屏、整组浮动、找回屏幕外浮窗。回停到有标签的组时合并，空组则由移入内容填满。"
   },
   {
-    title: "插件声明业务能力，Host 把它接进来", short: "声明与入口", group: "接入插件",
+    id: "plugins", title: "插件声明业务能力，Host 把它接进来", short: "声明与入口", group: "接入插件",
     lead: "插件开发者通过 SDK 声明能提供什么。Host 负责目录、呈现和调用入口。",
-    visual: "matrix", mapping: [
-      ["Document", "文档标签与创建入口"], ["Tool", "工具中心与面板"], ["Workbench Command", "菜单、快捷键与命令面板"], ["Workflow Action", "其他插件的调用入口"]
-    ], steps: [
+    visual: "host", demo: "contributions", steps: [
       ["文档", "让用户创建业务页面", "插件提供页面模型和界面。Host 在用户打开时创建实例，并放进工作区。"],
       ["工具", "让辅助面板进入工作台", "插件提供工具。Host 负责显示、隐藏、停靠和布局恢复。"],
       ["命令", "把业务动作放进统一入口", "插件可声明操作以及适用的文档类型。Host 根据当前上下文判断能否执行。"],
@@ -329,7 +581,7 @@ const slides = [
   {
     title: "插件从磁盘文件变成已注册的贡献", short: "插件加载", group: "接入插件",
     lead: "启动时，Host 按身份和兼容范围识别候选，并记录哪些插件成功注册。",
-    visual: "rail", steps: [
+    visual: "host", demo: "pluginLoading", steps: [
       ["发现", "读取插件清单", "从插件目录读取清单，识别插件身份、入口和本次启用意图。"],
       ["检查", "确定候选能否进入加载", "检查 SDK 兼容范围等条件。失败的候选留下状态和诊断。"],
       ["加载", "加载精确入口", "Host 加载清单指定的程序集和入口，为插件建立自己的服务容器。"],
@@ -338,9 +590,9 @@ const slides = [
     detail: "目录表示已提交的声明。后续的生命周期与可用性状态决定这些入口当前是否可用。"
   },
   {
-    title: "插件初始化结果决定运行可用性", short: "插件生命周期", group: "管理运行",
-    lead: "Host 跟踪注册、初始化和停止。切换初始化结果，查看工作台怎样处理。",
-    visual: "rail", variants: [
+    id: "lifecycle", title: "插件初始化结果决定运行可用性", short: "插件生命周期", group: "管理运行",
+    lead: "切换初始化结果。注意工作台里哪些入口出现，插件看板里留下什么。",
+    visual: "host", demo: "pluginLifecycle", variants: [
       { label: "初始化成功", steps: [
         ["已注册", "贡献已进入目录", "Host 已经知道插件声明了哪些功能。"],
         ["初始化", "按顺序尝试启动", "Host 调用插件提供的初始化逻辑，并跟踪完成、失败和取消。"],
@@ -360,7 +612,7 @@ const slides = [
   {
     title: "Host 管理从首屏到退出的整次运行", short: "Host 生命周期", group: "管理运行",
     lead: "主窗口成功交接后进入就绪状态。退出时，Host 先处理工作，再释放资源。",
-    visual: "rail", steps: [
+    visual: "host", demo: "startup", steps: [
       ["启动首屏", "先给出启动反馈", "轻量首屏展示进度，后台准备完整运行环境。"],
       ["运行环境", "组装服务与插件", "后台组合 Host 服务和插件贡献，完成后进入 Prepared。"],
       ["窗口就绪", "主工作台开始接收操作", "界面线程安装资源、创建主窗口并完成交接，Host 进入 Ready。"],
@@ -372,45 +624,43 @@ const slides = [
   {
     title: "同一种文档可以有多个独立实例", short: "文档生命周期", group: "管理运行",
     lead: "打开两份同类型业务文件。下面的操作只作用于文档 A。",
-    visual: "duo", variants: [
+    visual: "host", demo: "documents", variants: [
       { label: "保存后关闭", steps: [
-        ["打开", "为每份文档创建独立实例", "Host 创建独立的作用域、模型和界面，初始化成功后才发布标签。", ["文档 A", "已打开", "文档 B", "已打开"]],
-        ["编辑", "修改属于当前文档", "A 进入未保存状态，B 仍维持自己的状态。", ["文档 A", "有未保存修改", "文档 B", "已打开"]],
-        ["保存", "把 A 的内容写入业务文件", "可保存文档由 Host 协调持久化，具体内容和格式由插件定义。", ["文档 A", "已保存", "文档 B", "已打开"]],
-        ["关闭", "释放 A 的文档资源", "关闭获准并完成后，Host 回收 A 的界面与作用域。", ["文档 A", "关闭并释放", "文档 B", "仍可编辑"]]
+        ["打开", "为每份文档创建独立实例", "Host 创建独立的作用域、模型和界面，初始化成功后才发布标签。"],
+        ["编辑", "修改属于当前文档", "A 进入未保存状态，B 仍维持自己的状态。"],
+        ["保存", "把 A 的内容写入业务文件", "可保存文档由 Host 协调持久化，具体内容和格式由插件定义。"],
+        ["关闭", "释放 A 的文档资源", "关闭获准并完成后，Host 回收 A 的界面与作用域。"]
       ] },
       { label: "取消关闭", steps: [
-        ["请求关闭", "Host 询问如何处理修改", "A 有未保存修改，关闭流程等待用户作出选择。", ["文档 A", "等待确认", "文档 B", "已打开"]],
-        ["取消", "原页面继续工作", "Host 终止本次关闭，A 的界面、修改和作用域都保留。", ["文档 A", "继续编辑，保留修改", "文档 B", "仍可编辑"]]
+        ["请求关闭", "Host 询问如何处理修改", "A 有未保存修改，关闭流程等待用户作出选择。"],
+        ["取消", "原页面继续工作", "Host 终止本次关闭，A 的界面、修改和作用域都保留。"]
       ] }
     ],
     detail: "支持新建、打开、保存以及文件打开失败的处理。文档能否保存由其注册和模型能力决定，临时页面也可以作为文档打开。"
   },
   {
-    title: "工具隐藏后，重新显示时复用实例", short: "工具与服务", group: "管理运行",
-    lead: "文档、辅助工具与后台服务各自有不同的寿命。",
-    visual: "duo", steps: [
-      ["显示", "工具可以多次显示", "通常在首次需要时激活工具。模型由所属插件的服务容器持有。", ["文档", "独立工作实例", "工具", "已创建并可见"]],
-      ["关闭按钮", "先区分关闭的对象", "文档完成关闭后释放资源。工具的关闭入口通常将它隐藏。", ["文档", "关闭后释放", "工具", "隐藏，实例保留"]],
-      ["重新显示", "工具中心找回原面板", "在同一次运行里，Host 恢复该工具的显示并复用实例。", ["文档", "重新打开会创建实例", "工具", "原实例再次可见"]],
-      ["后台服务", "服务寿命由注册或业务协议决定", "插件仓储和后台任务可以独立于工具可见状态运行。", ["工具面板", "当前可隐藏", "插件服务", "按自身生命周期运行"]]
+    title: "关闭文档和隐藏工具，有什么区别？", short: "文档关闭与工具隐藏", group: "管理运行",
+    lead: "对比两个 ×。关闭后重新打开，观察文档和工具的实例编号。",
+    visual: "host", demo: "toolLifetime", steps: [
+      ["显示", "工具可以多次显示", "通常在首次需要时激活工具。模型由所属插件的服务容器持有。"],
+      ["关闭按钮", "先区分关闭的对象", "文档完成关闭后释放资源。工具的关闭入口通常将它隐藏。"],
+      ["重新显示", "工具中心找回原面板", "在同一次运行里，Host 恢复该工具的显示并复用实例。"],
+      ["后台服务", "服务寿命由注册或业务协议决定", "插件仓储和后台任务可以独立于工具可见状态运行。"]
     ]
   },
   {
     title: "保存文档和记住布局是两件事", short: "保存与布局恢复", group: "管理运行",
     lead: "Host 分别协调业务文件写入和工具布局快照。重启后可观察到两种结果。",
-    visual: "duo", steps: [
-      ["重启前", "编辑内容与摆放位置分开处理", "文档内容通过保存写入业务文件。工具窗口位置、分组和显隐进入布局记录。", ["业务文件", "已保存的内容", "布局 V3", "工具位置和显隐"]],
-      ["重启后", "恢复工具，按需重新打开文档", "Host 恢复可用工具的布局。文档标签和纯文档浮窗不会自动重开。", ["文档区", "手动打开业务文件", "工具区", "恢复已记录布局"]],
-      ["插件暂缺", "先保留这个工具的位置记录", "插件当前不可用时，不创建空白浮窗。插件恢复可用后可按保留的记录恢复工具。", ["工具窗口", "暂不显示", "布局记录", "保留位置、分组和显示意图"]]
+    visual: "host", demo: "persistence", steps: [
+      ["重启前", "编辑内容与摆放位置分开处理", "文档内容通过保存写入业务文件。工具窗口位置、分组和显隐进入布局记录。"],
+      ["重启后", "恢复工具，按需重新打开文档", "Host 恢复可用工具的布局。文档标签和纯文档浮窗不会自动重开。"],
+      ["插件暂缺", "先保留这个工具的位置记录", "插件当前不可用时，不创建空白浮窗。插件恢复可用后可按保留的记录恢复工具。"]
     ]
   },
   {
-    title: "菜单、快捷键和面板调用同一套命令", short: "工作台命令", group: "连接操作",
+    id: "commands", title: "菜单、快捷键和面板调用同一套命令", short: "工作台命令", group: "连接操作",
     lead: "同一个保存动作可以从不同入口触发，Host 按操作上下文确定目标。",
-    visual: "matrix", mapping: [
-      ["文件菜单", "当前文档"], ["Ctrl+S", "发起窗口中的活动文档"], ["命令面板", "提交时复核目标"]
-    ], steps: [
+    visual: "host", demo: "commands", steps: [
       ["文件菜单", "识别当前工作目标", "Host 根据活动文档状态判断保存操作是否可用。"],
       ["快捷键", "浮窗里也能保存", "浮窗收到快捷键时，Host 使用该窗口的操作上下文解决目标。"],
       ["命令面板", "打开面板后切页也会校验", "提交时复核目标和状态，避免旧入口把操作发给另一个文档。"]
@@ -419,7 +669,7 @@ const slides = [
   {
     title: "插件通过 Host 调用彼此的能力", short: "跨插件调用", group: "连接操作",
     lead: "以插件 A 请求插件 B 生成摘要为例。业务实现由 B 提供，Host 负责调用过程。",
-    visual: "rail", steps: [
+    visual: "host", demo: "workflow", steps: [
       ["A 发起", "按 Action 身份发出请求", "插件 A 通过自己的调用入口选择 Action，提供 JSON 参数。"],
       ["Host 校验", "确认身份、参数和调用条件", "Host 检查调用身份、目标可用性、输入格式、并发和授权策略。"],
       ["B 执行", "在提供方的调用作用域中运行", "插件 B 的处理器执行业务逻辑。调用不依赖当前活动文档。"],
@@ -430,7 +680,7 @@ const slides = [
   {
     title: "本地 ZIP 更新经过检查、确认和重启", short: "安装、更新与恢复", group: "接入插件",
     lead: "维护人员通过插件看板管理本地安装包。应用变更时会替换完整插件目录。",
-    visual: "rail", variants: [
+    visual: "host", demo: "installation", variants: [
       { label: "正常安装或更新", steps: [
         ["选择 ZIP", "先生成预检结果", "Host 检查清单、包结构和兼容基线，展示当前版本和候选版本。"],
         ["确认", "登记待应用变更", "用户核对预览后确认。Host 保存待办，当前运行继续使用现有插件。"],
@@ -447,30 +697,40 @@ const slides = [
   {
     title: "诊断把问题定位到发生的阶段", short: "状态与诊断", group: "管理运行",
     lead: "用户看到当前能做什么，维护者可以依靠状态、阶段和错误码查找原因。",
-    visual: "duo", steps: [
-      ["启动失败", "从启动反馈进入排查", "Host 显示启动失败，诊断可区分运行环境准备和主窗口交接等阶段。", ["用户界面", "启动失败提示", "维护线索", "阶段与错误码"]],
-      ["插件不可用", "从插件看板看当前状态", "看板汇总插件候选、注册、生命周期及相关诊断，便于区分安装状态和运行状态。", ["用户界面", "插件看板", "维护线索", "候选、注册或初始化结果"]],
-      ["文件保存失败", "保留当前工作，允许处理后再尝试", "工作台给出受控的保存错误。关闭流程遇到保存失败时保留页面和工作内容。", ["用户界面", "保存错误，可继续处理", "维护线索", "持久化失败状态"]]
+    visual: "host", demo: "diagnostics", steps: [
+      ["启动失败", "从启动反馈进入排查", "Host 显示启动失败，诊断可区分运行环境准备和主窗口交接等阶段。"],
+      ["插件不可用", "从插件看板看当前状态", "看板汇总插件候选、注册、生命周期及相关诊断，便于区分安装状态和运行状态。"],
+      ["文件保存失败", "保留当前工作，允许处理后再尝试", "工作台给出受控的保存错误。关闭流程遇到保存失败时保留页面和工作内容。"]
     ]
   },
   {
-    title: "一次操作串起工作台的主要能力", short: "端到端演示", group: "完整演示",
-    lead: "跟着一份插件文档走完一轮，观察每一步由哪部分负责。",
+    id: "story", title: "在一个工作台走完编辑与检查", short: "端到端演示", group: "完整演示",
+    lead: "编辑一份文件，把检查面板浮到旁边核对，保存退出后再打开。",
     visual: "desk", mode: "full-story", steps: [
       ["启动", "Host 发现、注册并初始化插件", "插件就绪后，Host 让其贡献在工作台可用。", "tools"],
       ["打开", "工作区创建文档实例", "文件由对应插件处理，Host 把初始化完成的页面放进工作区。", "doc"],
-      ["浮出工具", "Dock 调整工具的显示位置", "用户把辅助工具从主窗浮出，工作实例仍由原来的插件持有。", "float"],
+      ["浮出并核对", "一边看检查结果，一边改文档", "检查面板从主窗浮出，原来的检查实例继续运行。文档留在主窗，两个窗口可以并排。", "float"],
       ["保存退出", "保存业务文件，记录工具布局", "Host 完成文档保存和关闭协调，记录最终布局，再等待运行收尾。", "close"],
       ["重启", "恢复工具，等待用户打开文件", "浮窗回到记录的位置。文档内容可从先前保存的文件重新打开。", "restart"]
     ]
   },
   {
+    title: "用户少做哪些事，遇到意外又会怎样？", short: "体验变化与异常处理",
+    group: "体验变化", lead: "从同一个编辑与检查任务里看四种情况，以及 Host 给出的实际行为。",
+    visual: "host", demo: "exceptions", steps: [
+      ["需要对照", "编辑时就能把检查工具摆在旁边", "把辅助工具停靠在文档旁，空间不够时浮到另一块屏幕。移动窗口沿用原实例。", ["要完成的事", "对照检查结果修改文档"], ["Host 的行为", "文档与工具可并排、浮动和回停"]],
+      ["误点关闭", "取消关闭后还能接着编辑", "Host 先处理未保存修改。用户取消，或请求保存但写入失败时，关闭流程会保留页面与待处理内容。", ["遇到的情况", "文档还有未保存修改"], ["Host 的行为", "先确认，必要时保留文档"]],
+      ["暂时缺工具", "保留摆放位置，等插件可用时再恢复", "已记录布局里的工具暂时找不到时，Host 保留其位置和显示意图，避免生成空白浮窗。", ["遇到的情况", "插件当前不可用"], ["Host 的行为", "看板提供状态，布局保留记录"]],
+      ["下次接着做", "少重新摆一次窗口", "重启后，Host 恢复已记录的工具布局。用户重新打开已经保存的文档，就能回到熟悉的工作区。", ["要完成的事", "打开上次保存的文件"], ["Host 的行为", "恢复工具位置、分组和显隐"]]
+    ]
+  },
+  {
     title: "当前交付面向团队维护的 Windows 插件", short: "交付和接入边界", group: "交付与接入",
     lead: "业务插件可独立开发和交付，通过 Host 的 SDK 与运行契约接入。",
-    visual: "duo", steps: [
-      ["运行环境", "Windows x64 为正式支持范围", "Host 以 Windows x64 为交付环境，macOS 路径仍处于实验阶段。", ["正式支持", "Windows x64", "实验路径", "macOS"]],
-      ["信任边界", "同团队插件与 Host 同进程运行", "通过 SDK 管理接入与兼容性。组织接入时需要确认插件受信任并由团队维护。", ["接入对象", "团队维护的可信插件", "执行位置", "Host 进程内"]],
-      ["交付方式", "用版本化插件包交付", "本地 ZIP 可经插件看板预检与确认，在重启时应用变更。", ["交付载荷", "独立插件目录或本地 ZIP", "生效时机", "重启后加载"]]
+    visual: "host", demo: "environment", steps: [
+      ["运行环境", "Windows x64 为正式支持范围", "Host 以 Windows x64 为交付环境，macOS 路径仍处于实验阶段。"],
+      ["信任边界", "同团队插件与 Host 同进程运行", "通过 SDK 管理接入与兼容性。组织接入时需要确认插件受信任并由团队维护。"],
+      ["交付方式", "用版本化插件包交付", "本地 ZIP 可经插件看板预检与确认，在重启时应用变更。"]
     ]
   },
   { title: "从示例到接入", kind: "end", group: "交付与接入" }
@@ -488,10 +748,13 @@ let stopPlayback = () => {};
 function cover() {
   return `<div class="hero">
     <div>
-      <p class="section-label">主 Host 架构演示</p>
-      <h1 tabindex="-1">Host 做了<span class="accent">什么</span></h1>
-      <p class="lead">我们做了一个可扩展的桌面工作台。Host 管理统一的工作区和运行机制，插件把业务页面、工具和操作接进来。</p>
-      <button class="btn primary" data-page="2" type="button">查看职责总览 →</button>
+      <p class="section-label">为什么做 Host</p>
+      <h1 tabindex="-1">软件可以拆，<br><span class="accent">工作可以接着做</span></h1>
+      <p class="lead">一个大软件用起来集中，拆成独立软件便于分别交付。我们用 Host 统一用户的工作台，让各个插件负责自己的业务能力。</p>
+      <div class="actions">
+        <button class="btn primary" data-slide="large" type="button">从原来的做法讲起 →</button>
+        <button class="btn" data-slide="comparison" type="button">直接看三种做法</button>
+      </div>
     </div>
     <svg class="hero-figure" viewBox="0 0 600 440" role="img" aria-label="Host 将文档、工具、命令和插件能力组织进同一个工作台">
       <defs>
@@ -528,23 +791,26 @@ function pyramid() {
     <div class="tier" style="--width:min(44%, 560px);--inset:12%">统一的桌面工作台</div>
     <div class="tier" style="--width:min(76%, 940px);--inset:8%">让多种插件在同一个环境里工作</div>
     <div class="pyramid-links">
-      <button class="btn" style="--color:var(--accent)" data-page="3" type="button"><strong>组织工作区</strong><span>文档、工具、停靠和浮窗</span></button>
-      <button class="btn" style="--color:#92caff" data-page="5" type="button"><strong>接入插件</strong><span>声明、注册、安装与更新</span></button>
-      <button class="btn" style="--color:var(--violet)" data-page="7" type="button"><strong>管理运行</strong><span>生命周期、保存和恢复</span></button>
-      <button class="btn" style="--color:var(--amber)" data-page="12" type="button"><strong>连接操作</strong><span>统一命令、跨插件调用</span></button>
+      <button class="btn" style="--color:var(--accent)" data-slide="workspace" type="button"><strong>组织工作区</strong><span>文档、工具、停靠和浮窗</span></button>
+      <button class="btn" style="--color:#92caff" data-slide="plugins" type="button"><strong>接入插件</strong><span>声明、注册、安装与更新</span></button>
+      <button class="btn" style="--color:var(--violet)" data-slide="lifecycle" type="button"><strong>管理运行</strong><span>生命周期、保存和恢复</span></button>
+      <button class="btn" style="--color:var(--amber)" data-slide="commands" type="button"><strong>连接操作</strong><span>统一命令、跨插件调用</span></button>
     </div>
-    <button class="btn" data-page="16" type="button">直接看完整操作演示 →</button>
+    <button class="btn" data-slide="story" type="button">直接看完整操作演示 →</button>
   </div>`;
 }
 
 function endPage() {
   return `<div class="end-grid visual">
-    <div class="tile"><strong>用工作台</strong><span>了解文档、工具、布局和命令入口。</span><button class="btn" data-page="16" type="button">操作演示</button></div>
+    <div class="tile"><strong>用工作台</strong><span>了解文档、工具、布局和命令入口。</span><button class="btn" data-slide="story" type="button">操作演示</button></div>
     <div class="tile"><strong>接入插件</strong><span>从仓库内的 MyPlugTest 和 Managed Plugin 指南开始。</span><a href="docs/quick-start/README.md">插件开发指南 ↗</a></div>
     <div class="tile"><strong>维护 Host</strong><span>从职责映射继续查到架构、源码与测试。</span><a href="docs/host-architecture/README.md">架构说明 ↗</a><a href="docs/maintenance/verification.md">验证说明 ↗</a></div>
   </div>
   <p class="hint" style="white-space:normal;margin-top:12px">参考文档随项目仓库提供，演示文件本身可单独打开。</p>
-  <div class="actions end-actions"><button class="btn primary" data-page="2" type="button">返回职责总览</button></div>`;
+  <div class="actions end-actions">
+    <button class="btn primary" data-slide="comparison" type="button">回看三种做法</button>
+    <button class="btn" data-slide="overview" type="button">返回职责总览</button>
+  </div>`;
 }
 
 function deskScene() {
@@ -568,12 +834,335 @@ function deskScene() {
   </div>`;
 }
 
+function monolithSketch() {
+  return `<div class="sketch-app demo-monolith">
+    <div class="sketch-bar"><strong>报告编辑器</strong><span class="winctrl" aria-hidden="true">– □ ×</span></div>
+    <div class="sketch-actions"><span>文件</span><span>编辑</span><span>报告.txt</span></div>
+    <div class="module-map">
+      <div class="feature-module"><strong>检查功能</strong><span data-feature-state></span></div>
+      <svg class="branch" viewBox="0 0 300 26" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M150 0V11H50V25 M150 0V25 M150 0V11H250V25" pathLength="1"
+          fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+      </svg>
+      <div class="module-grid">
+        <div class="module"><strong>文档编辑</strong><span></span></div>
+        <div class="module"><strong>菜单命令</strong><span></span></div>
+        <div class="module"><strong>保存流程</strong><span></span></div>
+      </div>
+      <div class="package-track"><strong>应用安装包</strong><span data-package-state></span></div>
+    </div>
+  </div>`;
+}
+
+function splitSketch() {
+  return `<div class="demo-split">
+    <div class="sketch-app">
+      <div class="sketch-bar"><strong>编辑器</strong><span>1.4</span></div>
+      <div class="sketch-actions"><span>文件</span><span>视图</span></div>
+      <div class="sketch-document"><strong>报告.txt</strong><span data-editor-state></span><i aria-hidden="true"></i><i aria-hidden="true"></i></div>
+    </div>
+    <div class="handoff">
+      <svg viewBox="0 0 20 24" fill="none" aria-hidden="true"><path d="M4 2h8l5 5v15H4z M12 2v6h5 M7 12h7 M7 16h7" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      <span data-handoff-state></span>
+    </div>
+    <div class="sketch-app">
+      <div class="sketch-bar"><strong>检查器</strong><span>2.1</span></div>
+      <div class="sketch-actions"><span>打开</span><span>布局</span></div>
+      <div class="sketch-document"><strong data-checker-title></strong><span data-checker-state></span><i aria-hidden="true"></i><i aria-hidden="true"></i></div>
+    </div>
+  </div>`;
+}
+
+function hasDialogue(slide) {
+  return slide.visual === "monolith" || slide.visual === "split-apps";
+}
+
+function updateSketch(scene, visual, state) {
+  if (visual === "monolith") {
+    const app = scene.querySelector(".demo-monolith");
+    const copy = {
+      base: ["待加入", "正在编辑", "文件操作", "写入文件", "当前版本"],
+      change: ["已接入", "读取当前内容", "新增入口", "保存后重查", "等待验证"],
+      release: ["随应用交付", "验证过编辑", "验证过入口", "验证过保存", "整包回归后发布"]
+    };
+    const [feature, ...labels] = copy[state];
+    app.dataset.state = state;
+    app.querySelector("[data-feature-state]").textContent = feature;
+    app.querySelectorAll(".module span, [data-package-state]").forEach((label, index) => {
+      label.textContent = labels[index];
+    });
+  } else {
+    const desktop = scene.querySelector(".demo-split");
+    const copy = {
+      base: ["正在编辑", "独立安装", "等待打开", "检查规则已更新"],
+      transfer: ["保存到磁盘", "切换窗口", "报告.txt", "重新打开后检查"],
+      duplicate: ["保存编辑器布局", "分别设置", "检查结果", "保存检查器布局"]
+    };
+    desktop.dataset.state = state;
+    const fields = ["editor-state", "handoff-state", "checker-title", "checker-state"];
+    fields.forEach((field, index) => {
+      desktop.querySelector(`[data-${field}]`).textContent = copy[state][index];
+    });
+  }
+}
+
+function demoWindow(title, content, tone = "") {
+  return `<div class="frame-window ${tone}">
+    <div class="frame-bar"><strong>${title}</strong><span class="winctrl" aria-hidden="true">– □</span></div>
+    <div class="frame-body">${content}</div></div>`;
+}
+
+function demoRow(label, status = "", tone = "") {
+  return `<div class="frame-row ${tone}"><span>${label}</span>${status ? `<span class="badge">${status}</span>` : ""}</div>`;
+}
+
+function packet(label = "", tone = "go") {
+  return `<div class="transit ${tone}">
+    <span class="signal-track" aria-hidden="true"><i></i></span>${label ? `<strong>${label}</strong>` : ""}
+  </div>`;
+}
+
+function demoFile(name, status, tone = "") {
+  return `<div class="file-object ${tone} arrive">
+    <svg viewBox="0 0 28 31" fill="none" aria-hidden="true"><path d="M4 2h12l8 8v19H4z M16 2v9h8 M9 17h10 M9 22h10"
+      stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    <strong>${name}</strong><span class="badge">${status}</span>
+  </div>`;
+}
+
+function demoButton(label, step, description = label) {
+  return `<button class="mock-btn" type="button" data-demo-step="${step}" aria-label="${description}">${label}</button>`;
+}
+
+function demoPrompt(title, body, actions = "", tone = "") {
+  return `<div class="demo-prompt ${tone}"><strong>${title}</strong><span>${body}</span>
+    ${actions ? `<div class="mock-buttons">${actions}</div>` : ""}</div>`;
+}
+
+function demoEditor(label, dirty = false) {
+  return `<div class="demo-editor"><strong>${label}</strong>
+    <div class="fake-lines${dirty ? " dirty" : ""}" aria-hidden="true"><i></i><i></i><i></i></div>
+  </div>`;
+}
+
+function demoFrame(contents, layout = "frame-pair", caption = "", tone = "") {
+  return `<div class="demo-frame ${layout}">${contents.join("")}
+    ${caption ? `<p class="frame-status scene-caption ${tone}">${caption}</p>` : ""}</div>`;
+}
+
+function miniLayout(documentState, toolState, missing = false) {
+  return `<div class="layout-mini"><span>${documentState}</span><span${missing ? ' class="empty"' : ""}>${toolState}</span></div>`;
+}
+
+function pluginWorkspace(state) {
+  const visible = state === "ready";
+  return demoWindow("Host 工作台",
+    demoRow("文件 → 新建文档", "可用", "good") +
+    (visible ? demoRow("工具 → 检查面板", "已出现", "good flash") + demoRow("命令面板 → 运行检查", "可用", "good") :
+      demoRow("工具与命令入口", state === "checking" ? "等待初始化" : state === "stopping" ? "停止接受新调用" : "只显示可用项", "removed")),
+    visible ? "good" : "");
+}
+
+const hostDemos = {
+  contributions(step) {
+    const [contract, surface, entry, status] = [
+      ["Document", "新建文档", "检查报告", "打开标签"],
+      ["Tool", "工具中心", "检查面板", "显示面板"],
+      ["Workbench Command", "命令面板", "运行检查", "可执行"],
+      ["Workflow Action", "Action 目录", "report.check", "供插件调用"]
+    ][step];
+    return demoFrame([
+      demoWindow("插件 SDK 声明", demoFile(contract, "检查插件")),
+      packet("注册"),
+      demoWindow(surface, demoRow(entry, status, "good flash") + (step === 0 ? demoEditor("检查报告.txt") : ""), "good")
+    ], "frame-pair", "插件声明 → Host 目录 → 使用入口", "good");
+  },
+
+  pluginLoading(step) {
+    const [title, status] = [
+      ["发现清单", "已识别检查插件"], ["验证 SDK", "兼容范围符合"],
+      ["加载入口", "建立插件服务容器"], ["写入贡献目录", "登记页面、工具和命令"]
+    ][step];
+    return demoFrame([
+      demoWindow("插件目录", demoRow("检查插件", "", "good") + demoFile("plugin.manifest.json", "入口与 SDK 范围")),
+      packet(step < 2 ? "读取" : "接入"),
+      demoWindow("Host 加载过程", demoRow(title, status, "good flash") +
+        demoRow("Check.Plugin.dll", step >= 2 ? "已加载" : "待加载", step >= 2 ? "good" : "dim") +
+        demoRow("贡献目录", step === 3 ? "已登记" : "等待注册", step === 3 ? "good" : "dim"), "good")
+    ], "frame-pair", "注册完成后进入初始化，入口在可用后才出现。");
+  },
+
+  pluginLifecycle(step, option) {
+    const frame = (option === 0 ? [
+      ["已注册", "贡献已登记", "checking", "dim"],
+      ["初始化中", "正在启动检查服务", "checking", "warn"],
+      ["可用", "初始化完成", "ready", "good"],
+      ["停止中", "等待在途工作", "stopping", "warn"],
+      ["已释放", "插件服务容器已释放", "released", "dim"]
+    ] : [
+      ["已注册", "贡献已登记", "checking", "dim"],
+      ["初始化失败", "阶段：初始化", "failed", "bad"],
+      ["不可用", "保留失败记录", "failed", "bad"],
+      ["收尾中", "检查能否安全释放", "failed", "warn"]
+    ])[step];
+    const [status, note, workspace, tone] = frame;
+    return demoFrame([
+      demoWindow("插件看板", demoRow("检查插件", status, tone + " flash") + demoRow(note, "", tone) +
+        demoRow("编辑插件", "可用", "good"), tone),
+      packet("", workspace === "failed" ? "stop" : "go"),
+      pluginWorkspace(workspace)
+    ], "frame-pair", workspace === "failed" ? "检查入口不可用，正常编辑入口继续显示。" : "", tone);
+  },
+
+  startup(step) {
+    const frames = [
+      ["启动首屏", demoRow("Host 正在启动", "启动反馈", "good") + '<div class="mock-progress"><i style="--fill:24%"></i></div>', "后台任务", demoRow("准备运行环境", "进行中", "warn")],
+      ["启动首屏", demoRow("组装服务和插件", "Prepared", "good") + '<div class="mock-progress"><i style="--fill:72%"></i></div>', "后台任务", demoRow("插件贡献和服务", "已准备", "good")],
+      ["Host 工作台", miniLayout("文档区", "工具区"), "运行状态", demoRow("主窗口完成交接", "Ready", "good")],
+      ["Host 工作台", demoPrompt("退出前处理文档", "先处理未保存修改，再写入布局"), "关机协调", demoRow("新入口", "即将关闭", "warn")],
+      ["Host 工作台已关闭", demoRow("不再接受操作", "", "dim"), "运行收尾", demoRow("等待在途操作", "已结束", "good") + demoRow("工作区与插件资源", "已释放", "good flash")]
+    ];
+    const [leftTitle, left, rightTitle, right] = frames[step];
+    return demoFrame([demoWindow(leftTitle, left, step === 4 ? "dim" : ""), packet(), demoWindow(rightTitle, right)]);
+  },
+
+  documents(step, option) {
+    const confirm = option === 1 && step === 0;
+    const released = option === 0 && step === 3;
+    const saved = option === 0 && step === 2;
+    const dirty = option === 1 || step === 1;
+    const tabs = `<div class="demo-tabs">
+      <span class="demo-tab ${released ? "leaving" : "active"}"${released ? ' aria-hidden="true"' : ""}>报告 A${dirty ? " ●" : ""}　×</span>
+      <span class="demo-tab${released ? " active" : ""}">报告 B　×</span>
+    </div>`;
+    const confirmUI = confirm ? demoPrompt("保存报告 A 的更改？", "当前有未保存内容", demoButton("取消", 1)) : "";
+    const file = saved ? demoFile("报告 A.txt", "已写入业务文件") : "";
+    const scopes =
+      demoRow("文档 A", released ? "实例 #01 已释放" : "实例 #01", released ? "removed" : dirty ? "warn" : "good") +
+      demoRow("文档 B", "实例 #02", "good") + file;
+    return demoFrame([
+      demoWindow("Host 工作台", tabs + (confirmUI || demoEditor(released ? "报告 B.txt" : "报告 A.txt", dirty))),
+      packet(saved ? "写入" : "", confirm ? "" : "go"),
+      demoWindow("文档实例", scopes)
+    ]);
+  },
+
+  toolLifetime(step) {
+    const visible = step === 0 || step === 2;
+    const docNumber = step >= 2 ? "文档 #02" : "文档 #01";
+    const docTab = `<span class="demo-tab ${step === 1 ? "leaving" : "active"}"${step === 1 ? ' aria-hidden="true"' : ""}>报告.txt</span>`;
+    const left = `<div class="demo-tabs">${docTab}${step === 0 ? demoButton("×", 1, "演示关闭文档和隐藏工具") : ""}</div>` +
+      (step === 1 ? demoButton("重新打开文档", 2) : demoEditor(docNumber)) +
+      demoRow(docNumber, step === 1 ? "已释放" : "已打开", step === 1 ? "removed" : "good");
+    const tool = `<div class="tool-panel ${step === 1 ? "disappear" : step === 2 ? "appear" : ""}"${visible ? "" : ' aria-hidden="true"'}>
+      ${step !== 3 ? demoRow("检查面板", "1 处待核对", "good") : ""}
+      ${step === 0 ? demoButton("×", 1, "演示关闭文档和隐藏工具") : ""}</div>`;
+    const right = tool + (step === 1 ? demoButton("工具中心 · 显示", 2, "演示打开文档和重新显示工具") : "") +
+      demoRow("工具 #01", visible ? "原实例可见" : "隐藏，实例保留", visible ? "good" : "dim") +
+      (step === 3 ? demoRow("后台检查队列", "仍在运行", "good flash") : "");
+    return demoFrame([demoWindow("Document · 文档", left), demoWindow("Tool · 工具", right)],
+      "frame-pair direct", step === 2 ? "文档换了编号，工具仍是 #01。" : "", "good");
+  },
+
+  persistence(step) {
+    const [doc, tool] = [["报告.txt", "检查面板"], ["手动打开", "检查面板"], ["手动打开", "工具暂缺"]][step];
+    return demoFrame([
+      demoWindow("磁盘", demoFile("报告.txt", "保存的业务内容") + demoFile("布局 V3", "工具位置 / 显隐", "violet")),
+      packet(step === 0 ? "写入" : "恢复", step === 0 ? "go reverse" : "go"),
+      demoWindow(step === 0 ? "退出前的工作区" : "重启后的工作区", miniLayout(doc, tool, step === 2) +
+        demoRow("工具布局记录", step === 2 ? "保留，等待插件" : step === 1 ? "已恢复" : "已保存", step === 2 ? "warn" : "good flash"))
+    ]);
+  },
+
+  commands(step) {
+    const [source, contents, route, title, result] = [
+      ["文件菜单 · 主窗", demoRow("打开") + demoRow("保存", "选中", "good flash"), "保存", "活动文档 A", demoRow("报告 A.txt", "保存目标", "good flash")],
+      ["浮动窗口 · 文档 B", demoRow("键盘", "Ctrl+S", "good flash") + demoEditor("报告 B.txt"), "保存", "浮窗文档 B", demoRow("报告 B.txt", "保存目标", "good flash")],
+      ["命令面板 · 旧上下文", demoRow("保存报告 A", "打开面板时的目标") + demoRow("当前窗口已切到 B", "", "warn"), "复核", "目标检查", demoRow("旧目标已变化", "阻止本次提交", "bad flash")]
+    ][step];
+    return demoFrame([demoWindow(source, contents), packet(route, step === 2 ? "stop" : "go"), demoWindow(title, result, step === 2 ? "bad" : "good")]);
+  },
+
+  workflow(step) {
+    const caller = step === 3 ? demoRow("摘要结果", "已收到", "good flash") : demoRow("请求摘要", "JSON 参数", step === 0 ? "good flash" : "");
+    const host = demoRow(["受理调用", "检查身份与输入", "允许执行", "检查输出"][step],
+      ["绑定调用方", "通过", "授权", "通过"][step], "good flash");
+    const provider = demoRow("摘要 Action", step < 2 ? "等待许可" : step === 2 ? "执行中" : "已完成",
+      step < 2 ? "dim" : "good flash");
+    const active = step === 3 ? "go reverse" : "go";
+    return demoFrame([demoWindow("插件 A", caller), packet("", active), demoWindow("Host", host, "good"),
+      packet("", step >= 2 ? active : ""), demoWindow("插件 B", provider)], "frame-trio");
+  },
+
+  installation(step, option) {
+    const normal = option === 0;
+    const title = normal ? "检查插件 2.1.zip" : "检查插件 2.0";
+    const [status, slot, slotState, tone] = (normal ? [
+      ["预检通过", "当前使用 2.0", "等待确认", "good"],
+      ["待应用", "当前仍使用 2.0", "下次启动替换", "warn"],
+      ["目录已替换", "检查插件 2.1", "进入正常加载", "good"]
+    ] : [
+      ["新版应用失败", "安装操作记录", "尝试恢复一致状态", "bad"],
+      ["上一版备份", "恢复预览 2.0", "等待确认", "warn"],
+      ["已应用恢复", "检查插件 2.0", "进入正常加载", "good"]
+    ])[step];
+    return demoFrame([
+      demoWindow(normal ? "本地 ZIP" : "安装记录 / 备份", demoFile(title, status, normal ? "" : "warning")),
+      packet(step === 2 ? "重启" : "预览", tone === "bad" ? "stop" : "go"),
+      demoWindow("插件看板", demoRow(slot, slotState, tone + " flash"), tone)
+    ]);
+  },
+
+  diagnostics(step) {
+    const frames = [
+      ["Host 启动窗口", demoPrompt("启动失败", "工作台未进入就绪状态", "", "bad"), "启动阶段", "主窗口交接"],
+      ["插件看板", demoRow("检查插件", "初始化失败", "bad flash") + demoRow("编辑插件", "可用", "good"), "插件阶段", "初始化"],
+      ["Host 工作台", demoEditor("报告.txt ●", true) + demoPrompt("保存失败", "报告仍可编辑", "", "bad"), "文档持久化", "保存"]
+    ];
+    const [title, content, label, state] = frames[step];
+    return demoFrame([demoWindow(title, content, "bad"), packet("记录"), demoWindow("诊断", demoRow(label, state, "bad flash") +
+      demoRow("日志", "记录对应错误码", "good"))]);
+  },
+
+  exceptions(step) {
+    const frames = [
+      ["编辑与检查", miniLayout("报告.txt", "检查结果"), "浮动窗口", demoRow("检查面板", "原实例", "good flash")],
+      ["文档关闭确认", demoPrompt("报告有未保存修改", "本次选择取消"), "保留工作", demoEditor("报告.txt ●", true)],
+      ["插件看板", demoRow("检查插件", "当前不可用", "bad flash"), "布局 V3", miniLayout("文档区", "原位置保留", true)],
+      ["重新打开文件", demoFile("报告.txt", "保存的业务内容"), "已恢复工作区", miniLayout("报告.txt", "检查面板")]
+    ];
+    const [leftTitle, left, rightTitle, right] = frames[step];
+    return demoFrame([demoWindow(leftTitle, left), packet(), demoWindow(rightTitle, right, "good")]);
+  },
+
+  environment(step) {
+    const frames = [
+      ["桌面系统", demoRow("Windows x64", "正式支持", "good flash") + demoRow("macOS", "实验", "dim"),
+        "运行", "宿主程序", miniLayout("Host 工作台", "插件")],
+      ["团队维护", demoRow("可信插件程序集", "通过 SDK 接入", "good"),
+        "加载", "同一个进程", miniLayout("Host", "插件") + demoRow("执行边界", "同进程", "warn")],
+      ["插件交付", demoFile("检查插件.zip", "版本化安装包"),
+        "重启", "插件看板", demoRow("预检与确认", "待应用", "warn") + demoRow("下次启动", "更新目录", "good flash")]
+    ];
+    const [leftTitle, left, route, rightTitle, right] = frames[step];
+    return demoFrame([demoWindow(leftTitle, left), packet(route), demoWindow(rightTitle, right)]);
+  }
+};
+
 function sceneMarkup(slide) {
   if (slide.visual === "desk") return deskScene();
-  if (slide.visual === "rail") return `<div class="rail-wrap"><div class="rail" role="group" aria-label="流程状态"></div><p class="rail-status"></p></div>`;
-  if (slide.visual === "matrix") return `<div class="matrix" role="group" aria-label="入口对应关系">${slide.mapping.map(([from, to], index) =>
-    `<button data-map="${index}" type="button">${from}</button><span class="arrow" aria-hidden="true">→</span><button data-map="${index}" type="button">${to}</button>`).join("")}</div>`;
-  return `<div class="duo"><div class="tile"><strong></strong><span></span></div><div class="tile"><strong></strong><span></span></div></div>`;
+  if (slide.visual === "host") return "";
+  if (slide.visual === "monolith") return monolithSketch();
+  if (slide.visual === "split-apps") return splitSketch();
+  if (slide.visual === "compare") {
+    const models = [["large", "一个大软件"], ["split", "多个独立软件"], ["host", "Host ＋ 插件"]];
+    return `<div class="compare-grid">${models.map(([model, label]) => `
+      <article class="compare-card ${model}">
+        <h3>${label}</h3>
+        <div class="mini-map"><span class="mini-pane"></span><span class="mini-pane"></span></div>
+        <b></b><p></p>
+      </article>`).join("")}</div>`;
+  }
 }
 
 function mountInteraction(slide) {
@@ -600,67 +1189,67 @@ function mountInteraction(slide) {
   function draw() {
     const story = steps();
     const [, title, body, state] = story[step];
-    const rail = scene.querySelector(".rail");
     reading.querySelector("h3").textContent = title;
-    reading.querySelector("p").textContent = body;
+    if (hasDialogue(slide)) {
+      updateSketch(scene, slide.visual, body);
+      const messages = state.map(([speaker, message]) => {
+        const item = document.createElement("li");
+        const name = document.createElement("strong");
+        name.textContent = speaker;
+        item.append(name, message);
+        return item;
+      });
+      reading.querySelector(".chat").replaceChildren(...messages);
+    } else {
+      reading.querySelector("p").textContent = body;
+    }
+    if (slide.visual === "host") scene.innerHTML = hostDemos[slide.demo](step, option);
     reading.classList.remove("swap");
     void reading.offsetWidth;
     reading.classList.add("swap");
     choices.querySelectorAll("[data-step]").forEach((button, index) => button.setAttribute("aria-pressed", index === step));
-    if (rail) {
-      rail.querySelectorAll("[data-step]").forEach((button, index) => {
-        button.classList.toggle("done", index < step);
-        button.setAttribute("aria-pressed", index === step);
-      });
-      scene.querySelector(".rail-status").textContent = story[step][0];
-    }
     if (slide.visual === "desk") {
       const desk = scene.querySelector(".desk");
       desk.dataset.view = state;
       const documentDock = slide.mode === "document-dock";
-      desk.querySelector("#float-title").textContent = documentDock ? "文档浮窗" : "工具浮窗";
-      desk.querySelector("#float-content").textContent = documentDock ? "插件文档（原实例）" : "插件辅助工具";
+      const fullStory = slide.mode === "full-story";
+      desk.querySelector("#float-title").textContent = documentDock ? "文档浮窗" : fullStory ? "检查工具" : "工具浮窗";
+      desk.querySelector("#float-content").textContent = documentDock ? "插件文档（原实例）" :
+        fullStory && state === "float" ? "检查结果 · 1 处待核对" :
+        fullStory ? "检查面板已就绪" : "插件辅助工具";
       const tab = desk.querySelector("#document-tab");
       tab.textContent = state === "restart" ? "打开文档…" :
         documentDock && state === "float" ? "文档已移到浮窗" :
         state === "close" ? "文档已保存并关闭" :
-        slide.mode === "full-story" && step === 0 ? "工作台已就绪" : "插件文档";
+        fullStory && step === 0 ? "工作台已就绪" : "插件文档";
       desk.querySelectorAll(".doc-line").forEach(line => {
         line.hidden = ["close", "restart"].includes(state) || tab.textContent !== "插件文档";
       });
-      desk.querySelector("#tool-state").textContent = state === "restart" ? "已恢复工具布局" : "辅助工具";
+      desk.querySelector("#tool-state").textContent = state === "restart" ? "已恢复工具布局" :
+        fullStory && state === "float" ? "检查工具已浮动" :
+        fullStory ? "检查工具" : "辅助工具";
       desk.querySelector(".floating").setAttribute("aria-hidden", !["float", "restart"].includes(state));
       desk.querySelector(".palette").setAttribute("aria-hidden", state !== "palette");
     }
-    if (slide.visual === "matrix") {
-      scene.querySelectorAll("[data-map]").forEach(button => {
-        const active = Number(button.dataset.map) === step;
-        button.classList.toggle("on", active);
-        button.setAttribute("aria-pressed", active);
-      });
-      scene.querySelectorAll(".arrow").forEach((arrow, index) => arrow.classList.toggle("on", index === step));
-    }
-    if (slide.visual === "duo") {
-      scene.querySelectorAll(".tile").forEach((tile, index) => {
-        tile.querySelector("strong").textContent = state[index * 2];
-        tile.querySelector("span").textContent = state[index * 2 + 1];
-        tile.classList.remove("update");
-        void tile.offsetWidth;
-        tile.classList.add("update");
+    if (slide.visual === "compare") {
+      scene.querySelectorAll(".compare-card").forEach((card, index) => {
+        const [headline, description, labels] = state[index];
+        card.querySelector("b").textContent = headline;
+        card.querySelector("p").textContent = description;
+        card.querySelectorAll(".mini-map span").forEach((label, labelIndex) => {
+          label.textContent = labels[labelIndex];
+        });
+        card.classList.remove("update");
+        void card.offsetWidth;
+        card.classList.add("update");
       });
     }
     forward.textContent = step < story.length - 1 ? "下一步" : "重新演示";
   }
 
   function buildSteps() {
-    const rail = scene.querySelector(".rail");
-    if (rail) {
-      rail.innerHTML = steps().map(([label], index) =>
-        `<button data-step="${index}" type="button"><span class="dot" aria-hidden="true">${index + 1}</span><span>${label}</span></button>`).join("");
-    } else {
-      choices.innerHTML = steps().map(([label], index) =>
-        `<button class="choice" data-step="${index}" type="button"><span class="step-number" aria-hidden="true">${index + 1}</span>${label}</button>`).join("");
-    }
+    choices.innerHTML = steps().map(([label], index) =>
+      `<button class="choice" data-step="${index}" type="button"><span class="step-number" aria-hidden="true">${index + 1}</span>${label}</button>`).join("");
     variantButtons.forEach((button, index) => button.setAttribute("aria-pressed", index === option));
     draw();
   }
@@ -673,10 +1262,11 @@ function mountInteraction(slide) {
       option = Number(button.dataset.variant);
       step = 0;
       buildSteps();
-    } else if (button.hasAttribute("data-step") || button.hasAttribute("data-map")) {
+    } else if (button.hasAttribute("data-step") || button.hasAttribute("data-demo-step")) {
       pause();
-      step = Number(button.dataset.step ?? button.dataset.map);
+      step = Number(button.dataset.step ?? button.dataset.demoStep);
       draw();
+      if (button.hasAttribute("data-demo-step")) choices.querySelector(`[data-step="${step}"]`).focus();
     } else if (button === forward) {
       pause();
       step = (step + 1) % steps().length;
@@ -703,18 +1293,21 @@ function mountInteraction(slide) {
 }
 
 function interactionMarkup(slide) {
-  return `<div class="interaction visual">
+  const dialogue = hasDialogue(slide);
+  const visualClass = slide.visual === "compare" ? "comparison" : dialogue ? "sketch" : "";
+  return `<div class="interaction visual ${visualClass}">
     ${slide.variants ? `<div class="choices" role="group" aria-label="选择演示情景">${slide.variants.map((variant, index) =>
       `<button class="choice" data-variant="${index}" type="button">${variant.label}</button>`).join("")}</div>` : ""}
-    <div class="choices" data-step-choices role="group" aria-label="选择演示步骤"${slide.visual === "rail" ? " hidden" : ""}></div>
+    <div class="choices" data-step-choices role="group" aria-label="选择演示步骤"></div>
     <div class="interaction-body">
-      <div class="scene">${sceneMarkup(slide)}</div>
-      <div class="reading" aria-live="polite" aria-atomic="true"><h3></h3><p></p></div>
+      <div class="scene${slide.visual === "host" ? " host-scene" : ""}">${sceneMarkup(slide)}</div>
+      <div class="reading${dialogue ? " dialogue" : ""}" aria-live="polite" aria-atomic="true"><h3></h3>${dialogue ? '<ol class="chat" aria-label="示意对话"></ol>' : "<p></p>"}</div>
     </div>
     <div class="actions">
       <button class="btn" data-step-next type="button">下一步</button>
       <button class="btn" data-step-play aria-pressed="false" type="button">自动播放</button>
-      ${slide.visual === "desk" ? '<span class="hint">工作台示意</span>' : ""}
+      ${slide.demo === "pluginLoading" ? '<button class="btn" data-slide="lifecycle" type="button">继续看初始化 →</button>' : ""}
+      ${dialogue ? '<span class="hint">软件示意</span>' : slide.visual === "desk" ? '<span class="hint">工作台示意</span>' : ""}
     </div>
   </div>`;
 }
@@ -750,13 +1343,17 @@ function goToPage(page) {
   display(page - 1);
 }
 
+function goToSlide(id) {
+  display(slides.findIndex(slide => slide.id === id));
+}
+
 stage.addEventListener("click", event => {
-  const link = event.target.closest("[data-page]");
-  if (link) goToPage(Number(link.dataset.page));
+  const link = event.target.closest("[data-slide]");
+  if (link) goToSlide(link.dataset.slide);
 });
 previous.addEventListener("click", () => display(current - 1));
 next.addEventListener("click", () => display(current + 1));
-document.querySelector("#overview").addEventListener("click", () => goToPage(2));
+document.querySelector("#overview").addEventListener("click", () => goToSlide("overview"));
 document.querySelector("#open-toc").addEventListener("click", () => {
   const toc = document.querySelector("#toc");
   toc.innerHTML = slides.map((slide, index) =>
