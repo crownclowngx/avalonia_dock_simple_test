@@ -475,7 +475,7 @@
         "type": "Project",
         "dependencies": {
           "Avalonia": "[12.1.2, )",
-          "Avalonia.Controls.WebView": "[12.1.0, )",
+          "Avalonia.Controls.WebView": "[12.1.2, )",
           "Avalonia.Desktop": "[12.1.2, )",
           "Avalonia.Fonts.Inter": "[12.1.2, )",
           "Avalonia.Themes.Fluent": "[12.1.2, )",
@@ -488,16 +488,16 @@
           "Dock.Model.Mvvm": "[12.1.0.6, )",
           "Irihi.Ursa": "[2.1.0, )",
           "Irihi.Ursa.Themes.Semi": "[2.1.0, )",
-          "Markdig": "[1.3.2, )",
+          "Markdig": "[1.6.0, )",
           "Microsoft.Extensions.Configuration.Json": "[10.0.10, )",
           "Microsoft.Extensions.DependencyInjection": "[10.0.10, )",
           "Microsoft.Extensions.Logging.Abstractions": "[10.0.10, )",
-          "MyAvaloniaManagement.Icons": "[3.4.1, )",
-          "MyAvaloniaManagement.PluginSdk": "[3.4.1, )",
-          "MyAvaloniaManagement.PluginSdk.UI": "[3.4.1, )",
-          "MyAvaloniaManagement.PluginSdk.Workflow": "[3.4.1, )",
+          "MyAvaloniaManagement.Icons": "[3.4.2, )",
+          "MyAvaloniaManagement.PluginSdk": "[3.4.2, )",
+          "MyAvaloniaManagement.PluginSdk.UI": "[3.4.2, )",
+          "MyAvaloniaManagement.PluginSdk.Workflow": "[3.4.2, )",
           "Semi.Avalonia": "[12.1.0, )",
-          "Xaml.Behaviors": "[12.0.5, )"
+          "Xaml.Behaviors": "[12.0.7, )"
         }
       },
       "myavaloniamanagement.icons": {
@@ -514,14 +514,14 @@
           "Irihi.Ursa": "[2.1.0, 2.1.0]",
           "Irihi.Ursa.Themes.Semi": "[2.1.0, 2.1.0]",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, 10.0.10]",
-          "MyAvaloniaManagement.PluginSdk": "[3.4.1, )",
+          "MyAvaloniaManagement.PluginSdk": "[3.4.2, )",
           "Semi.Avalonia": "[12.1.0, 12.1.0]"
         }
       },
       "myavaloniamanagement.pluginsdk.workflow": {
         "type": "Project",
         "dependencies": {
-          "MyAvaloniaManagement.PluginSdk": "[3.4.1, )"
+          "MyAvaloniaManagement.PluginSdk": "[3.4.2, )"
         }
       },
       "myplugtest": {
@@ -531,9 +531,9 @@
           "EPPlus": "[8.6.3, )",
           "Flurl.Http": "[4.0.2, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, )",
-          "MyAvaloniaManagement.Icons": "[3.4.1, )",
-          "MyAvaloniaManagement.PluginSdk": "[3.4.1, )",
-          "MyAvaloniaManagement.PluginSdk.UI": "[3.4.1, )"
+          "MyAvaloniaManagement.Icons": "[3.4.2, )",
+          "MyAvaloniaManagement.PluginSdk": "[3.4.2, )",
+          "MyAvaloniaManagement.PluginSdk.UI": "[3.4.2, )"
         }
       },
       "Avalonia": {
@@ -549,9 +549,9 @@
       },
       "Avalonia.Controls.WebView": {
         "type": "CentralTransitive",
-        "requested": "[12.1.0, )",
-        "resolved": "12.1.0",
-        "contentHash": "imv2/+IYFa17ZBmQZG6TtNYXLC6m3vNw4JZLfhL3Eec9nXEFD2tPhA31ZIwbcvXK910eLABw+5yoGvbkR0AOuA==",
+        "requested": "[12.1.2, )",
+        "resolved": "12.1.2",
+        "contentHash": "vMP8KLA0avtchWxqP/NAhU6MyTbJcExPGvkj8sW73cn7XvcCSW68XOWG6OEv/G34MAQIBlLChxbhKPJ1C6LWPw==",
         "dependencies": {
           "Avalonia": "12.0.0"
         }
@@ -703,9 +703,9 @@
       },
       "Markdig": {
         "type": "CentralTransitive",
-        "requested": "[1.3.2, )",
-        "resolved": "1.3.2",
-        "contentHash": "fZgOC/3CswUrndjDTac70aQpYdtxbW5+5bRumR7vzvI2HJbkmgKisB1c9oT+GA6v0jB/JDR9BLa9FiPzQmaK6A=="
+        "requested": "[1.6.0, )",
+        "resolved": "1.6.0",
+        "contentHash": "rJEpDfPM8wrfXUgkNejjg2bJN9bciy44uVyRwKUI+92CnSmbaLeJTLPYcCdvgM4RFsKrhs8d2H2hO78yZpMl3g=="
       },
       "Microsoft.Extensions.Configuration.Json": {
         "type": "CentralTransitive",
@@ -755,9 +755,9 @@
       },
       "Xaml.Behaviors": {
         "type": "CentralTransitive",
-        "requested": "[12.0.5, )",
-        "resolved": "12.0.5",
-        "contentHash": "csunRFx964L7+B6/FKXVkEjorMQRKMgbRi89/ux+hSs4btYWxcCHCPYwTFEcJdzJahYUfWP2ecGso7er3Hn+tg==",
+        "requested": "[12.0.7, )",
+        "resolved": "12.0.7",
+        "contentHash": "keD0nDa+ryl9sOF5RDJMUpmUEL7gzKe++Yj5tjEkLw0iGXGJPXZCt2uRb17WO31u02Rkj5n7Wnqw32aEcnK5rA==",
         "dependencies": {
           "Avalonia": "12.0.5"
         }
