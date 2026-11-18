@@ -149,12 +149,14 @@ try {
     }
     $rawFeed = Join-Path $buildRoot 'raw-feed'
     $project = Join-Path $sourceRoot 'src/Dock.Avalonia/Dock.Avalonia.csproj'
+    # Avalonia 的 XAML 编译器会将本机 PDB 路径写入 DLL。私有发布包省略调试信息以获得可重建的字节。
     Invoke-Checked dotnet @('pack', $project, '-c', 'Release', '-m:1', '--nologo', '-warnaserror',
         "-p:RestoreConfigFile=$restoreConfig",
         '-p:DockAreaFillPackage=true', "-p:PackageVersion=$($baseline.packageVersion)",
         "-p:AssemblyVersion=$($baseline.assemblyVersion)", "-p:FileVersion=$($baseline.assemblyVersion)",
         "-p:InformationalVersion=$($baseline.packageVersion)", '-p:IncludeSourceRevisionInInformationalVersion=false',
-        '-p:IncludeSymbols=false', '-p:Deterministic=true', '-p:ContinuousIntegrationBuild=true',
+        '-p:IncludeSymbols=false', '-p:DebugType=none', '-p:DebugSymbols=false',
+        '-p:Deterministic=true', '-p:ContinuousIntegrationBuild=true',
         '-p:DeterministicSourcePaths=true', '-o', $rawFeed)
     $candidatePath = Join-Path $buildRoot 'canonical.nupkg'
     Write-CanonicalPackage (Join-Path $rawFeed "Dock.Avalonia.$($baseline.packageVersion).nupkg") $candidatePath ([DateTimeOffset]::Parse($baseline.packageTimestampUtc))

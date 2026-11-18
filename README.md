@@ -4,7 +4,7 @@ MyAvaloniaManagement 是基于 .NET 10、Avalonia 和 Dock 的模块化桌面工
 
 > 当前说明，核对日期：2026-09-21。版本以 [Directory.Version.props](Directory.Version.props) 为准；操作与维护入口统一见[文档导航](docs/README.md)。
 
-当前产品版本为 `3.0.0`，六个自有 NuGet 包的源码版本为 `3.4.2`。Host 使用官方 Avalonia `12.1.6`，Dock 基线为 `12.1.5`，呈现层使用[可重建区域回停补丁](patches/dock-area-fill/README.md) `12.1.5.1-area.1`。包发布状态、最低兼容版本和数据格式见[版本与交付边界](docs/reference/platform-baseline.md)。
+当前产品版本为 `3.0.0`，六个自有 NuGet 包的源码版本为 `3.4.2`。Host 使用官方 Avalonia `12.1.6`，Dock 基线为 `12.1.5`，呈现层使用[可重建区域回停补丁](patches/dock-area-fill/README.md) `12.1.5.1-area.2`。包发布状态、最低兼容版本和数据格式见[版本与交付边界](docs/reference/platform-baseline.md)。
 
 正式支持范围为 Windows x64、同一团队维护的可信进程内插件。更新插件需要退出 Host、整体替换插件目录并重新启动；不提供插件沙箱、在线市场或热卸载。macOS 仍为[实验路径](docs/quick-start/macos-experiment.md)。
 

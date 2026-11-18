@@ -358,7 +358,7 @@
           "Avalonia.Fonts.Inter": "[12.1.6, )",
           "Avalonia.Themes.Fluent": "[12.1.6, )",
           "CommunityToolkit.Mvvm": "[8.4.2, )",
-          "Dock.Avalonia": "[12.1.5.1-area.1, )",
+          "Dock.Avalonia": "[12.1.5.1-area.2, )",
           "Dock.Avalonia.Themes.Fluent": "[12.1.5, )",
           "Dock.Controls.ProportionalStackPanel": "[12.1.5, )",
           "Dock.Controls.Recycling": "[12.1.5, )",
@@ -462,9 +462,9 @@
       },
       "Dock.Avalonia": {
         "type": "CentralTransitive",
-        "requested": "[12.1.5.1-area.1, )",
-        "resolved": "12.1.5.1-area.1",
-        "contentHash": "NRVx6V5xyXtzFT42Gyt5eqsEZNRNzm3CTbG2asHnYaJ6IIUJZQTuDgcp2RbQGJZ92bcXXMNEpep+U1UODUZEjw==",
+        "requested": "[12.1.5.1-area.2, )",
+        "resolved": "12.1.5.1-area.2",
+        "contentHash": "GRb3BL048f9P9+QT0VRvavYwVVwk6A3LpuufcqZHzmMVffC3ptbmY4ru2PccE0oJ+4o91b7B7NuLh7eglZFbhg==",
         "dependencies": {
           "Avalonia": "12.1.5",
           "Dock.Controls.DeferredContentControl": "12.1.5",

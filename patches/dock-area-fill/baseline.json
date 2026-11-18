@@ -2,10 +2,10 @@
   "repository": "https://github.com/wieslawsoltes/Dock.git",
   "commit": "9e85df60156fc2ba454ffaee7038ec8e37d8fe78",
   "upstreamVersion": "12.1.5",
-  "packageVersion": "12.1.5.1-area.1",
+  "packageVersion": "12.1.5.1-area.2",
   "minimumTests": 564,
   "sdkVersion": "10.0.302",
   "assemblyVersion": "12.1.5.0",
-  "packageTimestampUtc": "2026-11-18T00:00:00Z",
-  "packageSha256": "566853aa6a04df138df4626e82bf28e74ca63ad46887978a16606589b7b6f70b"
+  "packageTimestampUtc": "2026-11-18T00:00:02Z",
+  "packageSha256": "f0e8c2d8f2270ac1362e3594938dc7118174dab3ef8785b9a092774d92d4eca0"
 }

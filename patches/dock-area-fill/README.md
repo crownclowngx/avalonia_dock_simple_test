@@ -4,7 +4,7 @@
 
 ## 固定输入与产物
 
-固定基线为官方 `12.1.5`，本地包为 `12.1.5.1-area.1`，保留 `Dock.Avalonia` 程序集版本 `12.1.5.0` 以便官方主题绑定。Model、Settings、Controls 和 Theme 使用官方包。SDK `10.0.302`、固定提交、最低测试数量和最终包 SHA-256 见 [baseline.json](baseline.json)，源码差异见 [area-fill.patch](area-fill.patch)。
+固定基线为官方 `12.1.5`，本地包为 `12.1.5.1-area.2`，保留 `Dock.Avalonia` 程序集版本 `12.1.5.0` 以便官方主题绑定。Model、Settings、Controls 和 Theme 使用官方包。SDK `10.0.302`、固定提交、最低测试数量和最终包 SHA-256 见 [baseline.json](baseline.json)，源码差异见 [area-fill.patch](area-fill.patch)。私有包的 Release 打包关闭调试信息，以避免 XAML 编译器将构建路径写入 DLL。
 
 上游只有公开签名密钥，因此补丁启用 PublicSign，保持相同公钥标识；不能把它说成持有上游私钥签名的官方产物。本项目运行于 .NET 10；其他运行时的签名验证不在本次范围。
 
