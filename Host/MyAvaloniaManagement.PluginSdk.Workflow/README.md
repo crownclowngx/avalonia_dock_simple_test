@@ -11,5 +11,5 @@
 要求 required/minItems 保证，对运行时 JSON 使用相同对象和数组 segment 语法。Catalog 分别生成执行契约
 与展示修订，使文案变化不再无条件使工作流失效。
 
-V9 统一 NuGet 发布版本为 `3.4.1`，依赖 Core SDK `3.4.1`。本次没有公共 API 变更；
+当前包版本为 `3.4.2`，依赖 Core SDK `3.4.2`。
 既有 `v1` API 文本与 `AssemblyVersion=1.0.0.0` 保留，FileVersion/InformationalVersion 反映当前包号。

@@ -1,6 +1,6 @@
 # MyAvaloniaManagement Plugin SDK
 
-> 用途：包消费者了解 Core 契约。当前包版本 3.4.1；核对日期：2026-09-16。事实源为本程序集 public 类型、ApiCompatibility/v3 与集中版本属性。
+> 用途：包消费者了解 Core 契约。当前包版本 3.4.2；核对日期：2026-09-16。事实源为本程序集 public 类型、ApiCompatibility/v3 与集中版本属性。
 
 Core 是平台无关契约，只依赖 .NET BCL，不引用 Avalonia、Dock、Microsoft DI、Newtonsoft 或 Host 实现。模块、服务注册、View 与窗口交互使用同版本 UI SDK。
 
@@ -21,9 +21,9 @@ Workflow Action 契约提供 JSON 边界的 Handler、caller-bound Gateway、显
 Core/UI v3 Shipped 保持 127/45，增量文本分别为 91/79；已公开版本中的部分新增仍位于 Unshipped，不能据文件名推断“未发布”。Workflow 共享 Schema 位于独立包，不包含 AI 或工作流 Runner。
 
 ```xml
-<PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="[3.4.1]" />
-<PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="[3.4.1]" />
-<PackageReference Include="MyAvaloniaManagement.Plugin.Build" Version="[3.4.1]" PrivateAssets="all" />
+<PackageReference Include="MyAvaloniaManagement.PluginSdk" Version="[3.4.2]" />
+<PackageReference Include="MyAvaloniaManagement.PluginSdk.UI" Version="[3.4.2]" />
+<PackageReference Include="MyAvaloniaManagement.Plugin.Build" Version="[3.4.2]" PrivateAssets="all" />
 ```
 
-插件发布物不携带共享 SDK DLL；由 Host 提供契约程序集。新模板最低 SDK 为 3.4.1，既有旧二进制保留真实 manifest 下限并独立验证。
+插件发布物不携带共享 SDK DLL；由 Host 提供契约程序集。新模板最低 SDK 为 3.4.2，既有旧二进制保留真实 manifest 下限并独立验证。
