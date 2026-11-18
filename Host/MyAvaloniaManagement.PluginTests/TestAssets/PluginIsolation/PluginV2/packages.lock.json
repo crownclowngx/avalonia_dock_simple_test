@@ -43,7 +43,7 @@
           "Avalonia.Themes.Fluent": "[12.1.2, 12.1.2]",
           "Irihi.Ursa": "[2.1.0, 2.1.0]",
           "Irihi.Ursa.Themes.Semi": "[2.1.0, 2.1.0]",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.10, 10.0.10]",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.15, 10.0.15]",
           "MyAvaloniaManagement.PluginSdk": "[3.4.2, )",
           "Semi.Avalonia": "[12.1.0, 12.1.0]"
         }
@@ -95,9 +95,9 @@
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {
         "type": "CentralTransitive",
-        "requested": "[10.0.10, )",
-        "resolved": "10.0.10",
-        "contentHash": "z/2xXlFw2aLGjHyEm6E0tQ+In6VfzQzTrtArbQ2c0TQE16ZbyDCMGPvaUT9I0s8rgy9sRWlU2P9waW37qV04qA=="
+        "requested": "[10.0.15, )",
+        "resolved": "10.0.15",
+        "contentHash": "KczR2nV7ooeimtZxAawPht/FJUHnX+uoWy7y4pba+iaRQBwUM2NwtiqZg+/FpZDHUf2RkkzveGkhMTWDNzmDUA=="
       },
       "Semi.Avalonia": {
         "type": "CentralTransitive",

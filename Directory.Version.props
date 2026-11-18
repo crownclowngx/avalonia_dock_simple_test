@@ -48,7 +48,7 @@
     <MyAvaloniaDockAvaloniaVersion>12.1.0.7-area.5</MyAvaloniaDockAvaloniaVersion>
     <MyAvaloniaSemiUiVersion>12.1.0</MyAvaloniaSemiUiVersion>
     <MyAvaloniaUrsaUiVersion>2.1.0</MyAvaloniaUrsaUiVersion>
-    <MyAvaloniaDependencyInjectionUiVersion>10.0.10</MyAvaloniaDependencyInjectionUiVersion>
+    <MyAvaloniaDependencyInjectionUiVersion>10.0.15</MyAvaloniaDependencyInjectionUiVersion>
 
     <!--
       V3 G1 只切换代码与程序集版本线，不改变已经稳定的磁盘协议。manifest、Document
